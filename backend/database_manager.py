@@ -3,9 +3,10 @@ from sqlite3 import Connection
 
 from classes import Value, Objective, KeyResult
 
+database_name = "test.db"
 
 def executescript(script: str):
-    conn = sqlite3.connect("db.db")
+    conn = sqlite3.connect(database_name)
     conn.executescript(open(script, "r").read())
     conn.close()
 
@@ -13,7 +14,7 @@ def executescript(script: str):
 class DatabaseManager:
 
     def __init__(self):
-        self.conn: Connection = sqlite3.connect("db.db")
+        self.conn: Connection = sqlite3.connect(database_name)
 
     def __del__(self):
         self.conn.close()
