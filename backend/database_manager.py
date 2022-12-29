@@ -25,10 +25,10 @@ class DatabaseManager:
             values.append(Value(value))
         return values
 
-    def insert_value(self, name, description) -> int:
-        id = self.conn.execute("insert into PValues(name,description) values (?,?)", (name, description)).lastrowid
-        self.conn.commit()
-        return id
+    # def insert_value(self, name, description) -> int:
+    #     id = self.conn.execute("insert into PValues(name,description) values (?,?)", (name, description)).lastrowid
+    #     self.conn.commit()
+    #     return id
 
     def select_value(self, id: str) -> Value:
         value = self.conn.execute('select * from PValues where id=?', (int(id),)).fetchone()
@@ -46,3 +46,9 @@ class DatabaseManager:
         for key_result in self.conn.execute('select * from KeyResults where objective_id=?', (int(objective_id),)).fetchall():
             key_results.append(KeyResult(key_result, True))
         return key_results
+
+    def insert_key_result(self, name, description, objective_id) -> int:
+        id = self.conn.execute("insert into KeyResults(objective_id, state, name,description, s, m, a, r, t) values (?,?,?,?,?,?,?,?,?)",
+                               (objective_id, "active", name, description, "", "", "", "", "")).lastrowid
+        self.conn.commit()
+        return id

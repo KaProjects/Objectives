@@ -27,3 +27,5 @@ class Service:
     def delete_idea(self, value_id, idea_id):
         db.reference("ideas/" + str(value_id) + "/" + str(idea_id)).delete()
 
+    def add_key_result(self, name, description, objective_id):
+        return DatabaseManager().insert_key_result(name, description, objective_id)

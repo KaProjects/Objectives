@@ -14,15 +14,36 @@ export default {
       newIdeaDialog: false,
       newIdea: "",
       selectedIdea: -1,
+      confirmDeletionDialogs: [],
+      newKrDialogs: [],
+      newKr: {name: "", description: ""},
     }
   },
   methods: {
     async loadData() {
       const res = await fetch("http://" + properties.host + ":" + properties.port + "/value/" + app_state.value.id);
       this.value = await res.json();
+      for (let i = 0; i < this.value.objectives.length; i++) {
+        this.newKrDialogs[i] = false
+      }
+      for (let i = 0; i < this.value.ideas.length; i++) {
+        this.confirmDeletionDialogs[i] = false
+      }
     },
-    addKeyResult() {
-      alert('add KR')
+    async addKeyResult(objective_id, index) {
+      const requestOptions = {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name: this.newKr.name, description: this.newKr.description, objective_id: objective_id})
+      };
+
+      const res = await fetch("http://" + properties.host + ":" + properties.port + "/kr/add", requestOptions);
+      const newKr = await res.json();
+
+      this.value.objectives[index].key_results.push({id: newKr.new_id, objective_id: newKr.objective_id, state: newKr.state, name: newKr.name})
+
+      this.newKrDialogs[index] = false
+      this.newKr = {name: "", description: ""}
     },
     async addIdea() {
       const requestOptions = {
@@ -39,7 +60,7 @@ export default {
       this.newIdeaDialog = false
       this.newIdea = ""
     },
-    async deleteIdea(idea){
+    async deleteIdea(idea, index){
       const requestOptions = {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -52,7 +73,10 @@ export default {
       else
         alert(res.status);
 
-
+      this.confirmDeletionDialogs[index] = false
+    },
+    openKeyResult(kr_id) {
+      alert(kr_id)
     }
   },
   mounted() {
@@ -74,10 +98,28 @@ export default {
                                @mouseleave="selectedIdea = -1">
             <div class="idea">
               <v-list-item class="inLine">{{idea.value}}</v-list-item>
-              <v-icon v-if="selectedIdea === index"
-                     @click="deleteIdea(idea)"
-                      icon="mdi-delete">
-              </v-icon>
+
+              <v-dialog
+                  v-model="confirmDeletionDialogs[index]"
+                  width="300"
+              >
+                <template v-slot:activator="{ props }">
+                    <v-icon icon="mdi-delete" large v-bind="props" v-if="selectedIdea === index"/>
+                </template>
+
+                <v-card>
+                  <v-card-title class="text-h5 grey lighten-2">
+                    Delete Idea?
+                  </v-card-title>
+                  <v-card-text>
+                    {{ idea.value }}
+                  </v-card-text>
+                  <v-card-actions>
+                    <v-btn block @click="deleteIdea(idea, index)">Confirm</v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
+
             </div>
           </v-list-item-content>
         </v-list-item>
@@ -94,7 +136,7 @@ export default {
 
             <v-card>
               <v-text-field
-                  label="Idea*"
+                  label="Idea"
                   v-model="newIdea"
                   required
               ></v-text-field>
@@ -107,7 +149,7 @@ export default {
       </v-card>
 
       <v-card class="obj"
-              v-for="objective in value.objectives" :key="objective.id"
+              v-for="(objective, index) in value.objectives" :key="objective.id"
               :class="objective.state"
               width="300" elevation="3" shaped
       >
@@ -116,17 +158,42 @@ export default {
           {{objective.description}}
         </v-card-text>
         <v-list-item v-for="key_result in objective.key_results"
-                     class="kr" :class="key_result.state">
-          <v-list-item-content >
+                     class="kr" :class="key_result.state"
+                     @click="openKeyResult(key_result.id)">
+          <v-list-item-content>
             <v-icon icon="mdi-check-bold" v-if="key_result.state === 'success'" />
             <v-icon icon="mdi-cancel" v-if="key_result.state === 'failed'"/>
             <v-list-item-title class="inLine">{{key_result.name}}</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
         <v-card-actions v-if="objective.state === 'active'">
-          <v-btn outlined rounded color="primary">
-            <v-icon icon="mdi-plus" large @click="addKeyResult"/>
-          </v-btn>
+          <v-dialog
+              v-model="newKrDialogs[index]"
+              width="300"
+          >
+            <template v-slot:activator="{ props }">
+              <v-btn color="primary" v-bind="props">
+                <v-icon icon="mdi-plus" large/>
+              </v-btn>
+            </template>
+
+            <v-card>
+              <v-text-field
+                  label="Name"
+                  v-model="newKr.name"
+                  required
+              ></v-text-field>
+              <v-text-field
+                  label="Description"
+                  v-model="newKr.description"
+                  required
+              ></v-text-field>
+              <v-card-actions>
+                <v-btn block @click="addKeyResult(objective.id, index)">Add</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+
         </v-card-actions>
       </v-card>
 
