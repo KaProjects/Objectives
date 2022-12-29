@@ -54,3 +54,14 @@ def delete_idea():
     idea_id = data["idea_id"]
     Service().delete_idea(value_id, idea_id)
     return json.dumps({"deleted": idea_id}), 200
+
+
+@rest.route('/kr/add', methods=['POST'])
+def add_key_result():
+    data: dict = request.json
+    name = data["name"]
+    description = data["description"]
+    objective_id = data["objective_id"]
+    data["new_id"] = Service().add_key_result(name, description, objective_id)
+    data["state"] = "active"
+    return Response(response=json.dumps(data), status=200, mimetype="text/plain")
