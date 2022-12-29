@@ -1,9 +1,6 @@
-import json
-
-import firebase_admin
 
 from database_manager import DatabaseManager
-from firebase_admin import db, credentials
+from firebase_admin import db
 
 
 class Service:
@@ -20,13 +17,13 @@ class Service:
         for objective in value.objectives:
             objective.set_key_results(DatabaseManager().select_key_results_for_objective(objective.id))
 
-        value.set_ideas(db.reference("/values/" + id).get())
+        value.set_ideas(db.reference("/ideas/" + id).get())
 
         return value
 
     def add_idea(self, value_id, idea):
-        return db.reference("values/" + str(value_id)).push(idea).key
+        return db.reference("ideas/" + str(value_id)).push(idea).key
 
     def delete_idea(self, value_id, idea_id):
-        db.reference("values/" + str(value_id) + "/" + str(idea_id)).delete()
+        db.reference("ideas/" + str(value_id) + "/" + str(idea_id)).delete()
 
