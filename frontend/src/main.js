@@ -11,7 +11,8 @@ export const app_state = reactive({
     },
     unselect_value() {
         this.value = null
-    }
+    },
+    krDialogToggle: false,
 })
 
 // Vuetify
@@ -33,7 +34,5 @@ const vuetify = createVuetify({
     },
 })
 
-import VueVirtualScroller from 'vue3-virtual-scroller'
 
-
-createApp(App).use(vuetify).use(VueVirtualScroller).mount('#app')
+createApp(App).use(vuetify).mount('#app')

@@ -1,7 +1,7 @@
 import sqlite3
 from sqlite3 import Connection
 
-from classes import Value, Objective, KeyResult
+from classes import Value, Objective, KeyResult, Task
 
 database_name = "test.db"
 
@@ -47,8 +47,34 @@ class DatabaseManager:
             key_results.append(KeyResult(key_result, True))
         return key_results
 
-    def insert_key_result(self, name, description, objective_id) -> int:
-        id = self.conn.execute("insert into KeyResults(objective_id, state, name,description, s, m, a, r, t) values (?,?,?,?,?,?,?,?,?)",
-                               (objective_id, "active", name, description, "", "", "", "", "")).lastrowid
+    def insert_key_result(self, name, description, state, objective_id, s, m, a, r, t) -> int:
+        id = self.conn.execute("insert into KeyResults(objective_id, state, name,description, s, m, a, r, t) "
+                               "values (?,?,?,?,?,?,?,?,?)",
+                               (objective_id, state, name, description, s, m, a, r, t)).lastrowid
         self.conn.commit()
         return id
+
+    def select_key_result(self, id: str) -> KeyResult:
+        kr = self.conn.execute('select * from KeyResults where id=?', (int(id),)).fetchone()
+        if kr is not None:
+            return KeyResult(kr, False)
+
+    def update_key_result(self, id, name, description, state, s, m, a, r, t):
+        self.conn.execute('update KeyResults set name=?,description=?,state=?,s=?,m=?,a=?,r=?,t=? where id=?',
+                          (name, description, state, s, m, a, r, t, int(id)))
+        self.conn.commit()
+
+    def select_tasks_for_key_result(self, id):
+        tasks = list()
+        for task in self.conn.execute('select * from Tasks where kr_id=?', (int(id),)).fetchall():
+            tasks.append(Task(task))
+        return tasks
+
+    def insert_task(self, value, kr_id, state) -> int:
+        id = self.conn.execute("insert into Tasks(kr_id, state, value) values (?,?,?)", (kr_id, state, value)).lastrowid
+        self.conn.commit()
+        return id
+
+    def update_task(self, id, value, state):
+        self.conn.execute('update Tasks set value=?,state=? where id=?', (value, state, int(id)))
+        self.conn.commit()

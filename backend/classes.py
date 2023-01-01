@@ -6,6 +6,14 @@ class JsonEncoder(JSONEncoder):
         return o.__dict__
 
 
+class Task:
+    def __init__(self, attributes: tuple):
+        self.id: str = attributes[0]
+        self.kr_id: str = attributes[1]
+        self.state: str = attributes[2]
+        self.value: str = attributes[3]
+
+
 class KeyResult:
     def __init__(self, attributes: tuple, lightweight: bool):
         self.id: str = attributes[0]
@@ -19,6 +27,9 @@ class KeyResult:
             self.a: str = attributes[7]
             self.r: str = attributes[8]
             self.t: str = attributes[9]
+
+    def set_tasks(self, tasks: list[Task]):
+        self.tasks: list[Task] = tasks
 
 
 class Objective:

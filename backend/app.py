@@ -28,8 +28,8 @@ def init_firebase():
 
 
 if __name__ == '__main__':
-    executescript("drop_tables.sql")
-    executescript("create_tables.sql")
-    executescript("test_data.sql")
+    # executescript("drop_tables.sql")
+    # executescript("create_tables.sql")
+    # executescript("test_data.sql")
     init_firebase()
     api.run(port=7702, debug=True)

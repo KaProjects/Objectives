@@ -5,18 +5,18 @@ import { app_state } from '@/main'
 <script>
 import {properties} from "@/properties";
 import {app_state} from "@/main";
+import Ideas from "@/components/Ideas.vue";
+import KeyResultDialog from "@/components/KeyResultDialog.vue";
 
 export default {
   name: "Value",
   data() {
     return {
       value: Object,
-      newIdeaDialog: false,
-      newIdea: "",
-      selectedIdea: -1,
-      confirmDeletionDialogs: [],
       newKrDialogs: [],
       newKr: {name: "", description: ""},
+      selectedKr: Object,
+      selectedKr_parent: Object
     }
   },
   methods: {
@@ -26,9 +26,7 @@ export default {
       for (let i = 0; i < this.value.objectives.length; i++) {
         this.newKrDialogs[i] = false
       }
-      for (let i = 0; i < this.value.ideas.length; i++) {
-        this.confirmDeletionDialogs[i] = false
-      }
+      // TODO split fetch of value and ideas to 2 endpoints (in case of connection issue, local db is accessible, however firebase is not)
     },
     async addKeyResult(objective_id, index) {
       const requestOptions = {
@@ -37,47 +35,29 @@ export default {
         body: JSON.stringify({name: this.newKr.name, description: this.newKr.description, objective_id: objective_id})
       };
 
-      const res = await fetch("http://" + properties.host + ":" + properties.port + "/kr/add", requestOptions);
-      const newKr = await res.json();
-
-      this.value.objectives[index].key_results.push({id: newKr.new_id, objective_id: newKr.objective_id, state: newKr.state, name: newKr.name})
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/add", requestOptions);
+      if (response.ok){
+        const newKr = await response.json();
+        this.value.objectives[index].key_results.push(newKr)
+      } else {
+        const error = await response.json()
+        console.error(error)
+        alert(error.error)
+      }
 
       this.newKrDialogs[index] = false
       this.newKr = {name: "", description: ""}
     },
-    async addIdea() {
-      const requestOptions = {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({value_id: this.value.id, idea: this.newIdea})
-      };
-
-      const res = await fetch("http://" + properties.host + ":" + properties.port + "/idea/add", requestOptions);
-      const newIdea = await res.json();
-
-      this.value.ideas.push({id: newIdea.new_id, value: newIdea.idea})
-
-      this.newIdeaDialog = false
-      this.newIdea = ""
-    },
-    async deleteIdea(idea, index){
-      const requestOptions = {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({value_id: this.value.id, idea_id: idea.id})
-      };
-
-      const res = await fetch("http://" + properties.host + ":" + properties.port + "/idea/del", requestOptions);
-      if (res.ok)
-        this.value.ideas.splice(this.value.ideas.indexOf(idea), 1);
-      else
-        alert(res.status);
-
-      this.confirmDeletionDialogs[index] = false
-    },
-    openKeyResult(kr_id) {
-      alert(kr_id)
+    async openKeyResult(kr) {
+      const res = await fetch("http://" + properties.host + ":" + properties.port + "/kr/" + kr.id);
+      this.selectedKr = await res.json();
+      this.selectedKr_parent = kr
+      app_state.krDialogToggle = true
     }
+  },
+  components: {
+    Ideas,
+    KeyResultDialog,
   },
   mounted() {
     this.loadData()
@@ -90,65 +70,11 @@ export default {
     <v-icon icon="mdi-arrow-left" large @click="app_state.unselect_value()"/>
     <h1>{{value.name}}</h1>
 
-      <v-card class="obj" width="300" elevation="3" shaped>
-        <v-card-title>Ideas</v-card-title>
-        <v-list-item>
-          <v-list-item-content v-for="(idea, index) in value.ideas"
-                               @mouseover="selectedIdea = index"
-                               @mouseleave="selectedIdea = -1">
-            <div class="idea">
-              <v-list-item class="inLine">{{idea.value}}</v-list-item>
+    <Ideas :ideas="this.value.ideas" :valueId="this.value.id" />
 
-              <v-dialog
-                  v-model="confirmDeletionDialogs[index]"
-                  width="300"
-              >
-                <template v-slot:activator="{ props }">
-                    <v-icon icon="mdi-delete" large v-bind="props" v-if="selectedIdea === index"/>
-                </template>
+    <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" />
 
-                <v-card>
-                  <v-card-title class="text-h5 grey lighten-2">
-                    Delete Idea?
-                  </v-card-title>
-                  <v-card-text>
-                    {{ idea.value }}
-                  </v-card-text>
-                  <v-card-actions>
-                    <v-btn block @click="deleteIdea(idea, index)">Confirm</v-btn>
-                  </v-card-actions>
-                </v-card>
-              </v-dialog>
-
-            </div>
-          </v-list-item-content>
-        </v-list-item>
-        <v-card-actions>
-          <v-dialog
-              v-model="newIdeaDialog"
-              width="300"
-          >
-            <template v-slot:activator="{ props }">
-              <v-btn color="primary" v-bind="props">
-                <v-icon icon="mdi-plus" large/>
-              </v-btn>
-            </template>
-
-            <v-card>
-              <v-text-field
-                  label="Idea"
-                  v-model="newIdea"
-                  required
-              ></v-text-field>
-              <v-card-actions>
-                <v-btn block @click="addIdea">Add</v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-        </v-card-actions>
-      </v-card>
-
-      <v-card class="obj"
+    <v-card class="obj"
               v-for="(objective, index) in value.objectives" :key="objective.id"
               :class="objective.state"
               width="300" elevation="3" shaped
@@ -159,7 +85,7 @@ export default {
         </v-card-text>
         <v-list-item v-for="key_result in objective.key_results"
                      class="kr" :class="key_result.state"
-                     @click="openKeyResult(key_result.id)">
+                     @click="openKeyResult(key_result)">
           <v-list-item-content>
             <v-icon icon="mdi-check-bold" v-if="key_result.state === 'success'" />
             <v-icon icon="mdi-cancel" v-if="key_result.state === 'failed'"/>
@@ -205,23 +131,15 @@ export default {
 
 <style scoped>
 
-.idea {
-  border: 1px #d9e0e1 solid;
-}
-.idea:hover {
-  border: 2px #d9e0e1 solid;
-}
-.idea > .v-icon {
-  position: absolute;
-  right: 0px;
-}
+
 
 .kr {
   border: #2c3e50;
   border-style: solid;
+  border-width: 1px;
 }
 .kr:hover {
-  border-width: 3px;
+  border-width: 2px;
 }
 .kr.success {
   color: #017901;
