@@ -126,3 +126,12 @@ def update_task():
         return create_response(data, 200)
     else:
         return create_response({"error": str(error)}, 500)
+
+
+@rest.route('/task/<id>', methods=['DELETE'])
+def delete_task(id: str):
+    error = Service().delete_task(id)
+    if error is None:
+        return create_response("deleted", 200)
+    else:
+        return create_response({"error": str(error)}, 500)

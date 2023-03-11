@@ -26,13 +26,6 @@ export default {
       for (let i = 0; i < this.value.objectives.length; i++) {
         this.newKrDialogs[i] = false
       }
-
-      // const res_ideas = await fetch("http://" + properties.host + ":" + properties.port + "/value/" + app_state.value.id + "/ideas");
-      // this.ideas = await res_ideas.json();
-
-
-
-
     },
     async addKeyResult(objective_id, index) {
       const requestOptions = {

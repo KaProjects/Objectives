@@ -78,3 +78,7 @@ class DatabaseManager:
     def update_task(self, id, value, state):
         self.conn.execute('update Tasks set value=?,state=? where id=?', (value, state, int(id)))
         self.conn.commit()
+
+    def delete_task(self, task_id):
+        self.conn.execute('delete from Tasks where id=?', (int(task_id),))
+        self.conn.commit()

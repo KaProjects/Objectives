@@ -127,9 +127,6 @@ export default {
 </template>
 
 <style scoped>
-.spinner {
-  padding: 2px;
-}
 .idea {
   border: 1px #d9e0e1 solid;
 }

@@ -64,3 +64,9 @@ class Service:
             DatabaseManager().update_task(data["id"], data["value"], data["state"])
         except Exception as e:
             return e
+
+    def delete_task(self, task_id):
+        try:
+            DatabaseManager().delete_task(task_id)
+        except Exception as e:
+            return e

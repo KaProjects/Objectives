@@ -15,7 +15,8 @@ export default {
       values: [null, null, null, null, null, null, null, ""],
       editing: [false, false, false, false, false, false, false, false, []],
       editingValue: "",
-      selectedTask: -1
+      selectedTask: -1,
+      confirmDeletionDialogs: [],
     }
   },
   watch: {
@@ -90,7 +91,7 @@ export default {
       this.editingValue = this.kr.tasks[index].value
       this.editing[8][index] = true
     },
-    async updateTask(index){
+    async updateTaskValue(index){
       const task = {kr_id: this.kr.id, value: this.editingValue, id: this.kr.tasks[index].id, state: this.kr.tasks[index].state}
 
       const requestOptions = {
@@ -137,6 +138,38 @@ export default {
       }
 
       this.editing[7] = false
+    },
+    async updateTaskState(index, state){
+      const task = {kr_id: this.kr.id, value: this.kr.tasks[index].value, id: this.kr.tasks[index].id, state: state}
+
+      const requestOptions = {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(task)
+      };
+
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/update", requestOptions)
+      if (response.ok){
+        const updatedTask = await response.json();
+        this.kr.tasks[index].state = updatedTask.state
+      } else {
+        const error = await response.json()
+        console.error(error)
+        alert(error.error)
+      }
+    },
+    async deleteTask(task, index){
+      const requestOptions = {
+        method: "DELETE"
+      };
+
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/" + task.id, requestOptions)
+      if (response.ok)
+        this.kr.tasks.splice(this.kr.tasks.indexOf(task), 1);
+      else
+        alert(response.status);
+
+      this.confirmDeletionDialogs[index] = false
     }
   },
 }
@@ -227,13 +260,13 @@ export default {
       <v-divider></v-divider>
 
       <div v-for="(task, index) in kr.tasks">
-        <Editable v-if="editing[8][index]" :cancel="stopEditing" :submit="updateTask" :index=index>
-          <v-text-field @keydown.enter="updateTask(index)" @keydown.esc="stopEditing"
+        <Editable v-if="editing[8][index]" :cancel="stopEditing" :submit="updateTaskValue" :index=index>
+          <v-text-field @keydown.enter="updateTaskValue(index)" @keydown.esc="stopEditing"
                         v-model="editingValue"
                         label="Task"
           ></v-text-field>
         </Editable>
-        <div v-else style="display: flex;"
+        <div v-else class="task"
              @mouseover="selectedTask = index"
              @mouseleave="selectedTask = -1">
           <div style="flex: 25;" @click="startEditingTask(index)">
@@ -242,9 +275,32 @@ export default {
             <v-icon icon="mdi-checkbox-blank-outline" large v-if="task.state === 'active'"/>
             {{task.value}}
           </div>
-          <v-icon style="flex: 1;" icon="mdi-close-box-outline" large v-if="selectedTask === index" @click="console.log('x')"/>
-          <v-icon style="flex: 1;" icon="mdi-checkbox-marked-outline" large v-if="selectedTask === index" @click="console.log('s')"/>
-          <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-if="selectedTask === index" @click="console.log('d')"/>
+          <v-icon style="flex: 1;" icon="mdi-checkbox-blank-outline" large v-if="selectedTask === index && task.state !== 'active'" @click="updateTaskState(index, 'active')"/>
+          <v-icon style="flex: 1;" icon="mdi-checkbox-marked-outline" large v-if="selectedTask === index && task.state !== 'finished'" @click="updateTaskState(index, 'finished')"/>
+          <v-icon style="flex: 1;" icon="mdi-close-box-outline" large v-if="selectedTask === index && task.state !== 'failed'" @click="updateTaskState(index, 'failed')"/>
+
+          <v-dialog
+              v-model="confirmDeletionDialogs[index]"
+              width="300"
+          >
+            <template v-slot:activator="{ props }">
+              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedTask === index"/>
+            </template>
+
+            <v-card>
+              <v-card-title class="text-h5 grey lighten-2">
+                Delete Task?
+              </v-card-title>
+              <v-card-text>
+                {{ task.value }}
+              </v-card-text>
+              <v-card-actions>
+                <v-btn block @click="deleteTask(task, index)">Confirm</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+
+
         </div>
       </div>
 
@@ -270,16 +326,12 @@ export default {
 </template>
 
 <style scoped>
-.inLine {
-  display: inline-block;
-
+.task {
+  display: flex;
+  background: white;
 }
-.icon1 {
-  position: absolute;
-  right: 20px;
-}
-.icon2 {
-  position: absolute;
-  right: 0px;
+.task:hover {
+  display: flex;
+  background: #b2b2b2;
 }
 </style>
