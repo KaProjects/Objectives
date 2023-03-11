@@ -1,3 +1,4 @@
+from classes import Value, Idea
 from database_manager import DatabaseManager
 from firebase_admin import db
 
@@ -10,15 +11,23 @@ class Service:
             value.set_objective_counts(DatabaseManager().select_objectives_for_value(value.id))
         return values
 
-    def get_single_value(self, id: str):
+    def get_single_value(self, id: str) -> Value:
         value = DatabaseManager().select_value(id)
         value.set_objectives(DatabaseManager().select_objectives_for_value(value.id))
         for objective in value.objectives:
             objective.set_key_results(DatabaseManager().select_key_results_for_objective(objective.id))
 
-        value.set_ideas(db.reference("/ideas/" + id).get())
-
         return value
+
+    def get_ideas_of_value(self, value_id: str) -> list[Idea]:
+        ideas = list[Idea]()
+        db_ideas = db.reference("/ideas/" + value_id).get()
+
+        if db_ideas is not None:
+            for id in db_ideas:
+                ideas.append(Idea(id, db_ideas[id]))
+
+        return ideas
 
     def add_idea(self, value_id, idea):
         return db.reference("ideas/" + str(value_id)).push(idea).key

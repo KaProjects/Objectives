@@ -26,7 +26,13 @@ export default {
       for (let i = 0; i < this.value.objectives.length; i++) {
         this.newKrDialogs[i] = false
       }
-      // TODO split fetch of value and ideas to 2 endpoints (in case of connection issue, local db is accessible, however firebase is not)
+
+      // const res_ideas = await fetch("http://" + properties.host + ":" + properties.port + "/value/" + app_state.value.id + "/ideas");
+      // this.ideas = await res_ideas.json();
+
+
+
+
     },
     async addKeyResult(objective_id, index) {
       const requestOptions = {
@@ -70,7 +76,7 @@ export default {
     <v-icon icon="mdi-arrow-left" large @click="app_state.unselect_value()"/>
     <h1>{{value.name}}</h1>
 
-    <Ideas :ideas="this.value.ideas" :valueId="this.value.id" />
+    <Ideas :valueId="app_state.value.id" />
 
     <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" />
 

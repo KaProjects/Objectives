@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from json import JSONEncoder
 
 
@@ -63,13 +64,11 @@ class Value:
         self.objectives: list[Objective] = objectives
         self.set_objective_counts(objectives)
 
-    def set_ideas(self, ideas: dict):
-        self.ideas = list()
-        if ideas is not None:
-            for idea in ideas:
-                self.ideas.append({"id": idea, "value": ideas[idea]})
 
-
+@dataclass(frozen=True)
+class Idea:
+    id: str
+    value: str
 
 
 

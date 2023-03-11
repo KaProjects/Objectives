@@ -4,11 +4,12 @@ import {properties} from "@/properties";
 export default {
   name: "Ideas",
   props: {
-    ideas: Object,
     valueId: Number
   },
   data() {
     return {
+      ideas: Object,
+      loading: true,
       newIdeaDialog: false,
       newIdea: "",
       selectedIdea: -1,
@@ -16,6 +17,16 @@ export default {
     }
   },
   methods: {
+    async loadData() {
+      await fetch("http://" + properties.host + ":" + properties.port + "/value/" + this.valueId + "/ideas")
+          .then(async (response) => {
+            this.ideas = await response.json()
+            this.loading = false
+          })
+          .catch(function(error) {
+            console.log(error)
+      });
+    },
     async addIdea() {
       const requestOptions = {
         method: "POST",
@@ -46,70 +57,79 @@ export default {
 
       this.confirmDeletionDialogs[index] = false
     },
+  },
+  mounted() {
+    this.loadData()
   }
 }
 </script>
 <template>
   <v-card class="obj" width="300" elevation="3" shaped>
     <v-card-title>Ideas</v-card-title>
-    <v-list-item>
-      <v-list-item-content v-for="(idea, index) in ideas"
-                           @mouseover="selectedIdea = index"
-                           @mouseleave="selectedIdea = -1">
-        <div class="idea">
-          <v-list-item class="inLine">{{idea.value}}</v-list-item>
+    <v-progress-circular v-if="loading" style="margin: 0 0 10px 30px" indeterminate color="primary"></v-progress-circular>
+    <div v-else>
+      <v-list-item>
+        <v-list-item-content v-for="(idea, index) in ideas"
+                             @mouseover="selectedIdea = index"
+                             @mouseleave="selectedIdea = -1">
+          <div class="idea">
+            <v-list-item class="inLine">{{idea.value}}</v-list-item>
 
-          <v-dialog
-              v-model="confirmDeletionDialogs[index]"
-              width="300"
-          >
-            <template v-slot:activator="{ props }">
-              <v-icon icon="mdi-delete" large v-bind="props" v-if="selectedIdea === index"/>
-            </template>
+            <v-dialog
+                v-model="confirmDeletionDialogs[index]"
+                width="300"
+            >
+              <template v-slot:activator="{ props }">
+                <v-icon icon="mdi-delete" large v-bind="props" v-if="selectedIdea === index"/>
+              </template>
 
-            <v-card>
-              <v-card-title class="text-h5 grey lighten-2">
-                Delete Idea?
-              </v-card-title>
-              <v-card-text>
-                {{ idea.value }}
-              </v-card-text>
-              <v-card-actions>
-                <v-btn block @click="deleteIdea(idea, index)">Confirm</v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
+              <v-card>
+                <v-card-title class="text-h5 grey lighten-2">
+                  Delete Idea?
+                </v-card-title>
+                <v-card-text>
+                  {{ idea.value }}
+                </v-card-text>
+                <v-card-actions>
+                  <v-btn block @click="deleteIdea(idea, index)">Confirm</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
 
-        </div>
-      </v-list-item-content>
-    </v-list-item>
-    <v-card-actions>
-      <v-dialog
-          v-model="newIdeaDialog"
-          width="300"
-      >
-        <template v-slot:activator="{ props }">
-          <v-btn color="primary" v-bind="props">
-            <v-icon icon="mdi-plus" large/>
-          </v-btn>
-        </template>
+          </div>
+        </v-list-item-content>
+      </v-list-item>
+      <v-card-actions>
+        <v-dialog
+            v-model="newIdeaDialog"
+            width="300"
+        >
+          <template v-slot:activator="{ props }">
+            <v-btn color="primary" v-bind="props">
+              <v-icon icon="mdi-plus" large/>
+            </v-btn>
+          </template>
 
-        <v-card>
-          <v-text-field
-              label="Idea"
-              v-model="newIdea"
-              required
-          ></v-text-field>
-          <v-card-actions>
-            <v-btn block @click="addIdea">Add</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-    </v-card-actions>
+          <v-card>
+            <v-text-field
+                label="Idea"
+                v-model="newIdea"
+                required
+            ></v-text-field>
+            <v-card-actions>
+              <v-btn block @click="addIdea">Add</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </v-card-actions>
+    </div>
   </v-card>
 </template>
 
 <style scoped>
+.spinner {
+  padding: 2px;
+}
 .idea {
   border: 1px #d9e0e1 solid;
 }

@@ -37,6 +37,15 @@ def get_value(id: str):
         return create_response(value, 200)
 
 
+@rest.route('/value/<id>/ideas')
+def get_value_ideas(id: str):
+    ideas = Service().get_ideas_of_value(id)
+    if ideas is None:
+        return create_response({"not found": id}, 404)
+    else:
+        return create_response(ideas, 200)
+
+
 @rest.route('/value/list')
 def get_values():
     values = Service().get_all_values()
