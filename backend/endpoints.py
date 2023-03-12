@@ -3,7 +3,7 @@ import json
 from flask import request, Blueprint, Response
 from flask_cors import CORS
 
-from classes import JsonEncoder, KeyResult
+from classes import JsonEncoder
 from service import Service
 
 rest = Blueprint('rest', __name__, template_folder='templates')
@@ -14,18 +14,6 @@ CORS(rest, resources={r"/*": {"origins": "http://localhost:*"}})
 def create_response(response, status):
     json_response = json.dumps(response) if type(response) is dict else json.dumps(response, cls=JsonEncoder)
     return Response(response=json_response, status=status, mimetype="text/plain")
-
-
-# @rest.route('/value/list')
-# def values():
-#     return json.dumps(DatabaseManager().select_all_values(), cls=JsonEncoder)
-#
-#
-# @rest.route('/value', methods=['POST'])
-# def add_value():
-#     data = request.json
-#     value_id = DatabaseManager().insert_value(data["name"], data["description"])
-#     return json.dumps({"success": value_id}), 201
 
 
 @rest.route('/value/<id>')
@@ -76,10 +64,13 @@ def create_key_result():
     name = data["name"]
     description = data["description"]
     objective_id = data["objective_id"]
-    result, success = Service().create_key_result(name, description, objective_id)
+    result, success, date_created = Service().create_key_result(name, description, objective_id)
     if success:
         data["id"] = result
         data["state"] = "active"
+        data["date_reviewed"] = date_created
+        data["all_tasks_count"] = 0
+        data["finished_tasks_count"] = 0
         return create_response(data, 200)
     else:
         return create_response({"error": str(result)}, 500)
@@ -94,14 +85,23 @@ def get_key_result(id: str):
         return create_response(kr, 200)
 
 
+@rest.route('/kr/<id>/review', methods=['POST'])
+def review_key_result(id: str):
+    try:
+        date_reviewed = Service().review_key_result(id)
+        return create_response(date_reviewed, 200)
+    except Exception as e:
+        return create_response({"error": e}, 500)
+
+
 @rest.route('/kr/update', methods=['POST'])
 def update_key_result():
     data: dict = request.json
-    error = Service().update_key_result(data)
-    if error is None:
-        return create_response(data, 200)
-    else:
-        return create_response({"error": str(error)}, 500)
+    try:
+        date_reviewed = Service().update_key_result(data)
+        return create_response(date_reviewed, 200)
+    except Exception as e:
+        return create_response({"error": e}, 500)
 
 
 @rest.route('/task/add', methods=['POST'])
@@ -109,13 +109,13 @@ def create_task():
     data: dict = request.json
     kr_id = data["kr_id"]
     value = data["value"]
-    result, success = Service().create_task(value, kr_id)
-    if success:
-        data["id"] = result
+    try:
+        new_id = Service().create_task(value, kr_id)
+        data["id"] = new_id
         data["state"] = "active"
         return create_response(data, 200)
-    else:
-        return create_response({"error": str(result)}, 500)
+    except Exception as e:
+        return create_response({"error": e}, 500)
 
 
 @rest.route('/task/update', methods=['POST'])

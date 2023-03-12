@@ -17,7 +17,9 @@ create table if not exists KeyResults ( id INTEGER PRIMARY KEY,
                                         m text not null,
                                         a text not null,
                                         r text not null,
-                                        t text not null);
+                                        t text not null,
+                                        date_created text not null,
+                                        date_reviewed text not null);
 
 create table if not exists Tasks ( id INTEGER PRIMARY KEY,
                                     kr_id INTEGER references KeyResults( id ),

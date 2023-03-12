@@ -1,3 +1,5 @@
+from datetime import date
+
 from classes import Value, Idea
 from database_manager import DatabaseManager
 from firebase_admin import db
@@ -36,8 +38,9 @@ class Service:
         db.reference("ideas/" + str(value_id) + "/" + str(idea_id)).delete()
 
     def create_key_result(self, name, description, objective_id):
+        today = "10/03/2023" # date.today().strftime("%d/%m/%Y") # TODO
         try:
-            return DatabaseManager().insert_key_result(name, description, "active", objective_id, "", "", "", "", ""), True
+            return DatabaseManager().insert_key_result(name, description, "active", objective_id, "", "", "", "", "", today), True, today
         except Exception as e:
             return e, False
 
@@ -46,18 +49,20 @@ class Service:
         kr.set_tasks(DatabaseManager().select_tasks_for_key_result(kr.id))
         return kr
 
+    def review_key_result(self, id):
+        today = date.today().strftime("%d/%m/%Y")
+        DatabaseManager().review_key_result(id, today)
+        return today
+
     def update_key_result(self, data):
-        try:
-            DatabaseManager().update_key_result(data["id"], data["name"], data["description"], data["state"],
-                           data["s"], data["m"], data["a"], data["r"], data["t"])
-        except Exception as e:
-            return e
+        today = date.today().strftime("%d/%m/%Y")
+        DatabaseManager().update_key_result(data["id"], data["name"], data["description"], data["state"],
+                       data["s"], data["m"], data["a"], data["r"], data["t"], today)
+        return today
 
     def create_task(self, value, kr_id):
-        try:
-            return DatabaseManager().insert_task(value, kr_id, "active"), True
-        except Exception as e:
-            return e, False
+        return DatabaseManager().insert_task(value, kr_id, "active")
+
 
     def update_task(self, data):
         try:

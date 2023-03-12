@@ -5,6 +5,7 @@ from classes import Value, Objective, KeyResult, Task
 
 database_name = "test.db"
 
+
 def executescript(script: str):
     conn = sqlite3.connect(database_name)
     conn.executescript(open(script, "r").read())
@@ -43,14 +44,20 @@ class DatabaseManager:
 
     def select_key_results_for_objective(self, objective_id: str) -> list:
         key_results = list()
-        for key_result in self.conn.execute('select * from KeyResults where objective_id=?', (int(objective_id),)).fetchall():
-            key_results.append(KeyResult(key_result, True))
+        for db_key_result in self.conn.execute('select * from KeyResults where objective_id=?', (int(objective_id),)).fetchall():
+            key_result = KeyResult(db_key_result, True)
+
+            all_tasks_count = self.conn.execute('select count(*) from Tasks where kr_id=?', (int(key_result.id),)).fetchone()[0]
+            finished_tasks_count = self.conn.execute('select count(*) from Tasks where kr_id=? and state=?', (int(key_result.id), 'finished')).fetchone()[0]
+            key_result.set_tasks_count(all_tasks_count, finished_tasks_count)
+
+            key_results.append(key_result)
         return key_results
 
-    def insert_key_result(self, name, description, state, objective_id, s, m, a, r, t) -> int:
-        id = self.conn.execute("insert into KeyResults(objective_id, state, name,description, s, m, a, r, t) "
-                               "values (?,?,?,?,?,?,?,?,?)",
-                               (objective_id, state, name, description, s, m, a, r, t)).lastrowid
+    def insert_key_result(self, name, description, state, objective_id, s, m, a, r, t, date_created) -> int:
+        id = self.conn.execute("insert into KeyResults(objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) "
+                               "values (?,?,?,?,?,?,?,?,?,?,?)",
+                               (objective_id, state, name, description, s, m, a, r, t, date_created, date_created)).lastrowid
         self.conn.commit()
         return id
 
@@ -59,9 +66,13 @@ class DatabaseManager:
         if kr is not None:
             return KeyResult(kr, False)
 
-    def update_key_result(self, id, name, description, state, s, m, a, r, t):
-        self.conn.execute('update KeyResults set name=?,description=?,state=?,s=?,m=?,a=?,r=?,t=? where id=?',
-                          (name, description, state, s, m, a, r, t, int(id)))
+    def update_key_result(self, id, name, description, state, s, m, a, r, t, date_reviewed):
+        self.conn.execute('update KeyResults set name=?,description=?,state=?,s=?,m=?,a=?,r=?,t=?,date_reviewed=? where id=?',
+                          (name, description, state, s, m, a, r, t, date_reviewed, int(id)))
+        self.conn.commit()
+
+    def review_key_result(self, kr_id, date_reviewed):
+        self.conn.execute('update KeyResults set date_reviewed=? where id=?', (date_reviewed, int(kr_id)))
         self.conn.commit()
 
     def select_tasks_for_key_result(self, id):

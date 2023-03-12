@@ -21,6 +21,8 @@ class KeyResult:
         self.objective_id: str = attributes[1]
         self.state: str = attributes[2]
         self.name: str = attributes[3]
+        self.date_created: str = attributes[10]
+        self.date_reviewed: str = attributes[11]
         if not lightweight:
             self.description: str = attributes[4]
             self.s: str = attributes[5]
@@ -31,6 +33,12 @@ class KeyResult:
 
     def set_tasks(self, tasks: list[Task]):
         self.tasks: list[Task] = tasks
+        # self.all_tasks_count = len(tasks)
+        # self.finished_tasks_count = sum(map(lambda x : x.state == 'finished', tasks))
+
+    def set_tasks_count(self, all_tasks_count, finished_tasks_count):
+        self.all_tasks_count = all_tasks_count
+        self.finished_tasks_count = finished_tasks_count
 
 
 class Objective:

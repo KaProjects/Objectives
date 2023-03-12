@@ -86,9 +86,16 @@ export default {
                      class="kr" :class="key_result.state"
                      @click="openKeyResult(key_result)">
           <v-list-item-content>
-            <v-icon icon="mdi-check-bold" v-if="key_result.state === 'success'" />
-            <v-icon icon="mdi-cancel" v-if="key_result.state === 'failed'"/>
+
             <v-list-item-title class="inLine">{{key_result.name}}</v-list-item-title>
+            <v-icon style="vertical-align: top;" icon="mdi-check-bold" v-if="key_result.state === 'completed'" />
+            <v-icon style="vertical-align: top;" icon="mdi-close-thick" v-if="key_result.state === 'failed'"/>
+
+            <div class="krInfo" v-if="key_result.state === 'active'">
+              <div class="krInfoChild" style="right: 0;">{{key_result.date_reviewed}}</div>
+              <div class="krInfoChild" style="left: 0;">{{key_result.finished_tasks_count}}/{{key_result.all_tasks_count}}</div>
+            </div>
+
           </v-list-item-content>
         </v-list-item>
         <v-card-actions v-if="objective.state === 'active'">
@@ -129,9 +136,6 @@ export default {
 </template>
 
 <style scoped>
-
-
-
 .kr {
   border: #2c3e50;
   border-style: solid;
@@ -140,7 +144,7 @@ export default {
 .kr:hover {
   border-width: 2px;
 }
-.kr.success {
+.kr.completed {
   color: #017901;
 }
 .kr.failed {
@@ -149,12 +153,9 @@ export default {
 .kr.active {
   color: #000000;
 }
-
-
 .inLine {
   display: inline-block;
 }
-
 .obj {
   display: inline-block;
 }
@@ -170,5 +171,14 @@ export default {
   display: inline-block;
   background: #84e184;
 }
-
+.krInfo {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  position: relative;
+}
+.krInfoChild {
+  font-size: 10px;
+  position: absolute;
+  bottom: 0;
+}
 </style>

@@ -59,8 +59,10 @@ export default {
         this.kr.a = this.values[4]
         this.kr.r = this.values[5]
         this.kr.t = this.values[6]
+        this.kr.date_reviewed = await response.json()
 
         this.kr_parent.name = this.kr.name
+        this.kr_parent.date_reviewed = this.kr.date_reviewed
 
       } else {
         const error = await response.json()
@@ -77,9 +79,11 @@ export default {
       }
     },
     startEditing(index){
-      this.stopEditing()
-      this.editingValue = this.values[index]
-      this.editing[index] = true
+      if (this.kr.state === 'active') {
+        this.stopEditing()
+        this.editingValue = this.values[index]
+        this.editing[index] = true
+      }
     },
     update(index){
       this.values[index] = this.editingValue
@@ -87,9 +91,11 @@ export default {
       this.updateKeyResult()
     },
     startEditingTask(index){
-      this.stopEditing()
-      this.editingValue = this.kr.tasks[index].value
-      this.editing[8][index] = true
+      if (this.kr.state === 'active') {
+        this.stopEditing()
+        this.editingValue = this.kr.tasks[index].value
+        this.editing[8][index] = true
+      }
     },
     async updateTaskValue(index){
       const task = {kr_id: this.kr.id, value: this.editingValue, id: this.kr.tasks[index].id, state: this.kr.tasks[index].state}
@@ -131,6 +137,8 @@ export default {
       if (response.ok){
         const newTask = await response.json();
         this.kr.tasks.push(newTask)
+        this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count + 1
+        await this.reviewKeyResult()
       } else {
         const error = await response.json()
         console.error(error)
@@ -151,7 +159,14 @@ export default {
       const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/update", requestOptions)
       if (response.ok){
         const updatedTask = await response.json();
+        if (this.kr.tasks[index].state === 'finished' && updatedTask.state !== 'finished'){
+          this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count - 1
+        }
+        if (this.kr.tasks[index].state !== 'finished' && updatedTask.state === 'finished'){
+          this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count + 1
+        }
         this.kr.tasks[index].state = updatedTask.state
+        await this.reviewKeyResult()
       } else {
         const error = await response.json()
         console.error(error)
@@ -159,17 +174,30 @@ export default {
       }
     },
     async deleteTask(task, index){
-      const requestOptions = {
-        method: "DELETE"
-      };
-
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/" + task.id, requestOptions)
-      if (response.ok)
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/" + task.id, {method: "DELETE"})
+      if (response.ok) {
         this.kr.tasks.splice(this.kr.tasks.indexOf(task), 1);
-      else
+        this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count - 1
+        if (task.state === 'finished') {
+          this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count - 1
+        }
+        await this.reviewKeyResult()
+      } else {
         alert(response.status);
+      }
 
       this.confirmDeletionDialogs[index] = false
+    },
+    async reviewKeyResult(){
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/" + this.kr.id + "/review", {method: "POST"})
+      if (response.ok){
+        this.kr.date_reviewed = await response.json()
+        this.kr_parent.date_reviewed = this.kr.date_reviewed
+      } else {
+        const error = await response.json()
+        console.error(error)
+        alert(error.error)
+      }
     }
   },
 }
@@ -209,7 +237,7 @@ export default {
                       hint="The goal should have a clear, highly-specific endpoint. If your goal is too vague, it won’t be SMART."
         ></v-text-field>
       </Editable>
-      <div v-else @click="startEditing(2)">
+      <div v-else v-if="kr.state === 'active'" @click="startEditing(2)">
         Specific: {{kr.s}}
       </div>
 
@@ -220,7 +248,7 @@ export default {
                       hint="You need to be able to accurately track your progress, so you can judge when a goal will be met."
         ></v-text-field>
       </Editable>
-      <div v-else @click="startEditing(3)">
+      <div v-else v-if="kr.state === 'active'" @click="startEditing(3)">
         Measurable: {{kr.m}}
       </div>
 
@@ -231,7 +259,7 @@ export default {
                       hint="Of course, setting a goal that’s too ambitious will see you struggle to achieve it. This will sap at your motivation, both now and in the future."
         ></v-text-field>
       </Editable>
-      <div v-else @click="startEditing(4)">
+      <div v-else v-if="kr.state === 'active'" @click="startEditing(4)">
         Attainable: {{kr.a}}
       </div>
 
@@ -242,7 +270,7 @@ export default {
                       hint="The goal you pick should be pertinent to your chosen field, or should benefit you directly."
         ></v-text-field>
       </Editable>
-      <div v-else @click="startEditing(5)">
+      <div v-else v-if="kr.state === 'active'" @click="startEditing(5)">
         Relevant: {{kr.r}}
       </div>
 
@@ -253,7 +281,7 @@ export default {
                       hint="Finally, setting a timeframe for your goal helps quantify it further, and helps keep your focus on track."
         ></v-text-field>
       </Editable>
-      <div v-else @click="startEditing(6)">
+      <div v-else v-if="kr.state === 'active'" @click="startEditing(6)">
         Time-Bound: {{kr.t}}
       </div>
 
@@ -275,16 +303,22 @@ export default {
             <v-icon icon="mdi-checkbox-blank-outline" large v-if="task.state === 'active'"/>
             {{task.value}}
           </div>
-          <v-icon style="flex: 1;" icon="mdi-checkbox-blank-outline" large v-if="selectedTask === index && task.state !== 'active'" @click="updateTaskState(index, 'active')"/>
-          <v-icon style="flex: 1;" icon="mdi-checkbox-marked-outline" large v-if="selectedTask === index && task.state !== 'finished'" @click="updateTaskState(index, 'finished')"/>
-          <v-icon style="flex: 1;" icon="mdi-close-box-outline" large v-if="selectedTask === index && task.state !== 'failed'" @click="updateTaskState(index, 'failed')"/>
+          <v-icon style="flex: 1;" icon="mdi-checkbox-blank-outline" large
+                  v-if="selectedTask === index && task.state !== 'active' && kr.state === 'active'"
+                  @click="updateTaskState(index, 'active')"/>
+          <v-icon style="flex: 1;" icon="mdi-checkbox-marked-outline" large
+                  v-if="selectedTask === index && task.state !== 'finished' && kr.state === 'active'"
+                  @click="updateTaskState(index, 'finished')"/>
+          <v-icon style="flex: 1;" icon="mdi-close-box-outline" large
+                  v-if="selectedTask === index && task.state !== 'failed' && kr.state === 'active'"
+                  @click="updateTaskState(index, 'failed')"/>
 
           <v-dialog
               v-model="confirmDeletionDialogs[index]"
               width="300"
           >
             <template v-slot:activator="{ props }">
-              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedTask === index"/>
+              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedTask === index && kr.state === 'active'"/>
             </template>
 
             <v-card>
@@ -310,7 +344,7 @@ export default {
                       label="Add Task"
         ></v-text-field>
       </Editable>
-      <v-btn v-else color="primary" @click="startEditing(7)">
+      <v-btn v-else v-if="kr.state === 'active'" color="primary" @click="startEditing(7)">
         Add Task
       </v-btn>
 
@@ -332,6 +366,6 @@ export default {
 }
 .task:hover {
   display: flex;
-  background: #b2b2b2;
+  background: #f5f5f5;
 }
 </style>
