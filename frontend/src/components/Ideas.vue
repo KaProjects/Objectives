@@ -18,44 +18,48 @@ export default {
   },
   methods: {
     async loadData() {
-      await fetch("http://" + properties.host + ":" + properties.port + "/value/" + this.valueId + "/ideas")
-          .then(async (response) => {
-            this.ideas = await response.json()
-            this.loading = false
-          })
-          .catch(function(error) {
-            console.log(error)
-      });
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/value/" + this.valueId + "/ideas")
+      const body = await response.json()
+      if (response.ok){
+        this.ideas = body
+        this.loading = false
+      } else {
+        console.error(body)
+        alert(body)
+      }
     },
     async addIdea() {
       const requestOptions = {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({value_id: this.valueId, idea: this.newIdea})
-      };
-
-      const res = await fetch("http://" + properties.host + ":" + properties.port + "/idea/add", requestOptions);
-      const newIdea = await res.json();
-
-      this.ideas.push({id: newIdea.new_id, value: newIdea.idea})
-
-      this.newIdeaDialog = false
-      this.newIdea = ""
+      }
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/idea/add", requestOptions);
+      const body = await response.json();
+      if (response.ok){
+        this.ideas.push({id: body.new_id, value: body.idea})
+        this.newIdeaDialog = false
+        this.newIdea = ""
+      } else {
+        console.error(body)
+        alert(body)
+      }
     },
     async deleteIdea(idea, index){
       const requestOptions = {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({value_id: this.valueId, idea_id: idea.id})
-      };
-
-      const res = await fetch("http://" + properties.host + ":" + properties.port + "/idea/del", requestOptions);
-      if (res.ok)
+      }
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/idea/del", requestOptions);
+      const body = await response.json();
+      if (response.ok){
         this.ideas.splice(this.ideas.indexOf(idea), 1);
-      else
-        alert(res.status);
-
-      this.confirmDeletionDialogs[index] = false
+        this.confirmDeletionDialogs[index] = false
+      } else {
+        console.error(body)
+        alert(body)
+      }
     },
   },
   mounted() {

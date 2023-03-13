@@ -38,11 +38,8 @@ class Service:
         db.reference("ideas/" + str(value_id) + "/" + str(idea_id)).delete()
 
     def create_key_result(self, name, description, objective_id):
-        today = "10/03/2023" # date.today().strftime("%d/%m/%Y") # TODO
-        try:
-            return DatabaseManager().insert_key_result(name, description, "active", objective_id, "", "", "", "", "", today), True, today
-        except Exception as e:
-            return e, False
+        today = date.today().strftime("%d/%m/%Y")
+        return DatabaseManager().insert_key_result(name, description, "active", objective_id, "", "", "", "", "", today), today
 
     def get_single_key_result(self, id):
         kr = DatabaseManager().select_key_result(id)
@@ -54,6 +51,10 @@ class Service:
         DatabaseManager().review_key_result(id, today)
         return today
 
+    def update_key_result_state(self, id, state):
+        DatabaseManager().update_key_result_state(id, state)
+        return state
+
     def update_key_result(self, data):
         today = date.today().strftime("%d/%m/%Y")
         DatabaseManager().update_key_result(data["id"], data["name"], data["description"], data["state"],
@@ -63,15 +64,8 @@ class Service:
     def create_task(self, value, kr_id):
         return DatabaseManager().insert_task(value, kr_id, "active")
 
-
     def update_task(self, data):
-        try:
-            DatabaseManager().update_task(data["id"], data["value"], data["state"])
-        except Exception as e:
-            return e
+        DatabaseManager().update_task(data["id"], data["value"], data["state"])
 
     def delete_task(self, task_id):
-        try:
-            DatabaseManager().delete_task(task_id)
-        except Exception as e:
-            return e
+        DatabaseManager().delete_task(task_id)

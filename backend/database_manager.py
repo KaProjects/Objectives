@@ -75,6 +75,10 @@ class DatabaseManager:
         self.conn.execute('update KeyResults set date_reviewed=? where id=?', (date_reviewed, int(kr_id)))
         self.conn.commit()
 
+    def update_key_result_state(self, kr_id, state):
+        self.conn.execute('update KeyResults set state=? where id=?', (state, int(kr_id)))
+        self.conn.commit()
+
     def select_tasks_for_key_result(self, id):
         tasks = list()
         for task in self.conn.execute('select * from Tasks where kr_id=?', (int(id),)).fetchall():

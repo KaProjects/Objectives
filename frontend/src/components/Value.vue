@@ -21,10 +21,16 @@ export default {
   },
   methods: {
     async loadData() {
-      const res = await fetch("http://" + properties.host + ":" + properties.port + "/value/" + app_state.value.id);
-      this.value = await res.json();
-      for (let i = 0; i < this.value.objectives.length; i++) {
-        this.newKrDialogs[i] = false
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/value/" + app_state.value.id)
+      const body = await response.json()
+      if (response.ok){
+        this.value = body
+        for (let i = 0; i < this.value.objectives.length; i++) {
+          this.newKrDialogs[i] = false
+        }
+      } else {
+        console.error(body)
+        alert(body)
       }
     },
     async addKeyResult(objective_id, index) {
@@ -32,26 +38,29 @@ export default {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({name: this.newKr.name, description: this.newKr.description, objective_id: objective_id})
-      };
-
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/add", requestOptions);
-      if (response.ok){
-        const newKr = await response.json();
-        this.value.objectives[index].key_results.push(newKr)
-      } else {
-        const error = await response.json()
-        console.error(error)
-        alert(error.error)
       }
-
-      this.newKrDialogs[index] = false
-      this.newKr = {name: "", description: ""}
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/add", requestOptions)
+      const body = await response.json()
+      if (response.ok){
+        this.value.objectives[index].key_results.push(body)
+        this.newKrDialogs[index] = false
+        this.newKr = {name: "", description: ""}
+      } else {
+        console.error(body)
+        alert(body)
+      }
     },
     async openKeyResult(kr) {
-      const res = await fetch("http://" + properties.host + ":" + properties.port + "/kr/" + kr.id);
-      this.selectedKr = await res.json();
-      this.selectedKr_parent = kr
-      app_state.krDialogToggle = true
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/" + kr.id);
+      const body = await response.json()
+      if (response.ok){
+        this.selectedKr = body
+        this.selectedKr_parent = kr
+        app_state.krDialogToggle = true
+      } else {
+        console.error(body)
+        alert(body)
+      }
     }
   },
   components: {

@@ -17,6 +17,7 @@ export default {
       editingValue: "",
       selectedTask: -1,
       confirmDeletionDialogs: [],
+      confirmStateDialogs: [false, false, false]
     }
   },
   watch: {
@@ -48,9 +49,9 @@ export default {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(kr)
-      };
-
+      }
       const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/update", requestOptions)
+      const body = await response.json();
       if (response.ok){
         this.kr.name = this.values[0]
         this.kr.description = this.values[1]
@@ -59,15 +60,14 @@ export default {
         this.kr.a = this.values[4]
         this.kr.r = this.values[5]
         this.kr.t = this.values[6]
-        this.kr.date_reviewed = await response.json()
+        this.kr.date_reviewed = body
 
         this.kr_parent.name = this.kr.name
         this.kr_parent.date_reviewed = this.kr.date_reviewed
 
       } else {
-        const error = await response.json()
-        console.error(error)
-        alert(error.error)
+        console.error(body)
+        alert(body)
 
         this.values[0] = this.kr.name
         this.values[1] = this.kr.description
@@ -104,16 +104,14 @@ export default {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
-      };
-
+      }
       const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/update", requestOptions)
+      const body = await response.json();
       if (response.ok){
-        const updatedTask = await response.json();
-        this.kr.tasks[index].value = updatedTask.value
+        this.kr.tasks[index].value = body.value
       } else {
-        const error = await response.json()
-        console.error(error)
-        alert(error.error)
+        console.error(body)
+        alert(body)
       }
 
       this.stopEditing()
@@ -132,17 +130,16 @@ export default {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
-      };
+      }
       const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/add", requestOptions)
+      const body = await response.json();
       if (response.ok){
-        const newTask = await response.json();
-        this.kr.tasks.push(newTask)
+        this.kr.tasks.push(body)
         this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count + 1
         await this.reviewKeyResult()
       } else {
-        const error = await response.json()
-        console.error(error)
-        alert(error.error)
+        console.error(body)
+        alert(body)
       }
 
       this.editing[7] = false
@@ -154,23 +151,21 @@ export default {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
-      };
-
+      }
       const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/update", requestOptions)
+      const body = await response.json();
       if (response.ok){
-        const updatedTask = await response.json();
-        if (this.kr.tasks[index].state === 'finished' && updatedTask.state !== 'finished'){
+        if (this.kr.tasks[index].state === 'finished' && body.state !== 'finished'){
           this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count - 1
         }
-        if (this.kr.tasks[index].state !== 'finished' && updatedTask.state === 'finished'){
+        if (this.kr.tasks[index].state !== 'finished' && body.state === 'finished'){
           this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count + 1
         }
-        this.kr.tasks[index].state = updatedTask.state
+        this.kr.tasks[index].state = body.state
         await this.reviewKeyResult()
       } else {
-        const error = await response.json()
-        console.error(error)
-        alert(error.error)
+        console.error(body)
+        alert(body)
       }
     },
     async deleteTask(task, index){
@@ -190,13 +185,42 @@ export default {
     },
     async reviewKeyResult(){
       const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/" + this.kr.id + "/review", {method: "POST"})
+      const body = await response.json();
       if (response.ok){
-        this.kr.date_reviewed = await response.json()
+        this.kr.date_reviewed = body
         this.kr_parent.date_reviewed = this.kr.date_reviewed
       } else {
-        const error = await response.json()
-        console.error(error)
-        alert(error.error)
+        console.error(body)
+        alert(body)
+      }
+    },
+    async updateKeyResultState(index){
+      let state = null
+      if (index===0) state = "failed"
+      if (index===1) state = "completed"
+      if (index===2) state = "active"
+      if (state===null) {
+        console.log("invalid index " + index)
+        alert("invalid index " + index)
+        return
+      }
+
+      const requestOptions = {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(state)
+      }
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/" + this.kr.id + "/state", requestOptions)
+      const body = await response.json();
+      if (response.ok){
+        this.kr.state = body
+        this.kr_parent.state = this.kr.state
+
+        await this.reviewKeyResult()
+        this.confirmStateDialogs[index] = false
+      } else {
+        console.error(body)
+        alert(body)
       }
     }
   },
@@ -213,11 +237,15 @@ export default {
                       label="Name"
         ></v-text-field>
       </Editable>
-      <v-card-title v-else @click="startEditing(0)" class="text-h5 grey lighten-2 datesInfo">
-        {{kr.name}}
-        <div class="datesInfoChild" style="top: -5px;">created: {{kr.date_created}}</div>
-        <div class="datesInfoChild" style="top: 10px;">reviewed: {{kr.date_reviewed}}</div>
-      </v-card-title>
+      <div v-else class="datesInfo">
+        <v-card-title @click="startEditing(0)" class="text-h5 grey lighten-2">
+          {{kr.name}}
+        </v-card-title>
+        <div class="datesInfoChild" style="top: 0;">created: {{kr.date_created}}</div>
+        <div class="datesInfoChild" style="top: 15px;" v-if="kr.state==='active'">reviewed: {{kr.date_reviewed}}</div>
+        <div class="datesInfoChild" style="top: 15px;" v-if="kr.state==='failed'">failed: {{kr.date_reviewed}}</div>
+        <div class="datesInfoChild" style="top: 15px;" v-if="kr.state==='completed'">completed: {{kr.date_reviewed}}</div>
+      </div>
 
       <Editable v-if="editing[1]" :cancel="stopEditing" :submit="update" :index=1>
         <v-text-field @keydown.enter="update(1)" @keydown.esc="stopEditing"
@@ -343,13 +371,55 @@ export default {
                       label="Add Task"
         ></v-text-field>
       </Editable>
-      <v-btn v-else v-if="kr.state === 'active'" color="primary" @click="startEditing(7)">
+      <v-btn v-else v-if="kr.state === 'active'" color="secondary" @click="startEditing(7)">
         Add Task
       </v-btn>
 
     </v-card>
 
-    <v-btn color="red" @click="closeDialog">Close</v-btn>
+    <div>
+      <v-dialog v-model="confirmStateDialogs[0]" width="300" v-if="kr.state === 'active'">
+        <template v-slot:activator="{ props }">
+          <v-btn style="width: 50%;" color="red" v-bind="props">fail</v-btn>
+        </template>
+        <v-card>
+          <v-card-title class="text-h5 grey lighten-2">
+            Fail?
+          </v-card-title>
+          <v-card-actions>
+            <v-btn block @click="updateKeyResultState(0)">Confirm</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+      <v-dialog v-model="confirmStateDialogs[1]" width="300" v-if="kr.state === 'active'">
+        <template v-slot:activator="{ props }">
+          <v-btn style="width: 50%;" color="green" v-bind="props">complete</v-btn>
+        </template>
+        <v-card>
+          <v-card-title class="text-h5 grey lighten-2">
+            Complete?
+          </v-card-title>
+          <v-card-actions>
+            <v-btn block @click="updateKeyResultState(1)">Confirm</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+      <v-dialog v-model="confirmStateDialogs[2]" width="300" v-if="kr.state !== 'active'">
+        <template v-slot:activator="{ props }">
+          <v-btn style="width: 100%;" color="blue" v-bind="props">activate</v-btn>
+        </template>
+        <v-card>
+          <v-card-title class="text-h5 grey lighten-2">
+            Activate?
+          </v-card-title>
+          <v-card-actions>
+            <v-btn block @click="updateKeyResultState(2)">Confirm</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+    </div>
+
+    <v-btn color="primary" @click="closeDialog">Close</v-btn>
 
   </v-dialog>
 </template>
