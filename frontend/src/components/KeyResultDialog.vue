@@ -213,10 +213,11 @@ export default {
                       label="Name"
         ></v-text-field>
       </Editable>
-      <v-card-title v-else @click="startEditing(0)" class="text-h5 grey lighten-2">
+      <v-card-title v-else @click="startEditing(0)" class="text-h5 grey lighten-2 datesInfo">
         {{kr.name}}
+        <div class="datesInfoChild" style="top: -5px;">created: {{kr.date_created}}</div>
+        <div class="datesInfoChild" style="top: 10px;">reviewed: {{kr.date_reviewed}}</div>
       </v-card-title>
-
 
       <Editable v-if="editing[1]" :cancel="stopEditing" :submit="update" :index=1>
         <v-text-field @keydown.enter="update(1)" @keydown.esc="stopEditing"
@@ -333,8 +334,6 @@ export default {
               </v-card-actions>
             </v-card>
           </v-dialog>
-
-
         </div>
       </div>
 
@@ -348,13 +347,9 @@ export default {
         Add Task
       </v-btn>
 
-
-
     </v-card>
 
     <v-btn color="red" @click="closeDialog">Close</v-btn>
-
-
 
   </v-dialog>
 </template>
@@ -370,5 +365,13 @@ export default {
 }
 .smart {
   padding-left: 5px;
+}
+.datesInfo {
+  position: relative;
+}
+.datesInfoChild {
+  font-size: 12px;
+  position: absolute;
+  right: 5px;
 }
 </style>
