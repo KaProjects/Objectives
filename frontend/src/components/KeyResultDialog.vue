@@ -237,7 +237,7 @@ export default {
                       hint="The goal should have a clear, highly-specific endpoint. If your goal is too vague, it won’t be SMART."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" @click="startEditing(2)">
+      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(2)">
         Specific: {{kr.s}}
       </div>
 
@@ -248,7 +248,7 @@ export default {
                       hint="You need to be able to accurately track your progress, so you can judge when a goal will be met."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" @click="startEditing(3)">
+      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(3)">
         Measurable: {{kr.m}}
       </div>
 
@@ -259,7 +259,7 @@ export default {
                       hint="Of course, setting a goal that’s too ambitious will see you struggle to achieve it. This will sap at your motivation, both now and in the future."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" @click="startEditing(4)">
+      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(4)">
         Attainable: {{kr.a}}
       </div>
 
@@ -270,7 +270,7 @@ export default {
                       hint="The goal you pick should be pertinent to your chosen field, or should benefit you directly."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" @click="startEditing(5)">
+      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(5)">
         Relevant: {{kr.r}}
       </div>
 
@@ -281,7 +281,7 @@ export default {
                       hint="Finally, setting a timeframe for your goal helps quantify it further, and helps keep your focus on track."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" @click="startEditing(6)">
+      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(6)">
         Time-Bound: {{kr.t}}
       </div>
 
@@ -367,5 +367,8 @@ export default {
 .task:hover {
   display: flex;
   background: #f5f5f5;
+}
+.smart {
+  padding-left: 5px;
 }
 </style>
