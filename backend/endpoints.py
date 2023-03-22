@@ -12,8 +12,11 @@ CORS(rest, resources={r"/*": {"origins": "http://localhost:*"}})
 
 
 def create_response(response, status):
-    json_response = json.dumps(response) if type(response) is dict else json.dumps(response, cls=JsonEncoder)
-    return Response(response=json_response, status=status, mimetype="text/plain")
+    if (type(response) is str):
+        return Response(response=response, status=status, mimetype="text/plain")
+    else:
+        json_response = json.dumps(response) if type(response) is dict else json.dumps(response, cls=JsonEncoder)
+        return Response(response=json_response, status=status, mimetype="application/json")
 
 
 @rest.route('/value/<id>')
@@ -32,15 +35,12 @@ def get_value(id: str):
 def get_value_ideas(id: str):
     try:
         ideas = Service().get_ideas_of_value(id)
-        if ideas is None:
-            return create_response("id '" + id + "' not found", 404)
-        else:
-            return create_response(ideas, 200)
+        return create_response(ideas, 200)
     except Exception as e:
         return create_response(str(e), 500)
 
 
-@rest.route('/value/list')
+@rest.route('/values')
 def get_values():
     try:
         values = Service().get_all_values()
@@ -49,7 +49,7 @@ def get_values():
         return create_response(str(e), 500)
 
 
-@rest.route('/idea/add', methods=['POST'])
+@rest.route('/idea', methods=['POST'])
 def add_idea():
     data: dict = request.json
     value_id = data["value_id"]
@@ -61,7 +61,7 @@ def add_idea():
         return create_response(str(e), 500)
 
 
-@rest.route('/idea/del', methods=['POST'])
+@rest.route('/idea', methods=['DELETE'])
 def delete_idea():
     data: dict = request.json
     value_id = data["value_id"]

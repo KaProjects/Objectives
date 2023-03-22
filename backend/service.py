@@ -2,7 +2,7 @@ from datetime import date
 
 from classes import Value, Idea
 from database_manager import DatabaseManager
-from firebase_admin import db
+import firebase_manager
 
 
 class Service:
@@ -23,20 +23,13 @@ class Service:
         return value
 
     def get_ideas_of_value(self, value_id: str) -> list[Idea]:
-        ideas = list[Idea]()
-        db_ideas = db.reference("/ideas/" + value_id).get()
+        return firebase_manager.get_ideas_of_value(value_id)
 
-        if db_ideas is not None:
-            for id in db_ideas:
-                ideas.append(Idea(id, db_ideas[id]))
+    def add_idea(self, value_id: str, idea: Idea):
+        return firebase_manager.add_idea(value_id, idea)
 
-        return ideas
-
-    def add_idea(self, value_id, idea):
-        return db.reference("ideas/" + str(value_id)).push(idea).key
-
-    def delete_idea(self, value_id, idea_id):
-        db.reference("ideas/" + str(value_id) + "/" + str(idea_id)).delete()
+    def delete_idea(self, value_id: str, idea_id: str):
+        firebase_manager.delete_idea(value_id, idea_id)
 
     def create_key_result(self, name, description, objective_id):
         today = date.today().strftime("%d/%m/%Y")

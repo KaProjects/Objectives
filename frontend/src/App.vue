@@ -13,7 +13,7 @@ export default {
   },
   methods: {
     async loadData() {
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/value/list");
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/values");
       const body = await response.json();
       if (response.ok){
         this.values = body

@@ -34,7 +34,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({value_id: this.valueId, idea: this.newIdea})
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/idea/add", requestOptions);
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/idea", requestOptions);
       const body = await response.json();
       if (response.ok){
         this.ideas.push({id: body.new_id, value: body.idea})
@@ -47,11 +47,11 @@ export default {
     },
     async deleteIdea(idea, index){
       const requestOptions = {
-        method: "POST",
+        method: "DELETE",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({value_id: this.valueId, idea_id: idea.id})
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/idea/del", requestOptions);
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/idea", requestOptions);
       const body = await response.json();
       if (response.ok){
         this.ideas.splice(this.ideas.indexOf(idea), 1);
