@@ -39,7 +39,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({name: this.newKr.name, description: this.newKr.description, objective_id: objective_id})
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/add", requestOptions)
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult", requestOptions)
       const body = await response.json()
       if (response.ok){
         this.value.objectives[index].key_results.push(body)
@@ -51,7 +51,7 @@ export default {
       }
     },
     async openKeyResult(kr) {
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/" + kr.id);
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult/" + kr.id);
       const body = await response.json()
       if (response.ok){
         this.selectedKr = body

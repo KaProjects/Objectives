@@ -73,13 +73,28 @@ def delete_idea():
         return create_response(str(e), 500)
 
 
-@rest.route('/kr/add', methods=['POST'])
+@rest.route('/keyresult/<id>')
+def get_key_result(id: str):
+    try:
+        kr = Service().get_single_key_result(id)
+        if kr is None:
+            return create_response("id '" + id + "' not found", 404)
+        else:
+            return create_response(kr, 200)
+    except Exception as e:
+        return create_response(str(e), 500)
+
+
+@rest.route('/keyresult', methods=['POST'])
 def create_key_result():
     data: dict = request.json
     name = data["name"]
     description = data["description"]
     objective_id = data["objective_id"]
     try:
+        if not Service().check_objective_exist(objective_id):
+            return create_response("objective with id='" + str(objective_id) + "' not found", 404)
+
         new_id, date_created = Service().create_key_result(name, description, objective_id)
         data["id"] = new_id
         data["state"] = "active"
@@ -91,14 +106,12 @@ def create_key_result():
         return create_response(str(e), 500)
 
 
-@rest.route('/kr/<id>')
-def get_key_result(id: str):
+@rest.route('/kr/update', methods=['POST'])
+def update_key_result():
+    data: dict = request.json
     try:
-        kr = Service().get_single_key_result(id)
-        if kr is None:
-            return create_response("id '" + id + "' not found", 404)
-        else:
-            return create_response(kr, 200)
+        date_reviewed = Service().update_key_result(data)
+        return create_response(date_reviewed, 200)
     except Exception as e:
         return create_response(str(e), 500)
 
@@ -117,16 +130,6 @@ def update_key_result_state(id: str):
     try:
         new_state = Service().update_key_result_state(id, request.json)
         return create_response(new_state, 200)
-    except Exception as e:
-        return create_response(str(e), 500)
-
-
-@rest.route('/kr/update', methods=['POST'])
-def update_key_result():
-    data: dict = request.json
-    try:
-        date_reviewed = Service().update_key_result(data)
-        return create_response(date_reviewed, 200)
     except Exception as e:
         return create_response(str(e), 500)
 

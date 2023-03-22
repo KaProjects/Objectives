@@ -63,3 +63,8 @@ class Service:
 
     def delete_task(self, task_id):
         DatabaseManager().delete_task(task_id)
+
+    def check_objective_exist(self, objective_id) -> bool:
+        objective_count = DatabaseManager().count_objectives_by_id(objective_id)
+        if (objective_count > 1): raise Exception("found " + str(objective_count) + " objectives with id='" + str(objective_id) + "'")
+        return objective_count == 1

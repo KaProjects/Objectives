@@ -96,3 +96,6 @@ class DatabaseManager:
     def delete_task(self, task_id):
         self.conn.execute('delete from Tasks where id=?', (int(task_id),))
         self.conn.commit()
+
+    def count_objectives_by_id(self, id):
+        return self.conn.execute('select count(1) from Objectives where id=?', (int(id),)).fetchone()[0];

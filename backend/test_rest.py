@@ -2,18 +2,27 @@ import unittest
 import requests
 import json
 from classes import Value
+from datetime import date
 
 
 origin = "http://127.0.0.1:7702"
 
 
+def post_request(path, payload):
+    response = requests.post(origin + path, payload, headers={'Content-Type': 'application/json'})
+    content = parseContent(response)
+    return response.status_code, content, "Response: " + str(content)
+
 def get_request(path):
     response = requests.get(origin + path)
-    if (response.headers.get('content-type').casefold() == "application/json"):
-        return response.status_code, response.json(), "Response: " + str(response.json())
-    else:
-        return response.status_code, str(response.content), "Response: " + str(response.content)
+    content = parseContent(response)
+    return response.status_code, content, "Response: " + str(content)
 
+def parseContent(response):
+    if (response.headers.get('content-type').casefold() == "application/json"):
+        return response.json()
+    else:
+        return str(response.content)
 
 def assertBadUrl(self, status, error, message):
     self.assertEqual(status, 404, message)
@@ -32,6 +41,40 @@ class TestApi(unittest.TestCase):
         self.assertEqual(len(value["objectives"]), 0, message)
         self.assertEqual(value["active_count"], 0, message)
         self.assertEqual(value["achievements_count"], 0, message)
+
+
+    def test_get_value_with_children(self):
+        status, value, message = get_request("/value/3")
+        
+        self.assertEqual(status, 200, message)
+        self.assertEqual(value["id"], 3, message)
+        self.assertEqual(value["name"], "Third", message)
+        self.assertEqual(value["active_count"], 1, message)
+        self.assertEqual(value["achievements_count"], 1, message)
+        self.assertEqual(value["objectives"][0]["id"], 1, message)
+        self.assertEqual(value["objectives"][0]["state"], "achieved", message)
+        self.assertEqual(len(value["objectives"][0]["key_results"]), 1, message)
+        self.assertEqual(value["objectives"][0]["key_results"][0]["state"], "completed", message)
+        self.assertEqual(value["objectives"][0]["key_results"][0]["all_tasks_count"], 1, message)
+        self.assertEqual(value["objectives"][0]["key_results"][0]["finished_tasks_count"], 1, message)
+        self.assertEqual(value["objectives"][1]["id"], 2, message)
+        self.assertEqual(value["objectives"][1]["state"], "active", message)
+        self.assertEqual(len(value["objectives"][1]["key_results"]), 3, message)
+        self.assertEqual(value["objectives"][1]["key_results"][0]["state"], "completed", message)
+        self.assertEqual(value["objectives"][1]["key_results"][0]["all_tasks_count"], 1, message)
+        self.assertEqual(value["objectives"][1]["key_results"][0]["finished_tasks_count"], 1, message)
+        self.assertEqual(value["objectives"][1]["key_results"][1]["state"], "failed", message)
+        self.assertEqual(value["objectives"][1]["key_results"][1]["all_tasks_count"], 1, message)
+        self.assertEqual(value["objectives"][1]["key_results"][1]["finished_tasks_count"], 0, message)
+        self.assertEqual(value["objectives"][1]["key_results"][2]["state"], "active", message)
+        self.assertEqual(value["objectives"][1]["key_results"][2]["all_tasks_count"], 3, message)
+        self.assertEqual(value["objectives"][1]["key_results"][2]["finished_tasks_count"], 1, message)
+        self.assertEqual(value["objectives"][2]["id"], 3, message)
+        self.assertEqual(value["objectives"][2]["state"], "failed", message)
+        self.assertEqual(len(value["objectives"][2]["key_results"]), 1, message)
+        self.assertEqual(value["objectives"][2]["key_results"][0]["state"], "failed", message)
+        self.assertEqual(value["objectives"][2]["key_results"][0]["all_tasks_count"], 1, message)
+        self.assertEqual(value["objectives"][2]["key_results"][0]["finished_tasks_count"], 0, message)
 
 
     def test_get_value_none(self):
@@ -57,11 +100,112 @@ class TestApi(unittest.TestCase):
         status, values, message = get_request("/values")
 
         self.assertEqual(status, 200, message)
-        self.assertEqual(len(values), 3, message)
+        self.assertEqual(len(values), 4, message)
         self.assertEqual(values[0]["name"], "Zdravie", message)
 
+    # TODO test create/update/delete value here
+
+    # TODO test objective crud here
+
+    def test_get_key_result(self):
+        status, key_result, message = get_request("/keyresult/4")
+
+        self.assertEqual(status, 200, message)
+        self.assertEqual(key_result["id"], 4, message)
+        self.assertEqual(key_result["objective_id"], 2, message)
+        self.assertEqual(key_result["name"], "ccc", message)
+        self.assertEqual(len(key_result["tasks"]), 3, message)
+        self.assertEqual(key_result["tasks"][0]["kr_id"], 4, message)
 
 
+    def test_create_key_result(self):
+        before_status, before_value, before_message = get_request("/value/4")
+        self.assertEqual(before_status, 200, before_message)
+        before_kr_count = len(next(obj for obj in before_value["objectives"] if obj["id"] == 4)["key_results"])
+
+        name = "new kr"
+        description = "a desc"
+        objective_id = 4
+        payload = json.dumps({"name": name, "description": description, "objective_id": objective_id})
+        created_status, created_kr, created_message = post_request("/keyresult", payload)
+
+        self.assertEqual(created_status, 200, created_message)
+        self.assertEqual(created_kr["name"], name, created_message)
+        self.assertEqual(created_kr["description"], description, created_message)
+        self.assertEqual(created_kr["objective_id"], objective_id, created_message)
+        self.assertEqual(created_kr["state"], "active", created_message)
+        self.assertEqual(created_kr["date_reviewed"], date.today().strftime("%d/%m/%Y"), created_message)
+        self.assertEqual(created_kr["all_tasks_count"], 0, created_message)
+        self.assertEqual(created_kr["finished_tasks_count"], 0, created_message)
+
+        after_status, after_value, after_message = get_request("/value/4")
+        self.assertEqual(after_status, 200, after_message)
+        after_obj = next(obj for obj in after_value["objectives"] if obj["id"] == 4)
+        self.assertEqual(len(after_obj["key_results"]), before_kr_count + 1, after_message)
+        after_kr = next(kr for kr in after_obj["key_results"] if kr["id"] == created_kr["id"])
+        self.assertEqual(created_kr["id"], after_kr["id"], str(created_kr) + '\n' + str(after_kr))
+        self.assertEqual(created_kr["objective_id"], after_kr["objective_id"], str(created_kr) + '\n' + str(after_kr))
+        self.assertEqual(created_kr["state"], after_kr["state"], str(created_kr) + '\n' + str(after_kr))
+        self.assertEqual(created_kr["name"], after_kr["name"], str(created_kr) + '\n' + str(after_kr))
+        self.assertEqual(created_kr["date_reviewed"], after_kr["date_reviewed"], str(created_kr) + '\n' + str(after_kr))
+        self.assertEqual(created_kr["all_tasks_count"], after_kr["all_tasks_count"], str(created_kr) + '\n' + str(after_kr))
+        self.assertEqual(created_kr["finished_tasks_count"], after_kr["finished_tasks_count"], str(created_kr) + '\n' + str(after_kr))
+                
+        new_status, new_kr, new_message = get_request("/keyresult/" + str(created_kr["id"]))
+        self.assertEqual(new_status, 200, new_message)
+        self.assertEqual(created_kr["id"], new_kr["id"], str(created_kr) + '\n' + str(new_kr))
+        self.assertEqual(created_kr["objective_id"], new_kr["objective_id"], str(created_kr) + '\n' + str(new_kr))
+        self.assertEqual(created_kr["state"], new_kr["state"], str(created_kr) + '\n' + str(new_kr))
+        self.assertEqual(created_kr["name"], new_kr["name"], str(created_kr) + '\n' + str(new_kr))
+        self.assertEqual(created_kr["description"], new_kr["description"], str(created_kr) + '\n' + str(new_kr))
+        self.assertEqual(created_kr["date_reviewed"], new_kr["date_reviewed"], str(created_kr) + '\n' + str(new_kr))
+        self.assertEqual(created_kr["date_reviewed"], new_kr["date_created"], str(created_kr) + '\n' + str(new_kr))
+        self.assertEqual(new_kr["s"], "", new_message)
+        self.assertEqual(new_kr["m"], "", new_message)
+        self.assertEqual(new_kr["a"], "", new_message)
+        self.assertEqual(new_kr["r"], "", new_message)
+        self.assertEqual(new_kr["t"], "", new_message)
+        self.assertEqual(len(new_kr["tasks"]), 0, new_message)
+
+
+    def test_create_key_result_null_name(self):
+        name = None
+        description = "a desc"
+        objective_id = 4
+        payload = json.dumps({"name": name, "description": description, "objective_id": objective_id})
+        status, error, message = post_request("/keyresult", payload)
+
+        self.assertEqual(status, 500, message)
+        self.assertTrue("NOT NULL constraint" in error, message)
+
+
+    def test_create_key_result_null_description(self):
+        name = "a name"
+        description = None
+        objective_id = 4
+        payload = json.dumps({"name": name, "description": description, "objective_id": objective_id})
+        status, error, message = post_request("/keyresult", payload)
+
+        self.assertEqual(status, 500, message)
+        self.assertTrue("NOT NULL constraint" in error, message)
+
+
+    def test_create_key_result_none_objective(self):
+        name = "a name"
+        description = "a desc"
+        objective_id = 44
+        payload = json.dumps({"name": name, "description": description, "objective_id": objective_id})
+        status, error, message = post_request("/keyresult", payload)
+
+        self.assertEqual(status, 404, message)
+        self.assertTrue("id='44' not found" in error, message)
+
+
+    
+
+
+    
+    # TODO test delete kr here
 
 
     

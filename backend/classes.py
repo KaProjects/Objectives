@@ -21,9 +21,9 @@ class KeyResult:
         self.objective_id: str = attributes[1]
         self.state: str = attributes[2]
         self.name: str = attributes[3]
-        self.date_created: str = attributes[10]
         self.date_reviewed: str = attributes[11]
         if not lightweight:
+            self.date_created: str = attributes[10]
             self.description: str = attributes[4]
             self.s: str = attributes[5]
             self.m: str = attributes[6]
