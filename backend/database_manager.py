@@ -3,8 +3,7 @@ from sqlite3 import Connection
 
 from classes import Value, Objective, KeyResult, Task
 
-database_name = "test.db"
-
+database_name = None
 
 def executescript(script: str):
     conn = sqlite3.connect(database_name)

@@ -15,9 +15,10 @@ class Service:
 
     def get_single_value(self, id: str) -> Value:
         value = DatabaseManager().select_value(id)
-        value.set_objectives(DatabaseManager().select_objectives_for_value(value.id))
-        for objective in value.objectives:
-            objective.set_key_results(DatabaseManager().select_key_results_for_objective(objective.id))
+        if value is not None:
+            value.set_objectives(DatabaseManager().select_objectives_for_value(value.id))
+            for objective in value.objectives:
+                objective.set_key_results(DatabaseManager().select_key_results_for_objective(objective.id))
 
         return value
 
