@@ -207,7 +207,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(state)
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/" + this.kr.id + "/state", requestOptions)
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult/" + this.kr.id + "/state", requestOptions)
       const body = await response.json();
       if (response.ok){
         this.kr.state = body

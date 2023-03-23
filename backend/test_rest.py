@@ -363,9 +363,62 @@ class TestKeyResultsApi(unittest.TestCase):
         self.assertEqual(status, 500, message)       
 
 
+    def test_update_key_result_state(self):
+        before_status, before_key_result, before_message = get_request("/keyresult/14")
+        self.assertEqual(before_status, 200, before_message)
+
+        failed_status = "failed"
+        status, new_status, message = post_request("/keyresult/14/state", json.dumps(failed_status))
+        self.assertEqual(status, 200, message)
+        self.assertEqual(failed_status, new_status, message)
+
+        after_failed_status, after_failed_key_result, after_failed_message = get_request("/keyresult/14")
+        self.assertEqual(after_failed_status, 200, after_failed_message)
+        self.assertEqual(failed_status, after_failed_key_result["state"], before_message + '\n' + after_failed_message)
+
+        completed_status = "completed"
+        status, new_status, message = post_request("/keyresult/14/state", json.dumps(completed_status))
+        self.assertEqual(status, 200, message)
+        self.assertEqual(completed_status, new_status, message)
+
+        after_completed_status, after_completed_key_result, after_completed_message = get_request("/keyresult/14")
+        self.assertEqual(after_completed_status, 200, after_completed_message)
+        self.assertEqual(completed_status, after_completed_key_result["state"], after_failed_message + '\n' + after_completed_message)
+
+        self.assertEqual(before_key_result["id"], after_completed_key_result["id"], after_failed_message + '\n' + after_completed_message)
+        self.assertEqual(before_key_result["objective_id"], after_completed_key_result["objective_id"], after_failed_message + '\n' + after_completed_message)
+        self.assertEqual(before_key_result["date_created"], after_completed_key_result["date_created"], after_failed_message + '\n' + after_completed_message)
+        self.assertEqual(before_key_result["name"], after_completed_key_result["name"], after_failed_message + '\n' + after_completed_message)
+        self.assertEqual(before_key_result["description"], after_completed_key_result["description"], after_failed_message + '\n' + after_completed_message)
+        self.assertEqual(before_key_result["s"], after_completed_key_result["s"], after_failed_message + '\n' + after_completed_message)
+        self.assertEqual(before_key_result["m"], after_completed_key_result["m"], after_failed_message + '\n' + after_completed_message)
+        self.assertEqual(before_key_result["a"], after_completed_key_result["a"], after_failed_message + '\n' + after_completed_message)
+        self.assertEqual(before_key_result["r"], after_completed_key_result["r"], after_failed_message + '\n' + after_completed_message)
+        self.assertEqual(before_key_result["t"], after_completed_key_result["t"], after_failed_message + '\n' + after_completed_message)
 
 
-    # TODO test kr state
+    def test_update_key_result_state_null(self):
+        status, error, message = post_request("/keyresult/14/state", json.dumps(None))
+        self.assertEqual(status, 500, message)
+        self.assertTrue("invalid key result state" in error, message)  
+
+
+    def test_update_key_result_state_nonexistent(self):
+        status, error, message = post_request("/keyresult/33/state", json.dumps("failed"))
+        self.assertEqual(status, 404, message)
+        self.assertTrue("id '33' not found" in error, message)
+
+    
+    def test_update_key_result_state_invalid_id(self):
+        status, error, message = post_request("/keyresult/x/state", json.dumps("failed"))
+        self.assertEqual(status, 500, message)
+
+
+    def test_update_key_result_state_invalid_state(self):
+        status, error, message = post_request("/keyresult/14/state", json.dumps("xxx"))
+        self.assertEqual(status, 500, message)
+        self.assertTrue("invalid key result state" in error, message)
+
 
     # TODO test delete kr here
 

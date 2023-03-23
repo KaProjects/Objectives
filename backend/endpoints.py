@@ -131,10 +131,17 @@ def review_key_result(id: str):
         return create_response(str(e), 500)
 
 
-@rest.route('/kr/<id>/state', methods=['POST'])
+@rest.route('/keyresult/<id>/state', methods=['POST'])
 def update_key_result_state(id: str):
+    state = request.json
     try:
-        new_state = Service().update_key_result_state(id, request.json)
+        if not Service().check_key_result_exist(id):
+            return create_response("key result with id '" + id + "' not found", 404)
+
+        if state not in ["active", "failed", "completed"]:
+            return create_response("'" + str(state) + "' is invalid key result state", 500)
+
+        new_state = Service().update_key_result_state(id, state)
         return create_response(new_state, 200)
     except Exception as e:
         return create_response(str(e), 500)
