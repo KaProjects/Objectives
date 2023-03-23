@@ -181,7 +181,7 @@ export default {
       this.confirmDeletionDialogs[index] = false
     },
     async reviewKeyResult(){
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/" + this.kr.id + "/review", {method: "POST"})
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult/" + this.kr.id + "/review", {method: "POST"})
       const body = await response.json();
       if (response.ok){
         this.kr.date_reviewed = body

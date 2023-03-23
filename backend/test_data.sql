@@ -23,6 +23,7 @@ insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (10, 6, "active", "add task", "", "", "", "", "", "", "10/03/2023", "12/03/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (11, 6, "active", "del task", "", "", "", "", "", "", "10/03/2023", "12/03/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (12, 7, "active", "name", "description", "", "", "x", "", "", "10/03/2023", "12/03/2023");
+insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (13, 7, "active", "review", "d", "", "y", "x", "z", "w", "10/03/2023", "12/03/2023");
 
 insert into Tasks(id, kr_id, state, value) values (1, 3, "failed", "task1");
 insert into Tasks(id, kr_id, state, value) values (2, 4, "active", "task2.0");

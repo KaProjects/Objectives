@@ -230,18 +230,18 @@ class TestKeyResultsApi(unittest.TestCase):
 
 
     def test_update_key_result(self):
-        before_status, before_key_result, before_message = get_request("/keyresult/7")
+        before_status, before_key_result, before_message = get_request("/keyresult/12")
         self.assertEqual(before_status, 200, before_message)
 
         name = "new name"
         description = "new desc"
         s, m, a, r, t = "s", "m", "a", "r", "r"
         payload = json.dumps({"name": name, "description": description, "s": s, "m": m, "a": a, "r": r, "t": t})
-        status, review_date, message = post_request("/keyresult/7", payload)
+        status, review_date, message = post_request("/keyresult/12", payload)
         self.assertEqual(status, 200, message)
         self.assertEqual(review_date, today(), message)
 
-        after_status, after_key_result, after_message = get_request("/keyresult/7")
+        after_status, after_key_result, after_message = get_request("/keyresult/12")
         self.assertEqual(after_status, 200, after_message)
         self.assertEqual(before_key_result["id"], after_key_result["id"], before_message + '\n' + after_message)
         self.assertEqual(before_key_result["objective_id"], after_key_result["objective_id"], before_message + '\n' + after_message)
@@ -329,7 +329,43 @@ class TestKeyResultsApi(unittest.TestCase):
         self.assertEqual(status, 500, message)
 
 
-    # TODO test kr review/state
+    def test_review_key_result(self):
+        before_status, before_key_result, before_message = get_request("/keyresult/13")
+        self.assertEqual(before_status, 200, before_message)
+
+        status, review_date, message = post_request("/keyresult/13/review", None)
+        self.assertEqual(status, 200, message)
+        self.assertEqual(review_date, today(), message)
+
+        after_status, after_key_result, after_message = get_request("/keyresult/13")
+        self.assertEqual(after_status, 200, after_message)
+        self.assertEqual(before_key_result["id"], after_key_result["id"], before_message + '\n' + after_message)
+        self.assertEqual(before_key_result["objective_id"], after_key_result["objective_id"], before_message + '\n' + after_message)
+        self.assertEqual(before_key_result["state"], after_key_result["state"], before_message + '\n' + after_message)
+        self.assertEqual(before_key_result["date_created"], after_key_result["date_created"], before_message + '\n' + after_message)
+        self.assertEqual(before_key_result["name"], after_key_result["name"], before_message + '\n' + after_message)
+        self.assertEqual(before_key_result["description"], after_key_result["description"], before_message + '\n' + after_message)
+        self.assertEqual(before_key_result["s"], after_key_result["s"], before_message + '\n' + after_message)
+        self.assertEqual(before_key_result["m"], after_key_result["m"], before_message + '\n' + after_message)
+        self.assertEqual(before_key_result["a"], after_key_result["a"], before_message + '\n' + after_message)
+        self.assertEqual(before_key_result["r"], after_key_result["r"], before_message + '\n' + after_message)
+        self.assertEqual(before_key_result["t"], after_key_result["t"], before_message + '\n' + after_message)
+
+
+    def test_review_key_result_nonexistent(self):
+        status, error, message = post_request("/keyresult/33/review", None)
+        self.assertEqual(status, 404, message)
+        self.assertTrue("id '33' not found" in error, message)
+
+    
+    def test_review_key_result_invalid_id(self):
+        status, error, message = post_request("/keyresult/x/review", None)
+        self.assertEqual(status, 500, message)       
+
+
+
+
+    # TODO test kr state
 
     # TODO test delete kr here
 

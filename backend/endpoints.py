@@ -119,9 +119,12 @@ def update_key_result(id: str):
         return create_response(str(e), 500)
 
 
-@rest.route('/kr/<id>/review', methods=['POST'])
+@rest.route('/keyresult/<id>/review', methods=['POST'])
 def review_key_result(id: str):
     try:
+        if not Service().check_key_result_exist(id):
+            return create_response("key result with id '" + id + "' not found", 404)
+        
         date_reviewed = Service().review_key_result(id)
         return create_response(date_reviewed, 200)
     except Exception as e:
