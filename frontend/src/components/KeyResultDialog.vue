@@ -95,17 +95,18 @@ export default {
       }
     },
     async updateTaskValue(index){
-      const task = {kr_id: this.kr.id, value: this.editingValue, id: this.kr.tasks[index].id, state: this.kr.tasks[index].state}
+      const task = {kr_id: this.kr.id, value: this.editingValue, state: this.kr.tasks[index].state}
 
       const requestOptions = {
-        method: "POST",
+        method: "PUT",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/update", requestOptions)
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/" + this.kr.tasks[index].id, requestOptions)
       const body = await response.json();
       if (response.ok){
         this.kr.tasks[index].value = body.value
+        await this.retrieveKeyResultReviewDate()
       } else {
         console.error(body)
         alert(body)
@@ -128,12 +129,12 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/add", requestOptions)
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task", requestOptions)
       const body = await response.json();
       if (response.ok){
         this.kr.tasks.push(body)
         this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count + 1
-        await this.reviewKeyResult()
+        await this.retrieveKeyResultReviewDate()
       } else {
         console.error(body)
         alert(body)
@@ -142,14 +143,14 @@ export default {
       this.editing[7] = false
     },
     async updateTaskState(index, state){
-      const task = {kr_id: this.kr.id, value: this.kr.tasks[index].value, id: this.kr.tasks[index].id, state: state}
+      const task = {kr_id: this.kr.id, value: this.kr.tasks[index].value, state: state}
 
       const requestOptions = {
-        method: "POST",
+        method: "PUT",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/update", requestOptions)
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/" + this.kr.tasks[index].id, requestOptions)
       const body = await response.json();
       if (response.ok){
         if (this.kr.tasks[index].state === 'finished' && body.state !== 'finished'){
@@ -159,7 +160,7 @@ export default {
           this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count + 1
         }
         this.kr.tasks[index].state = body.state
-        await this.reviewKeyResult()
+        await this.retrieveKeyResultReviewDate()
       } else {
         console.error(body)
         alert(body)
@@ -173,18 +174,18 @@ export default {
         if (task.state === 'finished') {
           this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count - 1
         }
-        await this.reviewKeyResult()
+        await this.retrieveKeyResultReviewDate()
       } else {
         alert(response.status);
       }
 
       this.confirmDeletionDialogs[index] = false
     },
-    async reviewKeyResult(){
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult/" + this.kr.id + "/review", {method: "POST"})
+    async retrieveKeyResultReviewDate(){
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult/" + this.kr.id)
       const body = await response.json();
       if (response.ok){
-        this.kr.date_reviewed = body
+        this.kr.date_reviewed = body.date_reviewed
         this.kr_parent.date_reviewed = this.kr.date_reviewed
       } else {
         console.error(body)
@@ -208,12 +209,12 @@ export default {
         body: JSON.stringify(state)
       }
       const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult/" + this.kr.id + "/state", requestOptions)
-      const body = await response.json();
+      const body = await response.text();
       if (response.ok){
         this.kr.state = body
         this.kr_parent.state = this.kr.state
 
-        await this.reviewKeyResult()
+        await this.retrieveKeyResultReviewDate()
         this.confirmStateDialogs[index] = false
       } else {
         console.error(body)

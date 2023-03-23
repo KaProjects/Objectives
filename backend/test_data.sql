@@ -19,7 +19,7 @@ insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (6, 4, "active", "add one more", "", "", "", "", "", "", "10/03/2023", "12/03/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (7, 5, "active", "should stay", "", "", "", "", "", "", "10/03/2023", "12/03/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (8, 5, "active", "to del", "", "", "", "", "", "", "10/03/2023", "12/03/2023");
-insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (9, 6, "active", "no change", "", "", "", "", "", "", "10/03/2023", "12/03/2023");
+insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (9, 6, "active", "no change", "ddd", "q", "w", "e", "r", "t", "10/03/2023", "12/03/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (10, 6, "active", "add task", "", "", "", "", "", "", "10/03/2023", "12/03/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (11, 6, "active", "del task", "", "", "", "", "", "", "10/03/2023", "12/03/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (12, 7, "active", "name", "description", "", "", "x", "", "", "10/03/2023", "12/03/2023");

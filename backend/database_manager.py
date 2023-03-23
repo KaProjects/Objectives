@@ -97,8 +97,8 @@ class DatabaseManager:
         return tasks
 
 
-    def insert_task(self, value, kr_id, state) -> int:
-        id = self.conn.execute("insert into Tasks(kr_id, state, value) values (?,?,?)", (kr_id, state, value)).lastrowid
+    def insert_task(self, value, kr_id) -> int:
+        id = self.conn.execute("insert into Tasks(kr_id, state, value) values (?,?,?)", (kr_id, "active", value)).lastrowid
         self.conn.commit()
         return id
 

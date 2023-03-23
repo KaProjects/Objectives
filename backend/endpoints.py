@@ -19,6 +19,10 @@ def create_response(response, status):
         return Response(response=json_response, status=status, mimetype="application/json")
 
 
+def create_exception_response(exception):
+    return create_response(type(exception).__name__ + ": " + str(exception), 500)
+
+
 @rest.route('/value/<id>')
 def get_value(id: str):
     try:
@@ -28,7 +32,7 @@ def get_value(id: str):
         else:
             return create_response(value, 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)
 
 
 @rest.route('/value/<id>/ideas')
@@ -37,7 +41,7 @@ def get_value_ideas(id: str):
         ideas = Service().get_ideas_of_value(id)
         return create_response(ideas, 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)
 
 
 @rest.route('/values')
@@ -46,7 +50,7 @@ def get_values():
         values = Service().get_all_values()
         return create_response(values, 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)
 
 
 @rest.route('/idea', methods=['POST'])
@@ -58,7 +62,7 @@ def add_idea():
         data["new_id"] = Service().add_idea(value_id, idea)
         return create_response(data, 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)
 
 
 @rest.route('/idea', methods=['DELETE'])
@@ -70,7 +74,7 @@ def delete_idea():
         Service().delete_idea(value_id, idea_id)
         return create_response({"deleted": idea_id}, 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)
 
 
 @rest.route('/keyresult/<id>')
@@ -82,7 +86,7 @@ def get_key_result(id: str):
         else:
             return create_response(kr, 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)
 
 
 @rest.route('/keyresult', methods=['POST'])
@@ -103,7 +107,7 @@ def create_key_result():
         data["finished_tasks_count"] = 0
         return create_response(data, 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)
 
 
 @rest.route('/keyresult/<id>', methods=['POST'])
@@ -116,7 +120,7 @@ def update_key_result(id: str):
         date_reviewed = Service().update_key_result(id, data)
         return create_response(date_reviewed, 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)
 
 
 @rest.route('/keyresult/<id>/review', methods=['POST'])
@@ -128,7 +132,7 @@ def review_key_result(id: str):
         date_reviewed = Service().review_key_result(id)
         return create_response(date_reviewed, 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)
 
 
 @rest.route('/keyresult/<id>/state', methods=['POST'])
@@ -144,10 +148,10 @@ def update_key_result_state(id: str):
         new_state = Service().update_key_result_state(id, state)
         return create_response(new_state, 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)
 
 
-@rest.route('/task/add', methods=['POST'])
+@rest.route('/task', methods=['POST'])
 def create_task():
     data: dict = request.json
     kr_id = data["kr_id"]
@@ -158,23 +162,37 @@ def create_task():
         data["state"] = "active"
         return create_response(data, 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)
 
 
-@rest.route('/task/update', methods=['POST'])
-def update_task():
+@rest.route('/task/<id>', methods=['PUT'])
+def update_task(id: str):
     data: dict = request.json
     try:
-        Service().update_task(data)
+        if not Service().check_task_exist(id):
+            return create_response("task with id '" + id + "' not found", 404)
+
+        value = data["value"]
+        state = data["state"]
+        kr_id = data["kr_id"]
+
+        if state not in ["active", "failed", "finished"]:
+            return create_response("'" + str(state) + "' is invalid task state", 500)
+
+        Service().update_task(id, value, state)
+        Service().review_key_result(kr_id)
         return create_response(data, 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)
 
 
 @rest.route('/task/<id>', methods=['DELETE'])
 def delete_task(id: str):
     try:
+        if not Service().check_task_exist(id):
+            return create_response("task with id '" + id + "' not found", 404)
+            
         Service().delete_task(id)
         return create_response("deleted", 200)
     except Exception as e:
-        return create_response(str(e), 500)
+        return create_exception_response(e)

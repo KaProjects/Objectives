@@ -56,6 +56,7 @@ class Service:
 
     def update_key_result_state(self, id, state):
         DatabaseManager().update_key_result_state(id, state)
+        self.review_key_result(id)
         return state
 
 
@@ -66,11 +67,13 @@ class Service:
 
 
     def create_task(self, value, kr_id):
-        return DatabaseManager().insert_task(value, kr_id, "active")
+        new_id = DatabaseManager().insert_task(value, kr_id)
+        self.review_key_result(kr_id)
+        return new_id
 
 
-    def update_task(self, data):
-        DatabaseManager().update_task(data["id"], data["value"], data["state"])
+    def update_task(self, id, value, state):
+        DatabaseManager().update_task(id, value, state)
 
 
     def delete_task(self, task_id):
@@ -87,3 +90,11 @@ class Service:
         kr_count = DatabaseManager().count_records("KeyResults", key_result_id)
         if (kr_count > 1): raise Exception("found " + str(kr_count) + " key results with id='" + str(key_result_id) + "'")
         return kr_count == 1
+
+
+    def check_task_exist(self, task_id) -> bool:
+        task_count = DatabaseManager().count_records("Tasks", task_id)
+        if (task_count > 1): raise Exception("found " + str(task_count) + " tasks with id='" + str(task_id) + "'")
+        return task_count == 1
+
+
