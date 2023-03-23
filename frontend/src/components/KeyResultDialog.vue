@@ -34,9 +34,6 @@ export default {
   methods: {
     async updateKeyResult(){
       let kr = {}
-      kr.state = this.kr.state
-      kr.id = this.kr.id
-      kr.objective_id = this.kr.objective_id
       kr.name = this.values[0]
       kr.description = this.values[1]
       kr.s = this.values[2]
@@ -50,8 +47,8 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(kr)
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/kr/update", requestOptions)
-      const body = await response.json();
+      const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult/" + this.kr.id, requestOptions)
+      const body = await response.text();
       if (response.ok){
         this.kr.name = this.values[0]
         this.kr.description = this.values[1]

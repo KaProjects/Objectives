@@ -16,8 +16,10 @@ class DatabaseManager:
     def __init__(self):
         self.conn: Connection = sqlite3.connect(database_name)
 
+
     def __del__(self):
         self.conn.close()
+
 
     def select_all_values(self) -> list:
         values = list()
@@ -25,21 +27,25 @@ class DatabaseManager:
             values.append(Value(value))
         return values
 
+
     # def insert_value(self, name, description) -> int:
     #     id = self.conn.execute("insert into PValues(name,description) values (?,?)", (name, description)).lastrowid
     #     self.conn.commit()
     #     return id
+
 
     def select_value(self, id: str) -> Value:
         value = self.conn.execute('select * from PValues where id=?', (int(id),)).fetchone()
         if value is not None:
             return Value(value)
 
+
     def select_objectives_for_value(self, value_id: str) -> list:
         objectives = list()
         for objective in self.conn.execute('select * from Objectives where value_id=?', (int(value_id),)).fetchall():
             objectives.append(Objective(objective))
         return objectives
+
 
     def select_key_results_for_objective(self, objective_id: str) -> list:
         key_results = list()
@@ -53,6 +59,7 @@ class DatabaseManager:
             key_results.append(key_result)
         return key_results
 
+
     def insert_key_result(self, name, description, state, objective_id, s, m, a, r, t, date_created) -> int:
         id = self.conn.execute("insert into KeyResults(objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) "
                                "values (?,?,?,?,?,?,?,?,?,?,?)",
@@ -60,23 +67,28 @@ class DatabaseManager:
         self.conn.commit()
         return id
 
+
     def select_key_result(self, id: str) -> KeyResult:
         kr = self.conn.execute('select * from KeyResults where id=?', (int(id),)).fetchone()
         if kr is not None:
             return KeyResult(kr, False)
 
-    def update_key_result(self, id, name, description, state, s, m, a, r, t, date_reviewed):
-        self.conn.execute('update KeyResults set name=?,description=?,state=?,s=?,m=?,a=?,r=?,t=?,date_reviewed=? where id=?',
-                          (name, description, state, s, m, a, r, t, date_reviewed, int(id)))
+
+    def update_key_result(self, id, name, description, s, m, a, r, t, date_reviewed):
+        self.conn.execute('update KeyResults set name=?,description=?,s=?,m=?,a=?,r=?,t=?,date_reviewed=? where id=?',
+                          (name, description, s, m, a, r, t, date_reviewed, int(id)))
         self.conn.commit()
+
 
     def review_key_result(self, kr_id, date_reviewed):
         self.conn.execute('update KeyResults set date_reviewed=? where id=?', (date_reviewed, int(kr_id)))
         self.conn.commit()
 
+
     def update_key_result_state(self, kr_id, state):
         self.conn.execute('update KeyResults set state=? where id=?', (state, int(kr_id)))
         self.conn.commit()
+
 
     def select_tasks_for_key_result(self, id):
         tasks = list()
@@ -84,18 +96,22 @@ class DatabaseManager:
             tasks.append(Task(task))
         return tasks
 
+
     def insert_task(self, value, kr_id, state) -> int:
         id = self.conn.execute("insert into Tasks(kr_id, state, value) values (?,?,?)", (kr_id, state, value)).lastrowid
         self.conn.commit()
         return id
 
+
     def update_task(self, id, value, state):
         self.conn.execute('update Tasks set value=?,state=? where id=?', (value, state, int(id)))
         self.conn.commit()
+
 
     def delete_task(self, task_id):
         self.conn.execute('delete from Tasks where id=?', (int(task_id),))
         self.conn.commit()
 
-    def count_objectives_by_id(self, id):
-        return self.conn.execute('select count(1) from Objectives where id=?', (int(id),)).fetchone()[0];
+
+    def count_records(self, table, id):
+        return self.conn.execute('select count(1) from ' + table + ' where id=?', (int(id),)).fetchone()[0];

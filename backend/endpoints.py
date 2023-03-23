@@ -93,7 +93,7 @@ def create_key_result():
     objective_id = data["objective_id"]
     try:
         if not Service().check_objective_exist(objective_id):
-            return create_response("objective with id='" + str(objective_id) + "' not found", 404)
+            return create_response("objective with id '" + str(objective_id) + "' not found", 404)
 
         new_id, date_created = Service().create_key_result(name, description, objective_id)
         data["id"] = new_id
@@ -106,11 +106,14 @@ def create_key_result():
         return create_response(str(e), 500)
 
 
-@rest.route('/kr/update', methods=['POST'])
-def update_key_result():
+@rest.route('/keyresult/<id>', methods=['POST'])
+def update_key_result(id: str):
     data: dict = request.json
     try:
-        date_reviewed = Service().update_key_result(data)
+        if not Service().check_key_result_exist(id):
+            return create_response("key result with id '" + id + "' not found", 404)
+
+        date_reviewed = Service().update_key_result(id, data)
         return create_response(date_reviewed, 200)
     except Exception as e:
         return create_response(str(e), 500)
