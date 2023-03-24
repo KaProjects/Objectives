@@ -4,7 +4,7 @@ import Editable from "@/components/Editable.vue";
 </script>
 
 <script>
-import {properties} from "@/properties";
+import {backend_fetch} from "@/properties";
 import {app_state} from "@/main";
 
 export default {
@@ -47,7 +47,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(kr)
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult/" + this.kr.id, requestOptions)
+      const response = await backend_fetch("/keyresult/" + this.kr.id, requestOptions)
       const body = await response.text();
       if (response.ok){
         this.kr.name = this.values[0]
@@ -102,7 +102,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/" + this.kr.tasks[index].id, requestOptions)
+      const response = await backend_fetch("/task/" + this.kr.tasks[index].id, requestOptions)
       const body = await response.json();
       if (response.ok){
         this.kr.tasks[index].value = body.value
@@ -129,7 +129,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task", requestOptions)
+      const response = await backend_fetch("/task", requestOptions)
       const body = await response.json();
       if (response.ok){
         this.kr.tasks.push(body)
@@ -150,7 +150,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/" + this.kr.tasks[index].id, requestOptions)
+      const response = await backend_fetch("/task/" + this.kr.tasks[index].id, requestOptions)
       const body = await response.json();
       if (response.ok){
         if (this.kr.tasks[index].state === 'finished' && body.state !== 'finished'){
@@ -167,7 +167,7 @@ export default {
       }
     },
     async deleteTask(task, index){
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/task/" + task.id, {method: "DELETE"})
+      const response = await backend_fetch("/task/" + task.id, {method: "DELETE"})
       if (response.ok) {
         this.kr.tasks.splice(this.kr.tasks.indexOf(task), 1);
         this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count - 1
@@ -182,7 +182,7 @@ export default {
       this.confirmDeletionDialogs[index] = false
     },
     async retrieveKeyResultReviewDate(){
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult/" + this.kr.id)
+      const response = await backend_fetch("/keyresult/" + this.kr.id)
       const body = await response.json();
       if (response.ok){
         this.kr.date_reviewed = body.date_reviewed
@@ -208,7 +208,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(state)
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult/" + this.kr.id + "/state", requestOptions)
+      const response = await backend_fetch("/keyresult/" + this.kr.id + "/state", requestOptions)
       const body = await response.text();
       if (response.ok){
         this.kr.state = body

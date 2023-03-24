@@ -3,7 +3,7 @@ import { app_state } from '@/main'
 
 </script>
 <script>
-import {properties} from "@/properties";
+import {backend_fetch} from "@/properties";
 import {app_state} from "@/main";
 import Ideas from "@/components/Ideas.vue";
 import KeyResultDialog from "@/components/KeyResultDialog.vue";
@@ -21,7 +21,7 @@ export default {
   },
   methods: {
     async loadData() {
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/value/" + app_state.value.id)
+      const response = await backend_fetch("/value/" + app_state.value.id)
       const body = await response.json()
       if (response.ok){
         this.value = body
@@ -39,7 +39,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({name: this.newKr.name, description: this.newKr.description, objective_id: objective_id})
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult", requestOptions)
+      const response = await backend_fetch("/keyresult", requestOptions)
       const body = await response.json()
       if (response.ok){
         this.value.objectives[index].key_results.push(body)
@@ -51,7 +51,7 @@ export default {
       }
     },
     async openKeyResult(kr) {
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/keyresult/" + kr.id);
+      const response = await backend_fetch("/keyresult/" + kr.id);
       const body = await response.json()
       if (response.ok){
         this.selectedKr = body

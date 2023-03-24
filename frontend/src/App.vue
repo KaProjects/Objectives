@@ -3,7 +3,7 @@ import Value from "@/components/Value.vue";
 import { app_state } from './main.js'
 </script>
 <script>
-import {properties} from "@/properties";
+import {backend_fetch} from "@/properties";
 
 export default {
   data() {
@@ -13,7 +13,7 @@ export default {
   },
   methods: {
     async loadData() {
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/values");
+      const response = await backend_fetch("/values");
       const body = await response.json();
       if (response.ok){
         this.values = body

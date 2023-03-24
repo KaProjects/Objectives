@@ -1,5 +1,5 @@
 <script>
-import {properties} from "@/properties";
+import {backend_fetch} from "@/properties";
 
 export default {
   name: "Ideas",
@@ -18,7 +18,7 @@ export default {
   },
   methods: {
     async loadData() {
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/value/" + this.valueId + "/ideas")
+      const response = await backend_fetch("/value/" + this.valueId + "/ideas")
       const body = await response.json()
       if (response.ok){
         this.ideas = body
@@ -34,7 +34,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({value_id: this.valueId, idea: this.newIdea})
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/idea", requestOptions);
+      const response = await backend_fetch("/idea", requestOptions);
       const body = await response.json();
       if (response.ok){
         this.ideas.push({id: body.new_id, value: body.idea})
@@ -51,7 +51,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({value_id: this.valueId, idea_id: idea.id})
       }
-      const response = await fetch("http://" + properties.host + ":" + properties.port + "/idea", requestOptions);
+      const response = await backend_fetch("/idea", requestOptions);
       const body = await response.json();
       if (response.ok){
         this.ideas.splice(this.ideas.indexOf(idea), 1);
