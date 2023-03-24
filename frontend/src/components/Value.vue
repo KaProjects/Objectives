@@ -61,6 +61,38 @@ export default {
         console.error(body)
         alert(body)
       }
+    },
+    compareDates(a, b){
+      let dateA = a.split("/")
+      let dateB = b.split("/")
+      if (dateA[2] !== dateB[2]){
+        return parseInt(dateA[2]) - parseInt(dateB[2])
+      } else {
+        if (dateA[1] !== dateB[1]) {
+          return parseInt(dateA[1]) - parseInt(dateB[1])
+        } else {
+          if (dateA[0] !== dateB[0]) {
+            return parseInt(dateA[0]) - parseInt(dateB[0])
+          } else {
+            return 0
+          }
+        }
+      }
+    },
+    compareKeyResults(a, b) {
+      if (a.state === "active") {
+        if (b.state === "completed" || b.state === "failed"){
+          return -1
+        } else { // both active
+          return this.compareDates(a.date_reviewed, b.date_reviewed)
+        }
+      } else {
+        if (b.state === "active") {
+          return 1
+        } else { // both inactive
+          return -1 * this.compareDates(a.date_reviewed, b.date_reviewed)
+        }
+      }
     }
   },
   components: {
@@ -91,7 +123,7 @@ export default {
         <v-card-text>
           {{objective.description}}
         </v-card-text>
-        <v-list-item v-for="key_result in objective.key_results"
+        <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
                      class="kr" :class="key_result.state"
                      @click="openKeyResult(key_result)">
           <v-list-item-content>
