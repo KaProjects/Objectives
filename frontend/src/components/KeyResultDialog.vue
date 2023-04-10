@@ -402,7 +402,7 @@ export default {
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-dialog v-model="confirmStateDialogs[2]" width="300" v-if="kr.state !== 'active'">
+      <v-dialog v-model="confirmStateDialogs[2]" width="300" v-if="kr.state !== 'active' && kr_parent.obj_state === 'active'">
         <template v-slot:activator="{ props }">
           <v-btn style="width: 100%;" color="blue" v-bind="props">activate</v-btn>
         </template>

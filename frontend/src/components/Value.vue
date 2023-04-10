@@ -34,29 +34,30 @@ export default {
         alert(body)
       }
     },
-    async addKeyResult(objective_id, index) {
+    async addKeyResult(objective) {
       const requestOptions = {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({name: this.newKr.name, description: this.newKr.description, objective_id: objective_id})
+        body: JSON.stringify({name: this.newKr.name, description: this.newKr.description, objective_id: objective.id})
       }
       const response = await backend_fetch("/keyresult", requestOptions)
       const body = await response.json()
       if (response.ok){
-        this.value.objectives[index].key_results.push(body)
-        this.newKrDialogs[index] = false
+        objective.key_results.push(body)
+        this.newKrDialogs[objective.id] = false
         this.newKr = {name: "", description: ""}
       } else {
         console.error(body)
         alert(body)
       }
     },
-    async openKeyResult(kr) {
+    async openKeyResult(kr, obj_state) {
       const response = await backend_fetch("/keyresult/" + kr.id);
       const body = await response.json()
       if (response.ok){
         this.selectedKr = body
         this.selectedKr_parent = kr
+        this.selectedKr_parent.obj_state = obj_state
         app_state.krDialogToggle = true
       } else {
         console.error(body)
@@ -127,7 +128,7 @@ export default {
     <Ideas :valueId="app_state.value.id" />
 
     <v-card class="obj"
-            v-for="(objective, index) in filterObjectives(value.objectives, tab === 'active')" :key="objective.id"
+            v-for="objective in filterObjectives(value.objectives, tab === 'active')" :key="objective.id"
             :class="objective.state"
             width="300" elevation="3" shaped
     >
@@ -137,7 +138,7 @@ export default {
       </v-card-text>
       <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
                    class="kr" :class="key_result.state"
-                   @click="openKeyResult(key_result)">
+                   @click="openKeyResult(key_result, objective.state)">
         <v-list-item-content>
 
           <v-list-item-title class="inLine">{{key_result.name}}</v-list-item-title>
@@ -153,7 +154,7 @@ export default {
       </v-list-item>
       <v-card-actions v-if="objective.state === 'active'">
         <v-dialog
-            v-model="newKrDialogs[index]"
+            v-model="newKrDialogs[objective.id]"
             width="300"
         >
           <template v-slot:activator="{ props }">
@@ -174,7 +175,7 @@ export default {
                 required
             ></v-text-field>
             <v-card-actions>
-              <v-btn block @click="addKeyResult(objective.id, index)">Add</v-btn>
+              <v-btn block @click="addKeyResult(objective)">Add</v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>
