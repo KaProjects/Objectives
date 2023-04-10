@@ -19,13 +19,13 @@ export default {
   methods: {
     async loadData() {
       const response = await backend_fetch("/value/" + this.valueId + "/ideas")
-      const body = await response.json()
       if (response.ok){
-        this.ideas = body
+        this.ideas = await response.json()
         this.loading = false
       } else {
+        const body = await response.text()
         console.error(body)
-        alert(body)
+        // alert(body)
       }
     },
     async addIdea() {

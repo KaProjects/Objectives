@@ -16,7 +16,8 @@ export default {
       newKrDialogs: [],
       newKr: {name: "", description: ""},
       selectedKr: Object,
-      selectedKr_parent: Object
+      selectedKr_parent: Object,
+      tab: "active"
     }
   },
   methods: {
@@ -93,6 +94,10 @@ export default {
           return -1 * this.compareDates(a.date_reviewed, b.date_reviewed)
         }
       }
+    },
+    filterObjectives(objs, isActive){
+      if (typeof objs === "undefined") return objs;
+      return objs.filter(obj => isActive ? obj.state === 'active' : obj.state !== 'active');
     }
   },
   components: {
@@ -107,69 +112,75 @@ export default {
 
 <template>
   <div>
-    <v-icon icon="mdi-arrow-left" large @click="app_state.unselect_value()"/>
-    <h1>{{value.name}}</h1>
+    <div>
+      <v-icon style="width: 100px" icon="mdi-arrow-left" large @click="app_state.unselect_value()"/>
+      <h1 class="inLine" style="width: 300px" >{{value.name}}</h1>
 
-    <Ideas :valueId="app_state.value.id" />
+      <v-tabs class="inLine" v-model="tab" bg-color="primary">
+        <v-tab value="active">Active</v-tab>
+        <v-tab value="inactive">Done</v-tab>
+      </v-tabs>
+    </div>
 
     <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" />
 
+    <Ideas :valueId="app_state.value.id" />
+
     <v-card class="obj"
-              v-for="(objective, index) in value.objectives" :key="objective.id"
-              :class="objective.state"
-              width="300" elevation="3" shaped
-      >
-        <v-card-title>{{objective.name}}</v-card-title>
-        <v-card-text>
-          {{objective.description}}
-        </v-card-text>
-        <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
-                     class="kr" :class="key_result.state"
-                     @click="openKeyResult(key_result)">
-          <v-list-item-content>
+            v-for="(objective, index) in filterObjectives(value.objectives, tab === 'active')" :key="objective.id"
+            :class="objective.state"
+            width="300" elevation="3" shaped
+    >
+      <v-card-title>{{objective.name}}</v-card-title>
+      <v-card-text>
+        {{objective.description}}
+      </v-card-text>
+      <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
+                   class="kr" :class="key_result.state"
+                   @click="openKeyResult(key_result)">
+        <v-list-item-content>
 
-            <v-list-item-title class="inLine">{{key_result.name}}</v-list-item-title>
-            <v-icon style="vertical-align: top;" icon="mdi-check-bold" v-if="key_result.state === 'completed'" />
-            <v-icon style="vertical-align: top;" icon="mdi-close-thick" v-if="key_result.state === 'failed'"/>
+          <v-list-item-title class="inLine">{{key_result.name}}</v-list-item-title>
+          <v-icon style="vertical-align: top;" icon="mdi-check-bold" v-if="key_result.state === 'completed'" />
+          <v-icon style="vertical-align: top;" icon="mdi-close-thick" v-if="key_result.state === 'failed'"/>
 
-            <div class="krInfo" v-if="key_result.state === 'active'">
-              <div class="krInfoChild" style="right: 0;">{{key_result.date_reviewed}}</div>
-              <div class="krInfoChild" style="left: 0;">{{key_result.finished_tasks_count}}/{{key_result.all_tasks_count}}</div>
-            </div>
+          <div class="krInfo" v-if="key_result.state === 'active'">
+            <div class="krInfoChild" style="right: 0;">{{key_result.date_reviewed}}</div>
+            <div class="krInfoChild" style="left: 0;">{{key_result.finished_tasks_count}}/{{key_result.all_tasks_count}}</div>
+          </div>
 
-          </v-list-item-content>
-        </v-list-item>
-        <v-card-actions v-if="objective.state === 'active'">
-          <v-dialog
-              v-model="newKrDialogs[index]"
-              width="300"
-          >
-            <template v-slot:activator="{ props }">
-              <v-btn color="primary" v-bind="props">
-                <v-icon icon="mdi-plus" large/>
-              </v-btn>
-            </template>
+        </v-list-item-content>
+      </v-list-item>
+      <v-card-actions v-if="objective.state === 'active'">
+        <v-dialog
+            v-model="newKrDialogs[index]"
+            width="300"
+        >
+          <template v-slot:activator="{ props }">
+            <v-btn color="primary" v-bind="props">
+              <v-icon icon="mdi-plus" large/>
+            </v-btn>
+          </template>
 
-            <v-card>
-              <v-text-field
-                  label="Name"
-                  v-model="newKr.name"
-                  required
-              ></v-text-field>
-              <v-text-field
-                  label="Description"
-                  v-model="newKr.description"
-                  required
-              ></v-text-field>
-              <v-card-actions>
-                <v-btn block @click="addKeyResult(objective.id, index)">Add</v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
+          <v-card>
+            <v-text-field
+                label="Name"
+                v-model="newKr.name"
+                required
+            ></v-text-field>
+            <v-text-field
+                label="Description"
+                v-model="newKr.description"
+                required
+            ></v-text-field>
+            <v-card-actions>
+              <v-btn block @click="addKeyResult(objective.id, index)">Add</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
 
-        </v-card-actions>
-      </v-card>
-
+      </v-card-actions>
+    </v-card>
 
   </div>
 
@@ -199,6 +210,7 @@ export default {
 }
 .obj {
   display: inline-block;
+  vertical-align:top;
 }
 .obj.active {
   display: inline-block;
