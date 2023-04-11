@@ -1,7 +1,6 @@
 import unittest
 import requests
 import json
-from classes import Value
 from datetime import date
 
 
@@ -655,7 +654,61 @@ class TestTasksApi(unittest.TestCase):
         status, error, message = delete_request("/task")
         assertMethodNotAllowed(self, status, error, message)
 
-    
+
+class TestObjectivesApi(unittest.TestCase):
+
+    def test_create_objective(self):
+        before_status, before_value, before_message = get_request("/value/4")
+        self.assertEqual(before_status, 200, before_message)
+        before_obj_count = len(before_value["objectives"])
+
+        name = "new obj"
+        description = "a desc obj"
+        value_id = 4
+        payload = json.dumps({"name": name, "description": description, "value_id": value_id})
+        created_status, created_obj, created_message = post_request("/objective", payload)
+
+        self.assertEqual(created_status, 200, created_message)
+        self.assertEqual(created_obj["name"], name, created_message)
+        self.assertEqual(created_obj["description"], description, created_message)
+        self.assertEqual(created_obj["value_id"], value_id, created_message)
+        self.assertEqual(created_obj["state"], "active", created_message)
+
+        after_status, after_value, after_message = get_request("/value/4")
+        self.assertEqual(after_status, 200, after_message)
+        after_obj = next(obj for obj in after_value["objectives"] if obj["id"] == created_obj["id"])
+        self.assertEqual(after_obj["name"], name, str(created_obj) + '\n' + str(after_obj))
+        self.assertEqual(after_obj["description"], description, str(created_obj) + '\n' + str(after_obj))
+        self.assertEqual(after_obj["value_id"], value_id, str(created_obj) + '\n' + str(after_obj))
+        self.assertEqual(after_obj["state"], "active", str(created_obj) + '\n' + str(after_obj))
+        self.assertTrue(len(after_obj["key_results"]) == 0, str(created_obj) + '\n' + str(after_obj))
+
+
+    def test_create_objective_null(self):
+        status, error, message = post_request("/objective", None)
+        self.assertEqual(status, 400, message)
+
+
+    def test_create_objective_null_name(self):
+        payload = json.dumps({"name": None, "description": "a desc", "value_id": 4})
+        status, error, message = post_request("/objective", payload)
+        self.assertEqual(status, 500, message)
+        self.assertTrue("NOT NULL constraint" in error, message)
+
+
+    def test_create_objective_null_description(self):
+        payload = json.dumps({"name": "a name", "description": None, "value_id": 4})
+        status, error, message = post_request("/objective", payload)
+        self.assertEqual(status, 500, message)
+        self.assertTrue("NOT NULL constraint" in error, message)
+
+
+    def test_create_objective_none_value(self):
+        payload = json.dumps({"name": "a name", "description": "a desc", "value_id": 44})
+        status, error, message = post_request("/objective", payload)
+        self.assertEqual(status, 404, message)
+        self.assertTrue("id '44' not found" in error, message)
+
 # NOTE: not testing external firebase db here&now
 # class TestFirebase(unittest.TestCase):
 

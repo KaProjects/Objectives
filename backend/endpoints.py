@@ -196,3 +196,22 @@ def delete_task(id: str):
         return create_response("deleted", 200)
     except Exception as e:
         return create_exception_response(e)
+
+
+@rest.route('/objective', methods=['POST'])
+def create_objective():
+    data: dict = request.json
+    name = data["name"]
+    description = data["description"]
+    value_id = data["value_id"]
+    try:
+        if not Service().check_value_exist(value_id):
+            return create_response("value with id '" + str(value_id) + "' not found", 404)
+
+        new_id = Service().create_objective(name, description, value_id)
+        data["id"] = new_id
+        data["state"] = "active"
+        data["key_results"] = []
+        return create_response(data, 200)
+    except Exception as e:
+        return create_exception_response(e)

@@ -17,7 +17,9 @@ export default {
       newKr: {name: "", description: ""},
       selectedKr: Object,
       selectedKr_parent: Object,
-      tab: "active"
+      tab: "active",
+      newObjDialog: false,
+      newObj: {name: "", description: ""},
     }
   },
   methods: {
@@ -99,6 +101,23 @@ export default {
     filterObjectives(objs, isActive){
       if (typeof objs === "undefined") return objs;
       return objs.filter(obj => isActive ? obj.state === 'active' : obj.state !== 'active');
+    },
+    async addObjective(){
+      const requestOptions = {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name: this.newObj.name, description: this.newObj.description, value_id: this.value.id})
+      }
+      const response = await backend_fetch("/objective", requestOptions)
+      const body = await response.json()
+      if (response.ok){
+        this.value.objectives.push(body)
+        this.newObjDialog = false
+        this.newObj = {name: "", description: ""}
+      } else {
+        console.error(body)
+        alert(body)
+      }
     }
   },
   components: {
@@ -113,14 +132,40 @@ export default {
 
 <template>
   <div>
+
     <div>
-      <v-icon style="width: 100px" icon="mdi-arrow-left" large @click="app_state.unselect_value()"/>
-      <h1 class="inLine" style="width: 300px" >{{value.name}}</h1>
+      <v-btn class="backBtn" >
+        <v-icon icon="mdi-arrow-left" size="25" @click="app_state.unselect_value()"/>
+      </v-btn>
+
+      <h1 class="inLine" style="width: 300px;" >{{value.name}}</h1>
 
       <v-tabs class="inLine" v-model="tab" bg-color="primary">
         <v-tab value="active">Active</v-tab>
         <v-tab value="inactive">Done</v-tab>
       </v-tabs>
+
+      <v-dialog v-model="newObjDialog" width="300">
+        <template v-slot:activator="{ props }">
+          <v-btn v-bind="props" class="addObj">ADD</v-btn>
+        </template>
+        <v-card>
+          <v-text-field
+              label="Name"
+              v-model="newObj.name"
+              required
+          ></v-text-field>
+          <v-text-field
+              label="Description"
+              v-model="newObj.description"
+              required
+          ></v-text-field>
+          <v-card-actions>
+            <v-btn block @click="addObjective">Add</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
     </div>
 
     <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" />
@@ -212,6 +257,7 @@ export default {
 .obj {
   display: inline-block;
   vertical-align:top;
+  margin-left: 1px;
 }
 .obj.active {
   display: inline-block;
@@ -234,5 +280,22 @@ export default {
   font-size: 10px;
   position: absolute;
   bottom: 0;
+}
+.addObj {
+  background: #181818;
+  color: darkgrey;
+  margin-top: -40px
+}
+.addObj:hover {
+  background: grey;
+}
+.backBtn {
+  width: 80px;
+  margin-top: -10px;
+  background: #181818;
+  color: darkgrey
+}
+.backBtn:hover {
+  background: #2f2f2f;
 }
 </style>

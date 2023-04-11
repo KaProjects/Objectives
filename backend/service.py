@@ -80,21 +80,29 @@ class Service:
         DatabaseManager().delete_task(task_id)
 
 
+    def check_value_exist(self, value_id) -> bool:
+        value_count = DatabaseManager().count_records("PValues", value_id)
+        if value_count > 1: raise Exception("found " + str(value_count) + " values with id='" + str(value_id) + "'")
+        return value_count == 1
+
+
     def check_objective_exist(self, objective_id) -> bool:
         objective_count = DatabaseManager().count_records("Objectives", objective_id)
-        if (objective_count > 1): raise Exception("found " + str(objective_count) + " objectives with id='" + str(objective_id) + "'")
+        if objective_count > 1: raise Exception("found " + str(objective_count) + " objectives with id='" + str(objective_id) + "'")
         return objective_count == 1
 
 
     def check_key_result_exist(self, key_result_id) -> bool:
         kr_count = DatabaseManager().count_records("KeyResults", key_result_id)
-        if (kr_count > 1): raise Exception("found " + str(kr_count) + " key results with id='" + str(key_result_id) + "'")
+        if kr_count > 1: raise Exception("found " + str(kr_count) + " key results with id='" + str(key_result_id) + "'")
         return kr_count == 1
 
 
     def check_task_exist(self, task_id) -> bool:
         task_count = DatabaseManager().count_records("Tasks", task_id)
-        if (task_count > 1): raise Exception("found " + str(task_count) + " tasks with id='" + str(task_id) + "'")
+        if task_count > 1: raise Exception("found " + str(task_count) + " tasks with id='" + str(task_id) + "'")
         return task_count == 1
 
 
+    def create_objective(self, name, description, value_id):
+        return DatabaseManager().insert_objective(name, description, "active", value_id)
