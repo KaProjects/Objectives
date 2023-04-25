@@ -215,3 +215,34 @@ def create_objective():
         return create_response(data, 200)
     except Exception as e:
         return create_exception_response(e)
+
+
+@rest.route('/objective/<id>', methods=['PUT'])
+def update_objective(id: str):
+    data: dict = request.json
+    name = data["name"]
+    description = data["description"]
+    try:
+        if not Service().check_objective_exist(id):
+            return create_response("objective with id '" + str(id) + "' not found", 404)
+
+        Service().update_objective(id, name, description)
+        return create_response("", 200)
+    except Exception as e:
+        return create_exception_response(e)
+
+
+@rest.route('/objective/<id>/state', methods=['PUT'])
+def update_objective_state(id: str):
+    state = request.json
+    try:
+        if not Service().check_objective_exist(id):
+            return create_response("objective with id '" + id + "' not found", 404)
+
+        if state not in ["active", "failed", "achieved"]:
+            return create_response("'" + str(state) + "' is invalid objective state", 500)
+
+        new_state, date = Service().update_objective_state(id, state)
+        return create_response({"state": new_state, "date": date}, 200)
+    except Exception as e:
+        return create_exception_response(e)

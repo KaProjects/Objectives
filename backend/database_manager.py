@@ -122,3 +122,14 @@ class DatabaseManager:
                                (name, description, state, value_id)).lastrowid
         self.conn.commit()
         return id
+
+
+    def update_objective(self, id, name, description):
+        self.conn.execute('update Objectives set name=?,description=? where id=?', (name, description, int(id)))
+        self.conn.commit()
+
+
+    def update_objective_state(self, id, state, date):
+        #         self.conn.execute('update Objectives set state=?,date_finished=? where id=?', (state, date, int(id)))
+        self.conn.execute('update Objectives set state=? where id=?', (state, int(id)))
+        self.conn.commit()

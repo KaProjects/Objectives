@@ -47,33 +47,37 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(kr)
       }
-      const response = await backend_fetch("/keyresult/" + this.kr.id, requestOptions)
-      const body = await response.text();
-      if (response.ok){
-        this.kr.name = this.values[0]
-        this.kr.description = this.values[1]
-        this.kr.s = this.values[2]
-        this.kr.m = this.values[3]
-        this.kr.a = this.values[4]
-        this.kr.r = this.values[5]
-        this.kr.t = this.values[6]
-        this.kr.date_reviewed = body
+      await backend_fetch("/keyresult/" + this.kr.id, requestOptions)
+        .then(async response => {
+          const body = await response.text();
+          if (response.ok) {
+            this.kr.name = this.values[0]
+            this.kr.description = this.values[1]
+            this.kr.s = this.values[2]
+            this.kr.m = this.values[3]
+            this.kr.a = this.values[4]
+            this.kr.r = this.values[5]
+            this.kr.t = this.values[6]
+            this.kr.date_reviewed = body
 
-        this.kr_parent.name = this.kr.name
-        this.kr_parent.date_reviewed = this.kr.date_reviewed
+            this.kr_parent.name = this.kr.name
+            this.kr_parent.date_reviewed = this.kr.date_reviewed
+          } else {
+            this.handleUpdateKeyResultError(body)
+          }})
+        .catch(error => this.handleUpdateKeyResultError(error))
+    },
+    handleUpdateKeyResultError(error){
+      console.error(error)
+      alert(error)
 
-      } else {
-        console.error(body)
-        alert(body)
-
-        this.values[0] = this.kr.name
-        this.values[1] = this.kr.description
-        this.values[2] = this.kr.s
-        this.values[3] = this.kr.m
-        this.values[4] = this.kr.a
-        this.values[5] = this.kr.r
-        this.values[6] = this.kr.t
-      }
+      this.values[0] = this.kr.name
+      this.values[1] = this.kr.description
+      this.values[2] = this.kr.s
+      this.values[3] = this.kr.m
+      this.values[4] = this.kr.a
+      this.values[5] = this.kr.r
+      this.values[6] = this.kr.t
     },
     startEditing(index){
       if (this.kr.state === 'active') {

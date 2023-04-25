@@ -7,6 +7,7 @@ import {backend_fetch} from "@/properties";
 import {app_state} from "@/main";
 import Ideas from "@/components/Ideas.vue";
 import KeyResultDialog from "@/components/KeyResultDialog.vue";
+import ObjectiveDialog from "@/components/ObjectiveDialog.vue";
 
 export default {
   name: "Value",
@@ -20,6 +21,8 @@ export default {
       tab: "active",
       newObjDialog: false,
       newObj: {name: "", description: ""},
+      selectedObjective_index: -1,
+      selectedObjective: Object,
     }
   },
   methods: {
@@ -118,11 +121,17 @@ export default {
         console.error(body)
         alert(body)
       }
+    },
+    openObjectiveDialog(objective) {
+      this.selectedObjective = objective
+      app_state.objDialogToggle = true
     }
+
   },
   components: {
     Ideas,
     KeyResultDialog,
+    ObjectiveDialog,
   },
   mounted() {
     this.loadData()
@@ -170,17 +179,25 @@ export default {
 
     <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" />
 
+    <ObjectiveDialog :obj="selectedObjective" />
+
     <Ideas :valueId="app_state.value.id" />
 
     <v-card class="obj"
-            v-for="objective in filterObjectives(value.objectives, tab === 'active')" :key="objective.id"
+            v-for="(objective, index) in filterObjectives(value.objectives, tab === 'active')" :key="objective.id"
             :class="objective.state"
             width="300" elevation="3" shaped
+            @mouseover="selectedObjective_index = index"
+            @mouseleave="selectedObjective_index = -1"
     >
       <v-card-title>{{objective.name}}</v-card-title>
       <v-card-text>
         {{objective.description}}
       </v-card-text>
+      <v-icon icon="mdi-pencil-circle-outline" large
+              v-if="selectedObjective_index === index"
+              @click="openObjectiveDialog(objective)"/>
+
       <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
                    class="kr" :class="key_result.state"
                    @click="openKeyResult(key_result, objective.state)">
@@ -270,6 +287,11 @@ export default {
 .obj.achieved {
   display: inline-block;
   background: #84e184;
+}
+.obj > .v-icon {
+  position: absolute;
+  right: 0px;
+  top: 0px;
 }
 .krInfo {
   margin-top: 20px;

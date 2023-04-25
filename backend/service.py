@@ -106,3 +106,16 @@ class Service:
 
     def create_objective(self, name, description, value_id):
         return DatabaseManager().insert_objective(name, description, "active", value_id)
+
+
+    def update_objective(self, id, name, description):
+        DatabaseManager().update_objective(id, name, description)
+
+
+    def update_objective_state(self, id, state):
+        today = ""
+        if state != "active":
+            today = date.today().strftime("%d/%m/%Y")
+        DatabaseManager().update_objective_state(id, state, today)
+        return state, today
+

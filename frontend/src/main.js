@@ -13,6 +13,7 @@ export const app_state = reactive({
         this.value = null
     },
     krDialogToggle: false,
+    objDialogToggle: false,
 })
 
 // Vuetify
