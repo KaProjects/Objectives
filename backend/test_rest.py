@@ -452,12 +452,9 @@ class TestKeyResultsApi(unittest.TestCase):
 
 
     def test_update_key_result_state_invalid_state(self):
-        status, error, message = post_request("/keyresult/14/state", json.dumps("xxx"))
+        status, error, message = post_request("/keyresult/14/state", json.dumps("achieved"))
         self.assertEqual(status, 500, message)
         self.assertTrue("invalid key result state" in error, message)
-
-
-    # TODO test delete kr here when implemented
 
 
 class TestTasksApi(unittest.TestCase):
@@ -673,7 +670,7 @@ class TestObjectivesApi(unittest.TestCase):
         self.assertEqual(created_obj["description"], description, created_message)
         self.assertEqual(created_obj["value_id"], value_id, created_message)
         self.assertEqual(created_obj["state"], "active", created_message)
-        self.assertEqual(created_obj["date_created"], date.today().strftime("%d/%m/%Y"), created_message)
+        self.assertEqual(created_obj["date_created"], today(), created_message)
         self.assertEqual(created_obj["date_finished"], "", created_message)
 
         after_status, after_value, after_message = get_request("/value/4")
@@ -683,7 +680,7 @@ class TestObjectivesApi(unittest.TestCase):
         self.assertEqual(after_obj["description"], description, str(created_obj) + '\n' + str(after_obj))
         self.assertEqual(after_obj["value_id"], value_id, str(created_obj) + '\n' + str(after_obj))
         self.assertEqual(after_obj["state"], "active", str(created_obj) + '\n' + str(after_obj))
-        self.assertEqual(after_obj["date_created"], date.today().strftime("%d/%m/%Y"), str(created_obj) + '\n' + str(after_obj))
+        self.assertEqual(after_obj["date_created"], today(), str(created_obj) + '\n' + str(after_obj))
         self.assertEqual(after_obj["date_finished"], "", str(created_obj) + '\n' + str(after_obj))
         self.assertTrue(len(after_obj["key_results"]) == 0, str(created_obj) + '\n' + str(after_obj))
 
@@ -712,6 +709,156 @@ class TestObjectivesApi(unittest.TestCase):
         status, error, message = post_request("/objective", payload)
         self.assertEqual(status, 404, message)
         self.assertTrue("id '44' not found" in error, message)
+
+
+    def test_update_objective(self):
+        before_status, before_value, before_message = get_request("/value/4")
+        self.assertEqual(before_status, 200, before_message)
+        before_objective = next(obj for obj in before_value["objectives"] if obj["id"] == 8)
+
+        name = "new name"
+        description = "new desc"
+        payload = json.dumps({"name": name, "description": description})
+        status, response, message = put_request("/objective/8", payload)
+        self.assertEqual(status, 200, message)
+        self.assertEqual(response, "", message)
+
+        after_status, after_value, after_message = get_request("/value/4")
+        self.assertEqual(after_status, 200, after_message)
+        after_objective = next(obj for obj in after_value["objectives"] if obj["id"] == 8)
+
+        self.assertEqual(before_objective["id"], after_objective["id"], before_message + '\n' + after_message)
+        self.assertEqual(before_objective["value_id"], after_objective["value_id"], before_message + '\n' + after_message)
+        self.assertEqual(before_objective["state"], after_objective["state"], before_message + '\n' + after_message)
+        self.assertEqual(after_objective["name"], name, before_message + '\n' + after_message)
+        self.assertEqual(after_objective["description"], description, before_message + '\n' + after_message)
+        self.assertEqual(before_objective["date_created"], after_objective["date_created"], before_message + '\n' + after_message)
+        self.assertEqual(before_objective["date_finished"], after_objective["date_finished"], before_message + '\n' + after_message)
+
+
+    def test_update_objective_missing_value(self):
+        payload = json.dumps({"name": "new name"})
+        status, error, message = put_request("/objective/8", payload)
+        self.assertEqual(status, 500, message)
+        self.assertTrue("KeyError" in error, message)
+
+
+    def test_update_objective_null(self):
+        status, error, message = put_request("/objective/8", None)
+        self.assertEqual(status, 400, message)
+
+
+    def test_update_objective_null_name(self):
+        payload = json.dumps({"name": None, "description": "new desc"})
+        status, error, message = put_request("/objective/8", payload)
+        self.assertEqual(status, 500, message)
+        self.assertTrue("NOT NULL constraint" in error, message)
+
+
+    def test_update_objective_null_description(self):
+        payload = json.dumps({"name": "new name", "description": None})
+        status, error, message = put_request("/objective/8", payload)
+        self.assertEqual(status, 500, message)
+        self.assertTrue("NOT NULL constraint" in error, message)
+
+
+    def test_update_objective_nonexistent(self):
+        payload = json.dumps({"name": "new name", "description": "new desc"})
+        status, error, message = put_request("/objective/33", payload)
+        self.assertEqual(status, 404, message)
+        self.assertTrue("id '33' not found" in error, message)
+
+
+    def test_update_objective_invalid_id(self):
+        payload = json.dumps({"name": "new name", "description": "new desc"})
+        status, error, message = put_request("/objective/x", payload)
+        self.assertEqual(status, 500, message)
+        self.assertTrue("ValueError" in error, message)
+
+
+    def test_update_objective_no_id(self):
+        payload = json.dumps({"name": "new name", "description": "new desc"})
+        status, error, message = put_request("/objective", payload)
+        assertMethodNotAllowed(self, status, error, message)
+
+
+    def test_update_objective_state(self):
+        before_status, before_value, before_message = get_request("/value/4")
+        self.assertEqual(before_status, 200, before_message)
+        before_objective = next(obj for obj in before_value["objectives"] if obj["id"] == 8)
+
+        failed_status = "failed"
+        status, response, message = put_request("/objective/8/state", json.dumps(failed_status))
+        self.assertEqual(status, 200, message)
+        self.assertEqual(response["state"], failed_status, message)
+        self.assertEqual(response["date"], today(), message)
+
+        after_failed_status, after_failed_value, after_failed_message = get_request("/value/4")
+        self.assertEqual(after_failed_status, 200, after_failed_message)
+        after_failed_objective = next(obj for obj in after_failed_value["objectives"] if obj["id"] == 8)
+        self.assertEqual(failed_status, after_failed_objective["state"], before_message + '\n' + after_failed_message)
+        self.assertEqual(today(), after_failed_objective["date_finished"], before_message + '\n' + after_failed_message)
+
+        achieved_status = "achieved"
+        status, response, message = put_request("/objective/8/state", json.dumps(achieved_status))
+        self.assertEqual(status, 200, message)
+        self.assertEqual(response["state"], achieved_status, message)
+        self.assertEqual(response["date"], today(), message)
+
+        after_achieved_status, after_achieved_value, after_achieved_message = get_request("/value/4")
+        self.assertEqual(after_achieved_status, 200, after_achieved_message)
+        after_achieved_objective = next(obj for obj in after_achieved_value["objectives"] if obj["id"] == 8)
+        self.assertEqual(after_achieved_objective["state"], achieved_status, after_failed_message + '\n' + after_achieved_message)
+        self.assertEqual(after_achieved_objective["date_finished"], today(), after_failed_message + '\n' + after_achieved_message)
+
+        active_status = "active"
+        status, response, message = put_request("/objective/8/state", json.dumps(active_status))
+        self.assertEqual(status, 200, message)
+        self.assertEqual(response["state"], active_status, message)
+        self.assertEqual(response["date"], "", message)
+
+        after_active_status, after_active_value, after_active_message = get_request("/value/4")
+        self.assertEqual(after_active_status, 200, after_active_message)
+        after_active_objective = next(obj for obj in after_active_value["objectives"] if obj["id"] == 8)
+        self.assertEqual(after_active_objective["state"], active_status, after_achieved_message + '\n' + after_active_message)
+        self.assertEqual(after_active_objective["date_finished"], "", after_achieved_message + '\n' + after_active_message)
+
+        self.assertEqual(before_objective["id"], after_active_objective["id"], before_message + '\n' + after_active_message)
+        self.assertEqual(before_objective["value_id"], after_active_objective["value_id"], before_message + '\n' + after_active_message)
+        self.assertEqual(before_objective["name"], after_active_objective["name"], before_message + '\n' + after_active_message)
+        self.assertEqual(before_objective["description"], after_active_objective["description"], before_message + '\n' + after_active_message)
+        self.assertEqual(before_objective["date_created"], after_active_objective["date_created"], before_message + '\n' + after_active_message)
+
+
+    def test_update_objective_state_null(self):
+        status, error, message = put_request("/objective/8/state", None)
+        self.assertEqual(status, 400, message)
+        self.assertTrue("Bad Request" in error, message)
+
+
+    def test_update_objective_state_null_state(self):
+        status, error, message = put_request("/objective/8/state", json.dumps(None))
+        self.assertEqual(status, 500, message)
+        self.assertTrue("invalid objective state" in error, message)
+
+
+    def test_update_objective_state_nonexistent(self):
+        status, error, message = put_request("/objective/33/state", json.dumps("failed"))
+        self.assertEqual(status, 404, message)
+        self.assertTrue("id '33' not found" in error, message)
+
+
+    def test_update_objective_state_invalid_id(self):
+        status, error, message = put_request("/objective/x/state", json.dumps("failed"))
+        self.assertEqual(status, 500, message)
+        self.assertTrue("ValueError" in error, message)
+
+
+    def test_update_objective_state_invalid_state(self):
+        status, error, message = put_request("/objective/8/state", json.dumps("completed"))
+        self.assertEqual(status, 500, message)
+        self.assertTrue("invalid objective state" in error, message)
+
 
 # NOTE: not testing external firebase db here&now
 # class TestFirebase(unittest.TestCase):
