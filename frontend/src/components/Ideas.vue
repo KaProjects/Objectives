@@ -18,15 +18,15 @@ export default {
   },
   methods: {
     async loadData() {
-      const response = await backend_fetch("/value/" + this.valueId + "/ideas")
-      if (response.ok){
-        this.ideas = await response.json()
-        this.loading = false
-      } else {
-        const body = await response.text()
-        console.error(body)
-        // alert(body)
-      }
+      await backend_fetch("/value/" + this.valueId + "/ideas")
+        .then(async response => {
+          if (response.ok){
+            this.ideas = await response.json()
+            this.loading = false
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
     },
     async addIdea() {
       const requestOptions = {
@@ -34,16 +34,21 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({value_id: this.valueId, idea: this.newIdea})
       }
-      const response = await backend_fetch("/idea", requestOptions);
-      const body = await response.json();
-      if (response.ok){
-        this.ideas.push({id: body.new_id, value: body.idea})
-        this.newIdeaDialog = false
-        this.newIdea = ""
-      } else {
-        console.error(body)
-        alert(body)
-      }
+      await backend_fetch("/idea", requestOptions)
+        .then(async response => {
+          if (response.ok){
+            const body = await response.json()
+            this.ideas.push({id: body.new_id, value: body.idea})
+            this.newIdeaDialog = false
+            this.newIdea = ""
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
+    },
+    handleFetchError(error){
+      console.error(error)
+      alert(error)
     },
     async deleteIdea(idea, index){
       const requestOptions = {
@@ -51,15 +56,15 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({value_id: this.valueId, idea_id: idea.id})
       }
-      const response = await backend_fetch("/idea", requestOptions);
-      const body = await response.json();
-      if (response.ok){
-        this.ideas.splice(this.ideas.indexOf(idea), 1);
-        this.confirmDeletionDialogs[index] = false
-      } else {
-        console.error(body)
-        alert(body)
-      }
+      await backend_fetch("/idea", requestOptions)
+        .then(async response => {
+          if (response.ok){
+            this.ideas.splice(this.ideas.indexOf(idea), 1);
+            this.confirmDeletionDialogs[index] = false
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
     },
   },
   mounted() {

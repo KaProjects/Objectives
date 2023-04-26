@@ -27,17 +27,17 @@ export default {
   },
   methods: {
     async loadData() {
-      const response = await backend_fetch("/value/" + app_state.value.id)
-      const body = await response.json()
-      if (response.ok){
-        this.value = body
-        for (let i = 0; i < this.value.objectives.length; i++) {
-          this.newKrDialogs[i] = false
-        }
-      } else {
-        console.error(body)
-        alert(body)
-      }
+      await backend_fetch("/value/" + app_state.value.id)
+        .then(async response => {
+          if (response.ok){
+            this.value = await response.json()
+            for (let i = 0; i < this.value.objectives.length; i++) {
+              this.newKrDialogs[i] = false
+            }
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
     },
     async addKeyResult(objective) {
       const requestOptions = {
@@ -45,29 +45,34 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({name: this.newKr.name, description: this.newKr.description, objective_id: objective.id})
       }
-      const response = await backend_fetch("/keyresult", requestOptions)
-      const body = await response.json()
-      if (response.ok){
-        objective.key_results.push(body)
-        this.newKrDialogs[objective.id] = false
-        this.newKr = {name: "", description: ""}
-      } else {
-        console.error(body)
-        alert(body)
-      }
+      await backend_fetch("/keyresult", requestOptions)
+        .then(async response => {
+          if (response.ok){
+            const body = await response.json()
+            objective.key_results.push(body)
+            this.newKrDialogs[objective.id] = false
+            this.newKr = {name: "", description: ""}
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
+    },
+    handleFetchError(error){
+      console.error(error)
+      alert(error)
     },
     async openKeyResult(kr, obj_state) {
-      const response = await backend_fetch("/keyresult/" + kr.id);
-      const body = await response.json()
-      if (response.ok){
-        this.selectedKr = body
-        this.selectedKr_parent = kr
-        this.selectedKr_parent.obj_state = obj_state
-        app_state.krDialogToggle = true
-      } else {
-        console.error(body)
-        alert(body)
-      }
+      await backend_fetch("/keyresult/" + kr.id)
+        .then(async response => {
+          if (response.ok){
+            this.selectedKr = await response.json()
+            this.selectedKr_parent = kr
+            this.selectedKr_parent.obj_state = obj_state
+            app_state.krDialogToggle = true
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
     },
     compareDates(a, b){
       let dateA = a.split("/")
@@ -111,16 +116,17 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({name: this.newObj.name, description: this.newObj.description, value_id: this.value.id})
       }
-      const response = await backend_fetch("/objective", requestOptions)
-      const body = await response.json()
-      if (response.ok){
-        this.value.objectives.push(body)
-        this.newObjDialog = false
-        this.newObj = {name: "", description: ""}
-      } else {
-        console.error(body)
-        alert(body)
-      }
+      await backend_fetch("/objective", requestOptions)
+        .then(async response => {
+          if (response.ok){
+            const body = await response.json()
+            this.value.objectives.push(body)
+            this.newObjDialog = false
+            this.newObj = {name: "", description: ""}
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
     },
     openObjectiveDialog(objective) {
       this.selectedObjective = objective

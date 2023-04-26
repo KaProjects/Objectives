@@ -13,14 +13,18 @@ export default {
   },
   methods: {
     async loadData() {
-      const response = await backend_fetch("/values");
-      const body = await response.json();
-      if (response.ok){
-        this.values = body
-      } else {
-        console.error(body)
-        alert(body)
-      }
+      await backend_fetch("/values")
+        .then(async response => {
+          if (response.ok) {
+            this.values = await response.json()
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
+    },
+    handleFetchError(error){
+      console.error(error)
+      alert(error)
     },
     addValue() {
       alert('add value')

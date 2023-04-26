@@ -106,15 +106,18 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
       }
-      const response = await backend_fetch("/task/" + this.kr.tasks[index].id, requestOptions)
-      const body = await response.json();
-      if (response.ok){
-        this.kr.tasks[index].value = body.value
-        await this.retrieveKeyResultReviewDate()
-      } else {
-        console.error(body)
-        alert(body)
-      }
+      await backend_fetch("/task/" + this.kr.tasks[index].id, requestOptions)
+        .then(async response => {
+          if (response.ok){
+            const body = await response.json();
+            this.kr.tasks[index].value = body.value
+            await this.retrieveKeyResultReviewDate()
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
+
+
 
       this.stopEditing()
     },
@@ -133,18 +136,22 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
       }
-      const response = await backend_fetch("/task", requestOptions)
-      const body = await response.json();
-      if (response.ok){
-        this.kr.tasks.push(body)
-        this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count + 1
-        await this.retrieveKeyResultReviewDate()
-      } else {
-        console.error(body)
-        alert(body)
-      }
+      await backend_fetch("/task", requestOptions)
+        .then(async response => {
+          if (response.ok){
+            this.kr.tasks.push(await response.json())
+            this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count + 1
+            await this.retrieveKeyResultReviewDate()
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
 
       this.editing[7] = false
+    },
+    handleFetchError(error){
+      console.error(error)
+      alert(error)
     },
     async updateTaskState(index, state){
       const task = {kr_id: this.kr.id, value: this.kr.tasks[index].value, state: state}
@@ -154,47 +161,51 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
       }
-      const response = await backend_fetch("/task/" + this.kr.tasks[index].id, requestOptions)
-      const body = await response.json();
-      if (response.ok){
-        if (this.kr.tasks[index].state === 'finished' && body.state !== 'finished'){
-          this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count - 1
-        }
-        if (this.kr.tasks[index].state !== 'finished' && body.state === 'finished'){
-          this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count + 1
-        }
-        this.kr.tasks[index].state = body.state
-        await this.retrieveKeyResultReviewDate()
-      } else {
-        console.error(body)
-        alert(body)
-      }
+      await backend_fetch("/task/" + this.kr.tasks[index].id, requestOptions)
+        .then(async response => {
+          if (response.ok){
+            const body = await response.json();
+            if (this.kr.tasks[index].state === 'finished' && body.state !== 'finished'){
+              this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count - 1
+            }
+            if (this.kr.tasks[index].state !== 'finished' && body.state === 'finished'){
+              this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count + 1
+            }
+            this.kr.tasks[index].state = body.state
+            await this.retrieveKeyResultReviewDate()
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
     },
     async deleteTask(task, index){
-      const response = await backend_fetch("/task/" + task.id, {method: "DELETE"})
-      if (response.ok) {
-        this.kr.tasks.splice(this.kr.tasks.indexOf(task), 1);
-        this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count - 1
-        if (task.state === 'finished') {
-          this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count - 1
-        }
-        await this.retrieveKeyResultReviewDate()
-      } else {
-        alert(response.status);
-      }
+      await backend_fetch("/task/" + task.id, {method: "DELETE"})
+        .then(async response => {
+          if (response.ok) {
+            this.kr.tasks.splice(this.kr.tasks.indexOf(task), 1);
+            this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count - 1
+            if (task.state === 'finished') {
+              this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count - 1
+            }
+            await this.retrieveKeyResultReviewDate()
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
 
       this.confirmDeletionDialogs[index] = false
     },
     async retrieveKeyResultReviewDate(){
-      const response = await backend_fetch("/keyresult/" + this.kr.id)
-      const body = await response.json();
-      if (response.ok){
-        this.kr.date_reviewed = body.date_reviewed
-        this.kr_parent.date_reviewed = this.kr.date_reviewed
-      } else {
-        console.error(body)
-        alert(body)
-      }
+      await backend_fetch("/keyresult/" + this.kr.id)
+        .then(async response => {
+          if (response.ok){
+            const body = await response.json();
+            this.kr.date_reviewed = body.date_reviewed
+            this.kr_parent.date_reviewed = this.kr.date_reviewed
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
     },
     async updateKeyResultState(index){
       let state = null
@@ -212,18 +223,18 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(state)
       }
-      const response = await backend_fetch("/keyresult/" + this.kr.id + "/state", requestOptions)
-      const body = await response.text();
-      if (response.ok){
-        this.kr.state = body
-        this.kr_parent.state = this.kr.state
-
-        await this.retrieveKeyResultReviewDate()
-        this.confirmStateDialogs[index] = false
-      } else {
-        console.error(body)
-        alert(body)
-      }
+      await backend_fetch("/keyresult/" + this.kr.id + "/state", requestOptions)
+        .then(async response => {
+          const body = await response.text();
+          if (response.ok){
+            this.kr.state = body
+            this.kr_parent.state = body
+            await this.retrieveKeyResultReviewDate()
+            this.confirmStateDialogs[index] = false
+          } else {
+            this.handleFetchError(body)
+          }})
+        .catch(error => this.handleFetchError(error))
     }
   },
 }

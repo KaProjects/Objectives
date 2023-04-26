@@ -58,11 +58,13 @@ export default {
         .catch(error => this.handleUpdateObjectiveError(error))
     },
     handleUpdateObjectiveError(error){
-      console.error(error)
-      alert(error)
-
+      this.handleFetchError(error)
       this.values[0] = this.obj.name
       this.values[1] = this.obj.description
+    },
+    handleFetchError(error){
+      console.error(error)
+      alert(error)
     },
     closeDialog(){
       this.stopEditing()
@@ -93,17 +95,11 @@ export default {
             const body = await response.json();
             this.obj.state = body.state
             this.obj.date_finished = body.date
-
             this.confirmStateDialogs[index] = false
           } else {
-            const error = await response.text();
-            console.error(error)
-            alert(error)
+            this.handleFetchError(await response.text())
           }})
-        .catch(error => {
-          console.error(error)
-          alert(error)
-        })
+        .catch(error => this.handleFetchError(error))
     },
   }
 }
