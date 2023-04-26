@@ -43,7 +43,7 @@ export default {
       kr.t = this.values[6]
 
       const requestOptions = {
-        method: "POST",
+        method: "PUT",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(kr)
       }
@@ -208,7 +208,7 @@ export default {
       }
 
       const requestOptions = {
-        method: "POST",
+        method: "PUT",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(state)
       }

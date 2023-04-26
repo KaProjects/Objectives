@@ -110,7 +110,7 @@ def create_key_result():
         return create_exception_response(e)
 
 
-@rest.route('/keyresult/<id>', methods=['POST'])
+@rest.route('/keyresult/<id>', methods=['PUT'])
 def update_key_result(id: str):
     data: dict = request.json
     try:
@@ -123,7 +123,7 @@ def update_key_result(id: str):
         return create_exception_response(e)
 
 
-@rest.route('/keyresult/<id>/review', methods=['POST'])
+@rest.route('/keyresult/<id>/review', methods=['PUT'])
 def review_key_result(id: str):
     try:
         if not Service().check_key_result_exist(id):
@@ -135,7 +135,7 @@ def review_key_result(id: str):
         return create_exception_response(e)
 
 
-@rest.route('/keyresult/<id>/state', methods=['POST'])
+@rest.route('/keyresult/<id>/state', methods=['PUT'])
 def update_key_result_state(id: str):
     state = request.json
     try:
