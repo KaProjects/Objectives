@@ -6,7 +6,9 @@ create table if not exists Objectives ( id INTEGER PRIMARY KEY,
                                         value_id INTEGER references PValues( id ) not null,
                                         state text not null,
                                         name text not null,
-                                        description text not null);
+                                        description text not null,
+                                        date_created text not null,
+                                        date_finished text not null);
 
 create table if not exists KeyResults ( id INTEGER PRIMARY KEY,
                                         objective_id INTEGER references Objectives( id ) not null,

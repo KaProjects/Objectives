@@ -673,6 +673,8 @@ class TestObjectivesApi(unittest.TestCase):
         self.assertEqual(created_obj["description"], description, created_message)
         self.assertEqual(created_obj["value_id"], value_id, created_message)
         self.assertEqual(created_obj["state"], "active", created_message)
+        self.assertEqual(created_obj["date_created"], date.today().strftime("%d/%m/%Y"), created_message)
+        self.assertEqual(created_obj["date_finished"], "", created_message)
 
         after_status, after_value, after_message = get_request("/value/4")
         self.assertEqual(after_status, 200, after_message)
@@ -681,6 +683,8 @@ class TestObjectivesApi(unittest.TestCase):
         self.assertEqual(after_obj["description"], description, str(created_obj) + '\n' + str(after_obj))
         self.assertEqual(after_obj["value_id"], value_id, str(created_obj) + '\n' + str(after_obj))
         self.assertEqual(after_obj["state"], "active", str(created_obj) + '\n' + str(after_obj))
+        self.assertEqual(after_obj["date_created"], date.today().strftime("%d/%m/%Y"), str(created_obj) + '\n' + str(after_obj))
+        self.assertEqual(after_obj["date_finished"], "", str(created_obj) + '\n' + str(after_obj))
         self.assertTrue(len(after_obj["key_results"]) == 0, str(created_obj) + '\n' + str(after_obj))
 
 

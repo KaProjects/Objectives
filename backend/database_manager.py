@@ -117,9 +117,9 @@ class DatabaseManager:
         return self.conn.execute('select count(1) from ' + table + ' where id=?', (int(id),)).fetchone()[0];
 
 
-    def insert_objective(self, name, description, state, value_id) -> int:
-        id = self.conn.execute("insert into Objectives(name, description, state, value_id) values (?,?,?,?)",
-                               (name, description, state, value_id)).lastrowid
+    def insert_objective(self, name, description, state, value_id, date_created) -> int:
+        id = self.conn.execute("insert into Objectives(name, description, state, value_id, date_created, date_finished) values (?,?,?,?,?,?)",
+                               (name, description, state, value_id, date_created, "")).lastrowid
         self.conn.commit()
         return id
 
@@ -130,6 +130,5 @@ class DatabaseManager:
 
 
     def update_objective_state(self, id, state, date):
-        #         self.conn.execute('update Objectives set state=?,date_finished=? where id=?', (state, date, int(id)))
-        self.conn.execute('update Objectives set state=? where id=?', (state, int(id)))
+        self.conn.execute('update Objectives set state=?,date_finished=? where id=?', (state, date, int(id)))
         self.conn.commit()

@@ -7,17 +7,17 @@ insert into PValues(id, name, description) values (6, "Vztahy", "provides you wi
 insert into PValues(id, name, description) values (7, "Sebarozvoj", "need to get started.");
 
 
-insert into Objectives(id, value_id, state, name, description) values (1, 1, "achieved", "nefajcit", "some description");
-insert into Objectives(id, value_id, state, name, description) values (2, 1, "active", "zdravy chrbat", "some other description");
-insert into Objectives(id, value_id, state, name, description) values (3, 1, "failed", "dychanie", "third description");
-insert into Objectives(id, value_id, state, name, description) values (4, 2, "achieved", "bc. na ESF", "ukoncit uspesne Podnikove Hospodarstvo a Management na ESF MU");
-insert into Objectives(id, value_id, state, name, description) values (5, 2, "failed", "Mgr. na FI", "ukoncit uspesne SSME na FI MU");
-insert into Objectives(id, value_id, state, name, description) values (6, 4, "active", "bmw", "namakane");
-insert into Objectives(id, value_id, state, name, description) values (7, 1, "active", "xxx", "xxx xxx xxx");
-insert into Objectives(id, value_id, state, name, description) values (8, 1, "active", "xxx", "xxx xxx xxx");
-insert into Objectives(id, value_id, state, name, description) values (9, 1, "active", "xxx", "xxx xxx xxx");
-insert into Objectives(id, value_id, state, name, description) values (10, 1, "active", "xxx", "xxx xxx xxx");
-insert into Objectives(id, value_id, state, name, description) values (11, 3, "active", "xxx", "xxx xxx xxx");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (1, 1, "achieved", "nefajcit", "some description","10/03/2023", "15/03/2023");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (2, 1, "active", "zdravy chrbat", "some other description", "10/03/2023","");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (3, 1, "failed", "dychanie", "third description","10/03/2023", "10/04/2023");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (4, 2, "achieved", "bc. na ESF", "ukoncit uspesne Podnikove Hospodarstvo a Management na ESF MU", "20/09/2012", "15/01/2019");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (5, 2, "failed", "Mgr. na FI", "ukoncit uspesne SSME na FI MU", "20/09/2019", "10/09/2021");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (6, 4, "active", "bmw", "namakane", "10/03/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (7, 1, "active", "xxx", "xxx xxx xxx", "10/03/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (8, 1, "active", "xxx", "xxx xxx xxx", "10/03/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (9, 1, "active", "xxx", "xxx xxx xxx", "10/03/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (10, 1, "active", "xxx", "xxx xxx xxx", "10/03/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (11, 3, "active", "xxx", "xxx xxx xxx", "10/03/2023", "");
 
 
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (1, 4, "completed", "semester podzim17", "", "", "", "", "", "", "", "");

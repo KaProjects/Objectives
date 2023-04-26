@@ -48,6 +48,8 @@ class Objective:
         self.state: str = attributes[2]
         self.name: str = attributes[3]
         self.description: str = attributes[4]
+        self.date_created: str = attributes[5]
+        self.date_finished: str = attributes[6]
 
     def set_key_results(self, key_results: list[KeyResult]):
         self.key_results: list[KeyResult] = key_results

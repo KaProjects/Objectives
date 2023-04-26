@@ -3,13 +3,14 @@ insert into PValues(id, name, description) values (2, "Second", "ha");
 insert into PValues(id, name, description) values (3, "Third", "with objectives");
 insert into PValues(id, name, description) values (4, "Modifable", "x");
 
-insert into Objectives(id, value_id, state, name, description) values (1, 3, "achieved", "obj1", "some description");
-insert into Objectives(id, value_id, state, name, description) values (2, 3, "active", "obj2", "some other description");
-insert into Objectives(id, value_id, state, name, description) values (3, 3, "failed", "obj3", "third description");
-insert into Objectives(id, value_id, state, name, description) values (4, 4, "active", "Add More", "test kr inserts");
-insert into Objectives(id, value_id, state, name, description) values (5, 4, "active", "To Clear", "test kr deletions");
-insert into Objectives(id, value_id, state, name, description) values (6, 4, "active", "Needs Tasks", "test task add/del");
-insert into Objectives(id, value_id, state, name, description) values (7, 4, "active", "Updatable", "for updates");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (1, 3, "achieved", "obj1", "some description", "10/03/2023", "12/03/2023");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (2, 3, "active", "obj2", "some other description", "10/03/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (3, 3, "failed", "obj3", "third description", "10/04/2023", "12/04/2023");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (4, 4, "active", "Add More", "test kr inserts", "10/03/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (5, 4, "active", "To Clear", "test kr deletions", "10/03/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (6, 4, "active", "Needs Tasks", "test task add/del", "10/03/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (7, 4, "active", "Updatable", "for updates", "10/03/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (8, 4, "active", "Finishable", "for state changes", "10/03/2023", "");
 
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (1, 1, "completed", "x", "xx", "s", "m", "a", "r", "t", "10/03/2023", "11/03/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (2, 2, "completed", "aaa with description", "description is here", "s", "m", "a", "r", "t", "10/03/2023", "10/03/2023");
@@ -25,6 +26,7 @@ insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (12, 7, "active", "name", "description", "", "", "x", "", "", "10/03/2023", "12/03/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (13, 7, "active", "review", "d", "", "y", "x", "z", "w", "10/03/2023", "12/03/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (14, 7, "active", "state", "x", "2", "3", "4", "5", "6", "10/03/2023", "12/03/2023");
+insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (15, 8, "completed", "state", "d", "a", "a", "a", "a", "6", "10/03/2023", "12/03/2023");
 
 insert into Tasks(id, kr_id, state, value) values (1, 3, "failed", "task1");
 insert into Tasks(id, kr_id, state, value) values (2, 4, "active", "task2.0");

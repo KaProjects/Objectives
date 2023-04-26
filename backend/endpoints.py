@@ -208,10 +208,12 @@ def create_objective():
         if not Service().check_value_exist(value_id):
             return create_response("value with id '" + str(value_id) + "' not found", 404)
 
-        new_id = Service().create_objective(name, description, value_id)
+        new_id, date_created = Service().create_objective(name, description, value_id)
         data["id"] = new_id
         data["state"] = "active"
         data["key_results"] = []
+        data["date_created"] = date_created
+        data["date_finished"] = ""
         return create_response(data, 200)
     except Exception as e:
         return create_exception_response(e)
