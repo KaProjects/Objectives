@@ -1,2 +1,4 @@
 cert.json filter=git-crypt diff=git-crypt
 envs.json filter=git-crypt diff=git-crypt
+
+build_deploy.sh filter=git-crypt diff=git-crypt

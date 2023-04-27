@@ -41,4 +41,4 @@ if __name__ == '__main__':
         raise Exception("usage: python3 app.py test/dev/prod")
 
     firebase_manager.init_firebase()
-    api.run(port=port, debug=debug)
+    api.run(port=port, debug=debug, host="0.0.0.0")
