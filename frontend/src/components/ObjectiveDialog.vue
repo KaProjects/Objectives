@@ -96,6 +96,8 @@ export default {
             this.obj.state = body.state
             this.obj.date_finished = body.date
             this.confirmStateDialogs[index] = false
+            this.closeDialog()
+            this.$emit('selectTab', body.state)
           } else {
             this.handleFetchError(await response.text())
           }})

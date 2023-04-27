@@ -123,6 +123,7 @@ export default {
             this.value.objectives.push(body)
             this.newObjDialog = false
             this.newObj = {name: "", description: ""}
+            this.tab = "active"
           } else {
             this.handleFetchError(await response.text())
           }})
@@ -131,8 +132,14 @@ export default {
     openObjectiveDialog(objective) {
       this.selectedObjective = objective
       app_state.objDialogToggle = true
+    },
+    selectTab(state) {
+      if (state === "active") {
+        this.tab = "active"
+      } else {
+        this.tab = "inactive"
+      }
     }
-
   },
   components: {
     Ideas,
@@ -185,7 +192,7 @@ export default {
 
     <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" />
 
-    <ObjectiveDialog :obj="selectedObjective" />
+    <ObjectiveDialog :obj="selectedObjective" v-on:selectTab="selectTab" />
 
     <Ideas :valueId="app_state.value.id" />
 
