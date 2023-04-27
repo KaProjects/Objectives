@@ -106,9 +106,16 @@ export default {
         }
       }
     },
+    compareObjectives(a, b) {
+      if (a.state !== "active" &&  b.state !== "active") {
+        return - this.compareDates(a.date_finished, b.date_finished)
+      } else {
+        return - this.compareDates(a.date_created, b.date_created)
+      }
+    },
     filterObjectives(objs, isActive){
       if (typeof objs === "undefined") return objs;
-      return objs.filter(obj => isActive ? obj.state === 'active' : obj.state !== 'active');
+      return objs.filter(obj => isActive ? obj.state === 'active' : obj.state !== 'active').slice().sort(this.compareObjectives);
     },
     async addObjective(){
       const requestOptions = {
@@ -265,9 +272,7 @@ export default {
 
 <style scoped>
 .kr {
-  border: #2c3e50;
-  border-style: solid;
-  border-width: 1px;
+  border: 1px solid #2c3e50;
 }
 .kr:hover {
   border-width: 2px;
@@ -300,6 +305,12 @@ export default {
 .obj.achieved {
   display: inline-block;
   background: #84e184;
+}
+.obj.failed > .kr {
+  color: #262626;
+}
+.obj.achieved > .kr {
+  color: #262626;
 }
 .obj > .v-icon {
   position: absolute;

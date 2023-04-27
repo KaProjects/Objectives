@@ -12,7 +12,7 @@ CORS(rest, resources={r"/*": {"origins": "http://localhost:*"}})
 
 
 def create_response(response, status):
-    if (type(response) is str):
+    if type(response) is str:
         return Response(response=response, status=status, mimetype="text/plain")
     else:
         json_response = json.dumps(response) if type(response) is dict else json.dumps(response, cls=JsonEncoder)
