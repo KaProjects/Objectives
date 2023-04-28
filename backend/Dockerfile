@@ -7,4 +7,4 @@ RUN pip install --user flask
 RUN pip install --user flask_cors
 RUN pip install --user firebase-admin==4.5.2
 
-CMD ["python3","-u","app.py", "prod"]
+CMD ["python3","-u","app.py", "dev"]
