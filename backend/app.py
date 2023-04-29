@@ -38,7 +38,7 @@ if __name__ == '__main__':
         raise Exception("usage: python3 app.py test/dev/prod")
 
     firebase_manager.init_firebase()
-    api = Flask(__name__)
+    app = Flask(__name__)
     CORS(rest, resources={r"/*": {"origins": origins}})
-    api.register_blueprint(rest)
-    api.run(port=port, debug=debug, host="0.0.0.0")
+    app.register_blueprint(rest)
+    app.run(port=port, debug=debug, host="0.0.0.0")
