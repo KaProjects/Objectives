@@ -1,6 +1,8 @@
-cert.json filter=git-crypt diff=git-crypt
-envs.json filter=git-crypt diff=git-crypt
+envs_firebase_sa.json filter=git-crypt diff=git-crypt
+envs_firebase_db.json filter=git-crypt diff=git-crypt
+envs_prod_db.json filter=git-crypt diff=git-crypt
 
 build_deploy.sh filter=git-crypt diff=git-crypt
 
-prod_db.json filter=git-crypt diff=git-crypt
+data_dev.sql filter=git-crypt diff=git-crypt
+data_prod.sql filter=git-crypt diff=git-crypt

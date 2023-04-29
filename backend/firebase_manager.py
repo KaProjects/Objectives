@@ -9,12 +9,12 @@ from classes import Idea
 
 """
 expects files:
-    cert.json
-    envs.json
+    envs_firebase_sa.json
+    envs_firebase_db.json
 """
 def init_firebase():
-    cred = credentials.Certificate('cert.json')
-    with open("envs.json") as envs_file:
+    cred = credentials.Certificate('envs_firebase_sa.json')
+    with open("envs_firebase_db.json") as envs_file:
         envs = json.load(envs_file)
     firebase_admin.initialize_app(cred, envs)
 

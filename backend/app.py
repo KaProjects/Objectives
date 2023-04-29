@@ -22,13 +22,13 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'dev':
         database_manager.datasource = database_manager.DataSource.DEVEL
         database_manager.DatabaseManager()\
-            .execute_scripts(["drop_tables.sql", "create_tables.sql", "devel_data.sql"])
+            .execute_scripts(["drop_tables.sql", "create_tables.sql", "data_dev.sql"])
         port = 7702
         debug = True
     elif sys.argv[1] == 'test':
         database_manager.datasource = database_manager.DataSource.TEST
         database_manager.DatabaseManager()\
-            .execute_scripts(["drop_tables.sql", "create_tables.sql", "test_data.sql"])
+            .execute_scripts(["drop_tables.sql", "create_tables.sql", "data_test.sql"])
         port = 7890
         debug = True
         # firebase_manager.mock_firebase()
