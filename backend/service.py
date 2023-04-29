@@ -1,8 +1,8 @@
 from datetime import date
 
+import firebase_manager
 from classes import Value, Idea
 from database_manager import DatabaseManager
-import firebase_manager
 
 
 class Service:

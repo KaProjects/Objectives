@@ -1,7 +1,8 @@
+import json
+
 import firebase_admin
 from firebase_admin import credentials, db
 
-import json
 from classes import Idea
 
 # is_mocked = False

@@ -1,15 +1,12 @@
 import json
 
 from flask import request, Blueprint, Response
-from flask_cors import CORS
 
 from classes import JsonEncoder
 from service import Service
 
 rest = Blueprint('rest', __name__, template_folder='templates')
 
-CORS(rest, resources={r"/*": {"origins": "http://*:*"}})
-# TODO CORS(rest, resources={r"/*": {"origins": "${FRONTEND_ORIGIN}"}})
 
 def create_response(response, status):
     if type(response) is str:
