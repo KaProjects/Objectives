@@ -92,25 +92,37 @@ export default {
       }
     },
     compareKeyResults(a, b) {
+      let comparison
       if (a.state === "active") {
         if (b.state === "completed" || b.state === "failed"){
-          return -1
+          comparison = -1
         } else { // both active
-          return this.compareDates(a.date_reviewed, b.date_reviewed)
+          comparison = this.compareDates(a.date_reviewed, b.date_reviewed)
         }
       } else {
         if (b.state === "active") {
-          return 1
+          comparison = 1
         } else { // both inactive
-          return -1 * this.compareDates(a.date_reviewed, b.date_reviewed)
+          comparison = -1 * this.compareDates(a.date_reviewed, b.date_reviewed)
         }
+      }
+      if (comparison !== 0) {
+        return comparison
+      } else {
+        return b.id - a.id
       }
     },
     compareObjectives(a, b) {
+      let comparison
       if (a.state !== "active" &&  b.state !== "active") {
-        return - this.compareDates(a.date_finished, b.date_finished)
+        comparison = - this.compareDates(a.date_finished, b.date_finished)
       } else {
-        return - this.compareDates(a.date_created, b.date_created)
+        comparison = - this.compareDates(a.date_created, b.date_created)
+      }
+      if (comparison !== 0) {
+        return comparison
+      } else {
+        return b.id - a.id
       }
     },
     filterObjectives(objs, isActive){
