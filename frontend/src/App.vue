@@ -3,7 +3,7 @@ import Value from "@/components/Value.vue";
 import { app_state } from './main.js'
 </script>
 <script>
-import {properties} from "@/properties";
+import {backend_fetch} from "@/properties";
 
 export default {
   data() {
@@ -13,8 +13,18 @@ export default {
   },
   methods: {
     async loadData() {
-      const res = await fetch("http://" + properties.host + ":" + properties.port + "/value/list");
-      this.values = await res.json();
+      await backend_fetch("/values")
+        .then(async response => {
+          if (response.ok) {
+            this.values = await response.json()
+          } else {
+            this.handleFetchError(await response.text())
+          }})
+        .catch(error => this.handleFetchError(error))
+    },
+    handleFetchError(error){
+      console.error(error)
+      alert(error)
     },
     addValue() {
       alert('add value')

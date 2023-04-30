@@ -1,35 +1,44 @@
-import json
+import os
+import sys
 
 from flask import Flask
 from flask_cors import CORS
 
-from database_manager import executescript, DatabaseManager
+import database_manager
+import firebase_manager
 from endpoints import rest
 
-import firebase_admin
-from firebase_admin import credentials, db
-
-api = Flask(__name__)
-api.register_blueprint(rest)
-
-# cors = CORS(api, resources={r"/*": {"origins": "localhost:*"}})
-
-
-"""
-expects files:
-    cert.json
-    envs.json
-"""
-def init_firebase():
-    cred = credentials.Certificate('cert.json')
-    with open("envs.json") as envs_file:
-        envs = json.load(envs_file)
-    firebase_admin.initialize_app(cred, envs)
-
-
 if __name__ == '__main__':
-    executescript("drop_tables.sql")
-    executescript("create_tables.sql")
-    executescript("test_data.sql")
-    init_firebase()
-    api.run(port=7702, debug=True)
+
+    if len(sys.argv) != 2:
+        raise Exception("usage: python3 app.py test/dev/prod")
+    elif sys.argv[1] == 'prod':
+        database_manager.datasource = database_manager.DataSource.PRODUCTION
+        port = 7777
+        debug = False
+        if os.getenv('ORIGIN') is None:
+            raise Exception("using prod option without ORIGIN set")
+        origins = os.getenv('ORIGIN')
+    elif sys.argv[1] == 'dev':
+        database_manager.datasource = database_manager.DataSource.DEVEL
+        database_manager.DatabaseManager()\
+            .execute_scripts(["drop_tables.sql", "create_tables.sql", "data_dev.sql"])
+        port = 7702
+        debug = True
+        origins = "http://localhost:5173"
+    elif sys.argv[1] == 'test':
+        database_manager.datasource = database_manager.DataSource.TEST
+        database_manager.DatabaseManager()\
+            .execute_scripts(["drop_tables.sql", "create_tables.sql", "data_test.sql"])
+        port = 7890
+        debug = True
+        origins = "http://*:*"
+        # firebase_manager.mock_firebase()
+    else:
+        raise Exception("usage: python3 app.py test/dev/prod")
+
+    firebase_manager.init_firebase()
+    app = Flask(__name__)
+    CORS(rest, resources={r"/*": {"origins": origins}})
+    app.register_blueprint(rest)
+    app.run(port=port, debug=debug, host="0.0.0.0")

@@ -1,1 +1,3 @@
 src/properties.js filter=git-crypt diff=git-crypt
+
+build_deploy.sh filter=git-crypt diff=git-crypt
