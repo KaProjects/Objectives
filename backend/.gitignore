@@ -1,3 +1,2 @@
-test_data.sql
-test.db
+*.db
 .idea
