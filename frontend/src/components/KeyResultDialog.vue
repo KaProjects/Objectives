@@ -86,7 +86,7 @@ export default {
       this.values[6] = this.kr.t
     },
     startEditing(index){
-      if (this.kr.state === 'active') {
+      if (this.kr.state === 'active' && this.kr_parent.obj_state === 'active') {
         this.stopEditing()
         this.editingValue = this.values[index]
         this.editing[index] = true
@@ -98,7 +98,7 @@ export default {
       this.updateKeyResult()
     },
     startEditingTask(index){
-      if (this.kr.state === 'active') {
+      if (this.kr.state === 'active' && this.kr_parent.obj_state === 'active') {
         this.stopEditing()
         this.editingValue = this.kr.tasks[index].value
         this.editing[8][index] = true
@@ -285,7 +285,7 @@ export default {
                       hint="The goal should have a clear, highly-specific endpoint. If your goal is too vague, it won’t be SMART."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(2)">
+      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active'" class="smart" @click="startEditing(2)">
         Specific: {{kr.s}}
       </div>
 
@@ -296,7 +296,7 @@ export default {
                       hint="You need to be able to accurately track your progress, so you can judge when a goal will be met."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(3)">
+      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active'" class="smart" @click="startEditing(3)">
         Measurable: {{kr.m}}
       </div>
 
@@ -307,7 +307,7 @@ export default {
                       hint="Of course, setting a goal that’s too ambitious will see you struggle to achieve it. This will sap at your motivation, both now and in the future."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(4)">
+      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active'" class="smart" @click="startEditing(4)">
         Attainable: {{kr.a}}
       </div>
 
@@ -318,7 +318,7 @@ export default {
                       hint="The goal you pick should be pertinent to your chosen field, or should benefit you directly."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(5)">
+      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active'" class="smart" @click="startEditing(5)">
         Relevant: {{kr.r}}
       </div>
 
@@ -329,7 +329,7 @@ export default {
                       hint="Finally, setting a timeframe for your goal helps quantify it further, and helps keep your focus on track."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(6)">
+      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active'" class="smart" @click="startEditing(6)">
         Time-Bound: {{kr.t}}
       </div>
 
@@ -352,13 +352,13 @@ export default {
             {{task.value}}
           </div>
           <v-icon style="flex: 1;" icon="mdi-checkbox-blank-outline" large
-                  v-if="selectedTask === index && task.state !== 'active' && kr.state === 'active'"
+                  v-if="selectedTask === index && task.state !== 'active' && kr.state === 'active' && kr_parent.obj_state === 'active'"
                   @click="updateTaskState(index, 'active')"/>
           <v-icon style="flex: 1;" icon="mdi-checkbox-marked-outline" large
-                  v-if="selectedTask === index && task.state !== 'finished' && kr.state === 'active'"
+                  v-if="selectedTask === index && task.state !== 'finished' && kr.state === 'active' && kr_parent.obj_state === 'active'"
                   @click="updateTaskState(index, 'finished')"/>
           <v-icon style="flex: 1;" icon="mdi-close-box-outline" large
-                  v-if="selectedTask === index && task.state !== 'failed' && kr.state === 'active'"
+                  v-if="selectedTask === index && task.state !== 'failed' && kr.state === 'active' && kr_parent.obj_state === 'active'"
                   @click="updateTaskState(index, 'failed')"/>
 
           <v-dialog
@@ -366,7 +366,7 @@ export default {
               width="300"
           >
             <template v-slot:activator="{ props }">
-              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedTask === index && kr.state === 'active'"/>
+              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedTask === index && kr.state === 'active' && kr_parent.obj_state === 'active'"/>
             </template>
 
             <v-card>
@@ -390,14 +390,14 @@ export default {
                       label="Add Task"
         ></v-text-field>
       </Editable>
-      <v-btn v-else v-if="kr.state === 'active'" color="secondary" @click="startEditing(7)">
+      <v-btn v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active'" color="secondary" @click="startEditing(7)">
         Add Task
       </v-btn>
 
     </v-card>
 
     <div>
-      <v-dialog v-model="confirmStateDialogs[0]" width="300" v-if="kr.state === 'active'">
+      <v-dialog v-model="confirmStateDialogs[0]" width="300" v-if="kr.state === 'active' && kr_parent.obj_state === 'active'">
         <template v-slot:activator="{ props }">
           <v-btn style="width: 50%;" color="red" v-bind="props">fail</v-btn>
         </template>
@@ -410,7 +410,7 @@ export default {
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-dialog v-model="confirmStateDialogs[1]" width="300" v-if="kr.state === 'active'">
+      <v-dialog v-model="confirmStateDialogs[1]" width="300" v-if="kr.state === 'active' && kr_parent.obj_state === 'active'">
         <template v-slot:activator="{ props }">
           <v-btn style="width: 50%;" color="green" v-bind="props">complete</v-btn>
         </template>
