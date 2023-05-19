@@ -31,6 +31,13 @@ class KeyResult:
             self.r: str = attributes[8]
             self.t: str = attributes[9]
 
+        self.is_smart = attributes[5] and attributes[6] and attributes[7] and attributes[8] and attributes[9] \
+                        and not str(attributes[5]).startswith("[!!!]") \
+                        and not str(attributes[6]).startswith("[!!!]") \
+                        and not str(attributes[7]).startswith("[!!!]") \
+                        and not str(attributes[8]).startswith("[!!!]") \
+                        and not str(attributes[9]).startswith("[!!!]")
+
     def set_tasks(self, tasks: list[Task]):
         self.tasks: list[Task] = tasks
         # self.all_tasks_count = len(tasks)

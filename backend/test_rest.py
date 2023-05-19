@@ -457,6 +457,29 @@ class TestKeyResultsApi(unittest.TestCase):
         self.assertTrue("invalid key result state" in error, message)
 
 
+    def test_key_result_smart(self):
+        status, value, message = get_request("/value/4")
+        self.assertEqual(status, 200, message)
+
+        obj = next(obj for obj in value["objectives"] if obj["id"] == 9)
+
+        for id in [16, 17, 18]:
+            self.assertTrue(next(kr for kr in obj["key_results"] if kr["id"] == id)["is_smart"], message)
+
+        for id in [19, 20, 21]:
+            self.assertFalse(next(kr for kr in obj["key_results"] if kr["id"] == id)["is_smart"], message)
+
+        for id in [16, 17, 18]:
+            status, key_result, message = get_request("/keyresult/" + str(id))
+            self.assertEqual(status, 200, message)
+            self.assertTrue(key_result["is_smart"], message)
+
+        for id in [19, 20, 21]:
+            status, key_result, message = get_request("/keyresult/" + str(id))
+            self.assertEqual(status, 200, message)
+            self.assertFalse(key_result["is_smart"], message)
+
+
 class TestTasksApi(unittest.TestCase):
 
     def test_create_task(self):

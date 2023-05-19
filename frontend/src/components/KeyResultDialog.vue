@@ -62,6 +62,12 @@ export default {
 
             this.kr_parent.name = this.kr.name
             this.kr_parent.date_reviewed = this.kr.date_reviewed
+            this.kr.is_smart = this.kr.s.length > 0 && !this.kr.s.startsWith("[!!!]")
+                && this.kr.m.length > 0 && !this.kr.m.startsWith("[!!!]")
+                && this.kr.a.length > 0 && !this.kr.a.startsWith("[!!!]")
+                && this.kr.r.length > 0 && !this.kr.r.startsWith("[!!!]")
+                && this.kr.t.length > 0 && !this.kr.t.startsWith("[!!!]")
+            this.kr_parent.is_smart = this.kr.is_smart
           } else {
             this.handleUpdateKeyResultError(body)
           }})
