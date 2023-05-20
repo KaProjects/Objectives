@@ -213,72 +213,74 @@ export default {
 
     <ObjectiveDialog :obj="selectedObjective" v-on:selectTab="selectTab" />
 
-    <Ideas :valueId="app_state.value.id" />
+    <div style="display: flex;">
+      <Ideas :valueId="app_state.value.id" class="obj"  />
 
-    <v-card class="obj"
-            v-for="(objective, index) in filterObjectives(value.objectives, tab === 'active')" :key="objective.id"
-            :class="objective.state"
-            width="300" elevation="3" shaped
-            @mouseover="selectedObjective_index = index"
-            @mouseleave="selectedObjective_index = -1"
-    >
-      <v-card-title>{{objective.name}}</v-card-title>
-      <v-card-text>
-        {{objective.description}}
-      </v-card-text>
-      <v-icon icon="mdi-pencil-circle-outline" large
-              v-if="selectedObjective_index === index"
-              @click="openObjectiveDialog(objective)"/>
+      <div style="display: flex; overflow-x:scroll;">
+        <v-card class="obj" :class="objective.state" width="300" elevation="3" shaped
+              v-for="(objective, index) in filterObjectives(value.objectives, tab === 'active')" :key="objective.id"
+              @mouseover="selectedObjective_index = index"
+              @mouseleave="selectedObjective_index = -1"
+      >
+        <v-card-title>{{objective.name}}</v-card-title>
+        <v-card-text>
+          {{objective.description}}
+        </v-card-text>
+        <v-icon icon="mdi-pencil-circle-outline" large
+                v-if="selectedObjective_index === index"
+                @click="openObjectiveDialog(objective)"/>
 
-      <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
-                   class="kr" :class="key_result.state"
-                   @click="openKeyResult(key_result, objective.state)">
-        <v-list-item-content>
+        <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
+                     class="kr" :class="key_result.state"
+                     @click="openKeyResult(key_result, objective.state)">
+          <v-list-item-content>
 
-          <v-list-item-title class="inLine">{{key_result.name}}</v-list-item-title>
-          <v-icon style="vertical-align: top;" icon="mdi-check-bold" v-if="key_result.state === 'completed'" />
-          <v-icon style="vertical-align: top;" icon="mdi-close-thick" v-if="key_result.state === 'failed'"/>
+            <v-list-item-title class="inLine">{{key_result.name}}</v-list-item-title>
+            <v-icon style="vertical-align: top;" icon="mdi-check-bold" v-if="key_result.state === 'completed'" />
+            <v-icon style="vertical-align: top;" icon="mdi-close-thick" v-if="key_result.state === 'failed'"/>
 
-          <div class="krInfo" v-if="key_result.state === 'active'">
-            <div class="krInfoChild" style="right: 0;">{{key_result.date_reviewed}}</div>
-            <div class="krInfoChild" style="right: 50%; color: #ff0000; font-weight: bold;" v-if="!key_result.is_smart">
-              !SMART
+            <div class="krInfo" v-if="key_result.state === 'active'">
+              <div class="krInfoChild" style="right: 0;">{{key_result.date_reviewed}}</div>
+              <div class="krInfoChild" style="right: 50%; color: #ff0000; font-weight: bold;" v-if="!key_result.is_smart">
+                !SMART
+              </div>
+              <div class="krInfoChild" style="left: 0;">{{key_result.finished_tasks_count}}/{{key_result.all_tasks_count}}</div>
             </div>
-            <div class="krInfoChild" style="left: 0;">{{key_result.finished_tasks_count}}/{{key_result.all_tasks_count}}</div>
-          </div>
 
-        </v-list-item-content>
-      </v-list-item>
-      <v-card-actions v-if="objective.state === 'active'">
-        <v-dialog
-            v-model="newKrDialogs[objective.id]"
-            width="300"
-        >
-          <template v-slot:activator="{ props }">
-            <v-btn color="primary" v-bind="props">
-              <v-icon icon="mdi-plus" large/>
-            </v-btn>
-          </template>
+          </v-list-item-content>
+        </v-list-item>
+        <v-card-actions v-if="objective.state === 'active'">
+          <v-dialog
+              v-model="newKrDialogs[objective.id]"
+              width="300"
+          >
+            <template v-slot:activator="{ props }">
+              <v-btn color="primary" v-bind="props">
+                <v-icon icon="mdi-plus" large/>
+              </v-btn>
+            </template>
 
-          <v-card>
-            <v-text-field
-                label="Name"
-                v-model="newKr.name"
-                required
-            ></v-text-field>
-            <v-text-field
-                label="Description"
-                v-model="newKr.description"
-                required
-            ></v-text-field>
-            <v-card-actions>
-              <v-btn block @click="addKeyResult(objective)">Add</v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
+            <v-card>
+              <v-text-field
+                  label="Name"
+                  v-model="newKr.name"
+                  required
+              ></v-text-field>
+              <v-text-field
+                  label="Description"
+                  v-model="newKr.description"
+                  required
+              ></v-text-field>
+              <v-card-actions>
+                <v-btn block @click="addKeyResult(objective)">Add</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
 
-      </v-card-actions>
-    </v-card>
+        </v-card-actions>
+      </v-card>
+      </div>
+    </div>
 
   </div>
 
@@ -306,19 +308,18 @@ export default {
 }
 .obj {
   display: inline-block;
+  min-width: 300px;
   vertical-align:top;
+  margin-bottom: auto;
   margin-left: 1px;
 }
 .obj.active {
-  display: inline-block;
   background: #b2d1ec;
 }
 .obj.failed {
-  display: inline-block;
   background: #dc1a1a;
 }
 .obj.achieved {
-  display: inline-block;
   background: #84e184;
 }
 .obj.failed > .kr {

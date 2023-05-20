@@ -73,7 +73,7 @@ export default {
 }
 </script>
 <template>
-  <v-card class="obj" width="300" elevation="3" shaped>
+  <v-card width="300" elevation="3" shaped>
     <v-card-title>Ideas</v-card-title>
     <v-progress-circular v-if="loading" style="margin: 0 0 10px 30px" indeterminate color="primary"></v-progress-circular>
     <div v-else>
