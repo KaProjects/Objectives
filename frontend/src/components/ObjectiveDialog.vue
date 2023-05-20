@@ -126,10 +126,10 @@ export default {
       </div>
 
       <Editable v-if="editing[1]" :cancel="stopEditing" :submit="updateObjective" :index=1>
-        <v-text-field @keydown.enter="updateObjective(1)" @keydown.esc="stopEditing"
+        <v-textarea rows="3" @keydown.enter="updateObjective(1)" @keydown.esc="stopEditing"
                       v-model="editingValue"
                       label="Description"
-        ></v-text-field>
+        ></v-textarea>
       </Editable>
       <v-card-text v-else @click="startEditing(1)">
         {{obj.description}}

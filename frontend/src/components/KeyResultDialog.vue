@@ -267,10 +267,10 @@ export default {
       </div>
 
       <Editable v-if="editing[1]" :cancel="stopEditing" :submit="update" :index=1>
-        <v-text-field @keydown.enter="update(1)" @keydown.esc="stopEditing"
+        <v-textarea rows="3" @keydown.enter="update(1)" @keydown.esc="stopEditing"
                       v-model="editingValue"
                       label="Description"
-        ></v-text-field>
+        ></v-textarea>
       </Editable>
       <v-card-text v-else @click="startEditing(1)">
         {{kr.description}}
