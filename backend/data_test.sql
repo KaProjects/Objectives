@@ -12,6 +12,14 @@ insert into Objectives(id, value_id, state, name, description, date_created, dat
 insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (7, 4, "active", "Updatable", "for updates", "10/03/2023", "");
 insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (8, 4, "active", "Finishable", "for state changes", "10/03/2023", "");
 insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (9, 4, "active", "SMART", "for smart ppl", "19/05/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (10, 4, "active", "ideas", "for ideas", "21/05/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (11, 4, "active", "ideas", "for create", "21/05/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (12, 4, "active", "ideas", "for delete", "21/05/2023", "");
+
+insert into ObjectiveIdeas(id, objective_id, value) values (1, 10, "first");
+insert into ObjectiveIdeas(id, objective_id, value) values (2, 10, "second");
+insert into ObjectiveIdeas(id, objective_id, value) values (3, 10, "third");
+insert into ObjectiveIdeas(id, objective_id, value) values (4, 12, "to del");
 
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (1, 1, "completed", "x", "xx", "s", "m", "a", "r", "t", "10/03/2023", "11/03/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (2, 2, "completed", "aaa with description", "description is here", "s", "m", "a", "r", "t", "10/03/2023", "10/03/2023");

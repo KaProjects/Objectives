@@ -6,6 +6,7 @@ class JsonEncoder(JSONEncoder):
     def default(self, o):
         return o.__dict__
 
+
 @dataclass(frozen=True)
 class Task:
     id: str
@@ -64,6 +65,8 @@ class Objective:
     def set_key_results(self, key_results: list[KeyResult]):
         self.key_results: list[KeyResult] = key_results
 
+    def set_ideas_count(self, ideas_count):
+        self.ideas_count = ideas_count
 
 class Value:
     def __init__(self, attributes: tuple):

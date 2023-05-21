@@ -230,6 +230,11 @@ export default {
                   v-if="selectedObjective_index === index"
                   @click="openObjectiveDialog(objective)"/>
 
+          <div class="objIdeas" v-if="objective.ideas_count > 0">
+            <v-icon icon="mdi-lightbulb-variant-outline" size="15" style="margin: 0 auto;"/>
+            <div style="margin: -5px auto;">{{objective.ideas_count}}</div>
+          </div>
+
           <div style="display: grid; overflow-x:scroll; max-height: 650px">
             <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
                          class="kr" :class="key_result.state"
@@ -335,6 +340,12 @@ export default {
   position: absolute;
   right: 0;
   top: 0;
+}
+.objIdeas {
+  display: grid;
+  position: absolute;
+  right: 5px;
+  top: 30px;
 }
 .krInfo {
   margin-top: 20px;

@@ -120,3 +120,25 @@ class Service:
         DatabaseManager().update_objective_state(id, state, today)
         return state, today
 
+
+    def get_objective_ideas(self, objective_id):
+        return DatabaseManager().select_ideas_for_objective(objective_id)
+
+
+    def update_objective_idea(self, idea_id, value):
+        DatabaseManager().update_objective_idea(idea_id, value)
+
+
+    def check_objective_idea_exist(self, idea_id) -> bool:
+        idea_count = DatabaseManager().count_records("ObjectiveIdeas", idea_id)
+        if idea_count > 1: raise Exception("found " + str(idea_count) + " objective ideas with id='" + str(idea_id) + "'")
+        return idea_count == 1
+
+
+    def create_objective_idea(self, objective_id, value):
+        return DatabaseManager().insert_objective_idea(objective_id, value)
+
+
+    def delete_objective_idea(self, idea_id):
+        DatabaseManager().delete_objective_idea(idea_id)
+

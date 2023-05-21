@@ -1,6 +1,6 @@
 create table if not exists PValues ( id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                                    name text not null,
-                                    description text not null);
+                                     name text not null,
+                                     description text not null);
 
 create table if not exists Objectives ( id INTEGER PRIMARY KEY AUTO_INCREMENT,
                                         value_id INTEGER,
@@ -26,8 +26,13 @@ create table if not exists KeyResults ( id INTEGER PRIMARY KEY AUTO_INCREMENT,
                                         date_reviewed text not null);
 
 create table if not exists Tasks ( id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                                    kr_id INTEGER,
-                                    FOREIGN KEY (kr_id) REFERENCES KeyResults(id),
-                                    state text not null,
-                                    value text not null);
+                                   kr_id INTEGER,
+                                   FOREIGN KEY (kr_id) REFERENCES KeyResults(id),
+                                   state text not null,
+                                   value text not null);
+
+create table if not exists ObjectiveIdeas ( id INTEGER PRIMARY KEY AUTO_INCREMENT,
+                                            objective_id INTEGER,
+                                            FOREIGN KEY (objective_id) REFERENCES Objectives(id),
+                                            value text not null);
 

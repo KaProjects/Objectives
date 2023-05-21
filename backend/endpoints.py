@@ -277,6 +277,7 @@ class Objectives(Resource):
             data["key_results"] = []
             data["date_created"] = date_created
             data["date_finished"] = ""
+            data["ideas_count"] = 0
             return create_response(data, 201)
         except Exception as e:
             return create_exception_response(e)
@@ -323,3 +324,72 @@ class ObjectiveState(Resource):
         except Exception as e:
             return create_exception_response(e)
 
+
+@objective.route('/<id>/idea')
+@objective.response(404, 'Objective not found')
+@objective.param('id', 'Objective identifier')
+class ObjectiveIdeas(Resource):
+    @objective.response(200, 'Success')
+    def get(self, id):
+        try:
+            if not Service().check_objective_exist(id):
+                return create_response("objective with id '" + str(id) + "' not found", 404)
+
+            ideas = Service().get_objective_ideas(id)
+            return create_response(ideas, 200)
+        except Exception as e:
+            return create_exception_response(e)
+
+    @objective.expect(api.model('ObjectiveIdeaCreate', {'value': fields.String(required=True, example='name')}))
+    @objective.response(201, 'Created')
+    def post(self, id):
+        try:
+            if not Service().check_objective_exist(id):
+                return create_response("objective with id '" + str(id) + "' not found", 404)
+
+            data: dict = api.payload
+            value = data["value"]
+            new_id = Service().create_objective_idea(id, value)
+            data["id"] = new_id
+            data["objective_id"] = id
+            return create_response(data, 201)
+        except Exception as e:
+            return create_exception_response(e)
+
+
+@objective.route('/<id>/idea/<idea_id>')
+@objective.response(404, 'Objective not found')
+@objective.param('id', 'Objective identifier')
+@objective.param('idea_id', 'Idea identifier')
+class ObjectiveIdea(Resource):
+    @objective.expect(api.model('ObjectiveIdeaUpdate', {'value': fields.String(required=True, example='value')}))
+    @objective.response(404, 'Idea not found')
+    @objective.response(200, 'Success')
+    def put(self, id, idea_id):
+        try:
+            if not Service().check_objective_exist(id):
+                return create_response("objective with id '" + str(id) + "' not found", 404)
+
+            if not Service().check_objective_idea_exist(idea_id):
+                return create_response("objective idea with id '" + str(idea_id) + "' not found", 404)
+
+            value = api.payload["value"]
+            Service().update_objective_idea(idea_id, value)
+            return create_response({"value": value}, 200)
+        except Exception as e:
+            return create_exception_response(e)
+
+    @objective.response(404, 'Idea not found')
+    @objective.response(204, 'Deleted')
+    def delete(self, id, idea_id):
+        try:
+            if not Service().check_objective_exist(id):
+                return create_response("objective with id '" + str(id) + "' not found", 404)
+
+            if not Service().check_objective_idea_exist(idea_id):
+                return create_response("objective idea with id '" + str(idea_id) + "' not found", 404)
+
+            Service().delete_objective_idea(idea_id)
+            return create_response(None, 204)
+        except Exception as e:
+            return create_exception_response(e)
