@@ -139,9 +139,10 @@ class DatabaseManager:
     def select_tasks_for_key_result(self, id):
         tasks = list()
         with self.cursor() as cursor:
-            cursor.execute(sql('select * from Tasks where kr_id=?'), (int(id),))
+            cursor.execute(sql('select id,kr_id,state,value from Tasks where kr_id=?'), (int(id),))
             for task in cursor.fetchall():
-                tasks.append(Task(task))
+                print(task)
+                tasks.append(Task(task[0], task[1], task[2], task[3]))
         return tasks
 
     def insert_task(self, value, kr_id) -> int:

@@ -6,13 +6,12 @@ class JsonEncoder(JSONEncoder):
     def default(self, o):
         return o.__dict__
 
-
+@dataclass(frozen=True)
 class Task:
-    def __init__(self, attributes: tuple):
-        self.id: str = attributes[0]
-        self.kr_id: str = attributes[1]
-        self.state: str = attributes[2]
-        self.value: str = attributes[3]
+    id: str
+    kr_id: str
+    state: str
+    value: str
 
 
 class KeyResult:
@@ -89,6 +88,13 @@ class Value:
 @dataclass(frozen=True)
 class Idea:
     id: str
+    value: str
+
+
+@dataclass(frozen=True)
+class ObjectiveIdea:
+    id: str
+    objective_id: str
     value: str
 
 
