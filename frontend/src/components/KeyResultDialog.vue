@@ -344,12 +344,13 @@ export default {
         <div v-else class="task"
              @mouseover="selectedTask = index"
              @mouseleave="selectedTask = -1">
-          <div style="flex: 25;" @click="startEditingTask(index)">
+          <div :class="task.state">
             <v-icon icon="mdi-close-box-outline" large v-if="task.state === 'failed'"/>
             <v-icon icon="mdi-checkbox-marked-outline" large v-if="task.state === 'finished'"/>
             <v-icon icon="mdi-checkbox-blank-outline" large v-if="task.state === 'active'"/>
-            <div v-html="string_to_html(task.value)" style="display: inline-block;"/>
           </div>
+          <div v-html="string_to_html(task.value)" @click="startEditingTask(index)" :class="task.state" style="display: inline; padding-left: 3px; flex: 25;"/>
+
           <v-icon style="flex: 1;" icon="mdi-checkbox-blank-outline" large
                   v-if="selectedTask === index && task.state !== 'active' && kr.state === 'active' && kr_parent.obj_state === 'active'"
                   @click="updateTaskState(index, 'active')"/>
@@ -450,6 +451,14 @@ export default {
 .task:hover {
   display: flex;
   background: #f5f5f5;
+}
+.task > div.failed {
+  color: #c70202;
+  text-decoration: line-through;
+}
+.task > div.finished {
+  color: #77c402;
+  text-decoration: line-through;
 }
 .smart {
   padding-left: 5px;

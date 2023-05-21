@@ -21,5 +21,12 @@ export function string_to_html(string){
 
     string = string.replaceAll('\n', "<br>")
 
+    let bolds = string.match(/\*[^*]*\*/g)
+    if (bolds !== null) {
+        for (let bold of bolds){
+            string = string.replace(bold, bold.replace("*","<b>").replace("*","</b>"))
+        }
+    }
+
     return string
 }
