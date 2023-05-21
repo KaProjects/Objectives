@@ -1,5 +1,5 @@
 <script>
-import {backend_fetch} from "@/properties";
+import {backend_fetch} from "@/utils";
 
 export default {
   name: "Ideas",

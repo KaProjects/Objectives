@@ -3,7 +3,7 @@ import Value from "@/components/Value.vue";
 import { app_state } from './main.js'
 </script>
 <script>
-import {backend_fetch} from "@/properties";
+import {backend_fetch} from "@/utils";
 
 export default {
   data() {

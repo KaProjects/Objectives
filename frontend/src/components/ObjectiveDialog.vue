@@ -4,7 +4,7 @@ import Editable from "@/components/Editable.vue";
 </script>
 
 <script>
-import {backend_fetch} from "@/properties";
+import {backend_fetch, string_to_html} from "@/utils";
 import {app_state} from "@/main";
 
 export default {
@@ -103,6 +103,7 @@ export default {
           }})
         .catch(error => this.handleFetchError(error))
     },
+    string_to_html
   }
 }
 </script>
@@ -126,14 +127,12 @@ export default {
       </div>
 
       <Editable v-if="editing[1]" :cancel="stopEditing" :submit="updateObjective" :index=1>
-        <v-textarea rows="3" @keydown.enter="updateObjective(1)" @keydown.esc="stopEditing"
-                      v-model="editingValue"
-                      label="Description"
+        <v-textarea @keydown.esc="stopEditing"
+                    v-model="editingValue"
+                    label="Description"
         ></v-textarea>
       </Editable>
-      <v-card-text v-else @click="startEditing(1)">
-        {{obj.description}}
-      </v-card-text>
+      <v-card-text v-else v-html="string_to_html(obj.description)" @click="startEditing(1)"/>
 
     </v-card>
 

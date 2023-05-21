@@ -3,7 +3,7 @@ import { app_state } from '@/main'
 
 </script>
 <script>
-import {backend_fetch} from "@/properties";
+import {backend_fetch, string_to_html} from "@/utils";
 import {app_state} from "@/main";
 import Ideas from "@/components/Ideas.vue";
 import KeyResultDialog from "@/components/KeyResultDialog.vue";
@@ -158,7 +158,8 @@ export default {
       } else {
         this.tab = "inactive"
       }
-    }
+    },
+    string_to_html
   },
   components: {
     Ideas,
@@ -223,9 +224,8 @@ export default {
               @mouseleave="selectedObjective_index = -1"
         >
           <v-card-title>{{objective.name}}</v-card-title>
-          <v-card-text>
-            {{objective.description}}
-          </v-card-text>
+          <v-card-text v-html="string_to_html(objective.description)"/>
+
           <v-icon class="objEdit" icon="mdi-pencil-circle-outline" large
                   v-if="selectedObjective_index === index"
                   @click="openObjectiveDialog(objective)"/>
