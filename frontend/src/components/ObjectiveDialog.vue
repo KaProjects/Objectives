@@ -87,7 +87,7 @@ export default {
       const requestOptions = {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(state)
+        body: JSON.stringify({"state": state})
       }
       await backend_fetch("/objective/" + this.obj.id + "/state", requestOptions)
         .then(async response => {

@@ -48,7 +48,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(kr)
       }
-      await backend_fetch("/keyresult/" + this.kr.id, requestOptions)
+      await backend_fetch("/key_result/" + this.kr.id, requestOptions)
         .then(async response => {
           const body = await response.text();
           if (response.ok) {
@@ -201,7 +201,7 @@ export default {
       this.confirmDeletionDialogs[index] = false
     },
     async retrieveKeyResultReviewDate(){
-      await backend_fetch("/keyresult/" + this.kr.id)
+      await backend_fetch("/key_result/" + this.kr.id)
         .then(async response => {
           if (response.ok){
             const body = await response.json();
@@ -226,9 +226,9 @@ export default {
       const requestOptions = {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(state)
+        body: JSON.stringify({"state": state})
       }
-      await backend_fetch("/keyresult/" + this.kr.id + "/state", requestOptions)
+      await backend_fetch("/key_result/" + this.kr.id + "/state", requestOptions)
         .then(async response => {
           const body = await response.text();
           if (response.ok){

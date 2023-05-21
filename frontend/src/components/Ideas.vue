@@ -18,7 +18,7 @@ export default {
   },
   methods: {
     async loadData() {
-      await backend_fetch("/value/" + this.valueId + "/ideas")
+      await backend_fetch("/value/" + this.valueId + "/idea")
         .then(async response => {
           if (response.ok){
             this.ideas = await response.json()
@@ -32,9 +32,9 @@ export default {
       const requestOptions = {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({value_id: this.valueId, idea: this.newIdea})
+        body: JSON.stringify({idea: this.newIdea})
       }
-      await backend_fetch("/idea", requestOptions)
+      await backend_fetch("/value/" + this.valueId + "/idea", requestOptions)
         .then(async response => {
           if (response.ok){
             const body = await response.json()
@@ -51,12 +51,7 @@ export default {
       alert(error)
     },
     async deleteIdea(idea, index){
-      const requestOptions = {
-        method: "DELETE",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({value_id: this.valueId, idea_id: idea.id})
-      }
-      await backend_fetch("/idea", requestOptions)
+      await backend_fetch("/value/" + this.valueId + "/idea/" + idea.id, {method: "DELETE"})
         .then(async response => {
           if (response.ok){
             this.ideas.splice(this.ideas.indexOf(idea), 1);

@@ -45,7 +45,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({name: this.newKr.name, description: this.newKr.description, objective_id: objective.id})
       }
-      await backend_fetch("/keyresult", requestOptions)
+      await backend_fetch("/key_result", requestOptions)
         .then(async response => {
           if (response.ok){
             const body = await response.json()
@@ -62,7 +62,7 @@ export default {
       alert(error)
     },
     async openKeyResult(kr, obj_state) {
-      await backend_fetch("/keyresult/" + kr.id)
+      await backend_fetch("/key_result/" + kr.id)
         .then(async response => {
           if (response.ok){
             this.selectedKr = await response.json()
