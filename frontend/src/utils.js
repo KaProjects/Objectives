@@ -8,10 +8,13 @@ export function string_to_html(string){
     if (urls !== null) {
         for (let url of urls){
             let text;
+            const subUrl = url.split("\/\/")[1]
             if (url.includes("docs.google.com")){
-                text = "google-" + url.split("\/\/")[1].split("\/")[1]
+                text = "google-" + subUrl.split("\/")[1]
             } else if (url.includes("trello.com")){
-                text = "trello-" + url.split("\/\/")[1].split("\/").pop()
+                text = "trello-" + subUrl.split("\/").pop()
+            } else if (url.includes("github.com")){
+                text = "gh-" + subUrl.split("\/")[1] + "-" + subUrl.split("\/")[2]
             } else {
                 text = url.split("\/\/")[1].split("\/")[0]
             }
