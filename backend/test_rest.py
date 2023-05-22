@@ -79,25 +79,25 @@ class TestValuesApi(unittest.TestCase):
         self.assertEqual(len(value["objectives"][0]["key_results"]), 1, message)
         self.assertEqual(value["objectives"][0]["key_results"][0]["state"], "completed", message)
         self.assertEqual(value["objectives"][0]["key_results"][0]["all_tasks_count"], 1, message)
-        self.assertEqual(value["objectives"][0]["key_results"][0]["finished_tasks_count"], 1, message)
+        self.assertEqual(value["objectives"][0]["key_results"][0]["resolved_tasks_count"], 1, message)
         self.assertEqual(value["objectives"][1]["id"], 2, message)
         self.assertEqual(value["objectives"][1]["state"], "active", message)
         self.assertEqual(len(value["objectives"][1]["key_results"]), 3, message)
         self.assertEqual(value["objectives"][1]["key_results"][0]["state"], "completed", message)
         self.assertEqual(value["objectives"][1]["key_results"][0]["all_tasks_count"], 1, message)
-        self.assertEqual(value["objectives"][1]["key_results"][0]["finished_tasks_count"], 1, message)
+        self.assertEqual(value["objectives"][1]["key_results"][0]["resolved_tasks_count"], 1, message)
         self.assertEqual(value["objectives"][1]["key_results"][1]["state"], "failed", message)
         self.assertEqual(value["objectives"][1]["key_results"][1]["all_tasks_count"], 1, message)
-        self.assertEqual(value["objectives"][1]["key_results"][1]["finished_tasks_count"], 0, message)
+        self.assertEqual(value["objectives"][1]["key_results"][1]["resolved_tasks_count"], 1, message)
         self.assertEqual(value["objectives"][1]["key_results"][2]["state"], "active", message)
         self.assertEqual(value["objectives"][1]["key_results"][2]["all_tasks_count"], 3, message)
-        self.assertEqual(value["objectives"][1]["key_results"][2]["finished_tasks_count"], 1, message)
+        self.assertEqual(value["objectives"][1]["key_results"][2]["resolved_tasks_count"], 2, message)
         self.assertEqual(value["objectives"][2]["id"], 3, message)
         self.assertEqual(value["objectives"][2]["state"], "failed", message)
         self.assertEqual(len(value["objectives"][2]["key_results"]), 1, message)
         self.assertEqual(value["objectives"][2]["key_results"][0]["state"], "failed", message)
         self.assertEqual(value["objectives"][2]["key_results"][0]["all_tasks_count"], 1, message)
-        self.assertEqual(value["objectives"][2]["key_results"][0]["finished_tasks_count"], 0, message)
+        self.assertEqual(value["objectives"][2]["key_results"][0]["resolved_tasks_count"], 1, message)
 
 
     def test_get_value_nonexistent(self):
@@ -119,15 +119,18 @@ class TestValuesApi(unittest.TestCase):
     def test_get_values(self):
         status, values, message = get_request("/values")
         self.assertEqual(status, 200, message)
-        self.assertEqual(len(values), 4, message)
+        self.assertEqual(len(values), 5, message)
         self.assertEqual(values[0]["name"], "Zdravie", message)
 
 
-    # TODO test create/update/delete value here when implemented
+    def test_get_value_check_tasks_count(self):
+        status, value, message = get_request("/value/5")
+        self.assertEqual(status, 200, message)
+        objective = next(obj for obj in value["objectives"] if obj["id"] == 13)
+        key_result = next(kr for kr in objective["key_results"] if kr["id"] == 22)
 
-
-# class TestObjectivesApi(unittest.TestCase):
-    # TODO test objective crud here when implemented
+        self.assertEqual(key_result["all_tasks_count"], 8, message)
+        self.assertEqual(key_result["resolved_tasks_count"], 4, message)
 
 
 class TestKeyResultsApi(unittest.TestCase):
@@ -188,7 +191,7 @@ class TestKeyResultsApi(unittest.TestCase):
         self.assertEqual(created_kr["state"], "active", created_message)
         self.assertEqual(created_kr["date_reviewed"], today(), created_message)
         self.assertEqual(created_kr["all_tasks_count"], 0, created_message)
-        self.assertEqual(created_kr["finished_tasks_count"], 0, created_message)
+        self.assertEqual(created_kr["resolved_tasks_count"], 0, created_message)
 
         after_status, after_value, after_message = get_request("/value/4")
         self.assertEqual(after_status, 200, after_message)
@@ -201,7 +204,7 @@ class TestKeyResultsApi(unittest.TestCase):
         self.assertEqual(created_kr["name"], after_kr["name"], str(created_kr) + '\n' + str(after_kr))
         self.assertEqual(created_kr["date_reviewed"], after_kr["date_reviewed"], str(created_kr) + '\n' + str(after_kr))
         self.assertEqual(created_kr["all_tasks_count"], after_kr["all_tasks_count"], str(created_kr) + '\n' + str(after_kr))
-        self.assertEqual(created_kr["finished_tasks_count"], after_kr["finished_tasks_count"], str(created_kr) + '\n' + str(after_kr))
+        self.assertEqual(created_kr["resolved_tasks_count"], after_kr["resolved_tasks_count"], str(created_kr) + '\n' + str(after_kr))
                 
         new_status, new_kr, new_message = get_request("/key_result/" + str(created_kr["id"]))
         self.assertEqual(new_status, 200, new_message)
@@ -512,7 +515,7 @@ class TestTasksApi(unittest.TestCase):
         self.assertEqual(status, 200, message)
         after_obj = next(obj for obj in after_value["objectives"] if obj["id"] == 6)
         after_obj_kr = next(kr for kr in after_obj["key_results"] if kr["id"] == 10)
-        self.assertEqual(before_obj_kr["finished_tasks_count"], after_obj_kr["finished_tasks_count"], str(before_obj_kr) + '\n' + str(after_obj_kr))
+        self.assertEqual(before_obj_kr["resolved_tasks_count"], after_obj_kr["resolved_tasks_count"], str(before_obj_kr) + '\n' + str(after_obj_kr))
         self.assertEqual(before_obj_kr["all_tasks_count"] + 1, after_obj_kr["all_tasks_count"], str(before_obj_kr) + '\n' + str(after_obj_kr))
 
 
@@ -574,7 +577,7 @@ class TestTasksApi(unittest.TestCase):
         self.assertEqual(status, 200, message)
         after_obj = next(obj for obj in after_value["objectives"] if obj["id"] == 6)
         after_obj_kr = next(kr for kr in after_obj["key_results"] if kr["id"] == 9)
-        self.assertEqual(before_obj_kr["finished_tasks_count"] + 1, after_obj_kr["finished_tasks_count"], str(before_obj_kr) + '\n' + str(after_obj_kr))
+        self.assertEqual(before_obj_kr["resolved_tasks_count"] + 1, after_obj_kr["resolved_tasks_count"], str(before_obj_kr) + '\n' + str(after_obj_kr))
         self.assertEqual(before_obj_kr["all_tasks_count"], after_obj_kr["all_tasks_count"], str(before_obj_kr) + '\n' + str(after_obj_kr))
 
         payload = json.dumps({"kr_id": before_kr_task["kr_id"], "value": value, "state": "active"})
@@ -655,7 +658,7 @@ class TestTasksApi(unittest.TestCase):
         self.assertEqual(status, 200, message)
         after_obj = next(obj for obj in after_value["objectives"] if obj["id"] == 6)
         after_obj_kr = next(kr for kr in after_obj["key_results"] if kr["id"] == 11)
-        self.assertEqual(before_obj_kr["finished_tasks_count"], after_obj_kr["finished_tasks_count"], str(before_obj_kr) + '\n' + str(after_obj_kr))
+        self.assertEqual(before_obj_kr["resolved_tasks_count"], after_obj_kr["resolved_tasks_count"], str(before_obj_kr) + '\n' + str(after_obj_kr))
         self.assertEqual(before_obj_kr["all_tasks_count"] - 1, after_obj_kr["all_tasks_count"], str(before_obj_kr) + '\n' + str(after_obj_kr))
 
         rollback_status, rollback_task, rollback_message = post_request("/task", json.dumps({"kr_id": 11, "value": "to del"}))

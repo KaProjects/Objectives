@@ -250,7 +250,7 @@ export default {
                   <div class="krInfoChild" style="right: 50%; color: #ff0000; font-weight: bold;" v-if="!key_result.is_smart">
                     !SMART
                   </div>
-                  <div class="krInfoChild" style="left: 0;">{{key_result.finished_tasks_count}}/{{key_result.all_tasks_count}}</div>
+                  <div class="krInfoChild" style="left: 0;">{{key_result.resolved_tasks_count}}/{{key_result.all_tasks_count}}</div>
                 </div>
 
               </v-list-item-content>

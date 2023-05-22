@@ -170,11 +170,11 @@ export default {
         .then(async response => {
           if (response.ok){
             const body = await response.json();
-            if (this.kr.tasks[index].state === 'finished' && body.state !== 'finished'){
-              this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count - 1
+            if (this.kr.tasks[index].state === 'active' && body.state !== 'active'){
+              this.kr_parent.resolved_tasks_count += 1
             }
-            if (this.kr.tasks[index].state !== 'finished' && body.state === 'finished'){
-              this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count + 1
+            if (this.kr.tasks[index].state !== 'active' && body.state === 'active'){
+              this.kr_parent.resolved_tasks_count -= 1
             }
             this.kr.tasks[index].state = body.state
             await this.retrieveKeyResultReviewDate()
@@ -189,8 +189,8 @@ export default {
           if (response.ok) {
             this.kr.tasks.splice(this.kr.tasks.indexOf(task), 1);
             this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count - 1
-            if (task.state === 'finished') {
-              this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count - 1
+            if (task.state !== 'active') {
+              this.kr_parent.resolved_tasks_count -= 1
             }
             await this.retrieveKeyResultReviewDate()
           } else {

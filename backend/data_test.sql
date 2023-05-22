@@ -2,6 +2,7 @@ insert into PValues(id, name, description) values (1, "Zdravie", "his project is
 insert into PValues(id, name, description) values (2, "Second", "ha");
 insert into PValues(id, name, description) values (3, "Third", "with objectives");
 insert into PValues(id, name, description) values (4, "Modifable", "x");
+insert into PValues(id, name, description) values (5, "New Static", "xxx");
 
 insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (1, 3, "achieved", "obj1", "some description", "10/03/2023", "12/03/2023");
 insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (2, 3, "active", "obj2", "some other description", "10/03/2023", "");
@@ -15,6 +16,7 @@ insert into Objectives(id, value_id, state, name, description, date_created, dat
 insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (10, 4, "active", "ideas", "for ideas", "21/05/2023", "");
 insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (11, 4, "active", "ideas", "for create", "21/05/2023", "");
 insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (12, 4, "active", "ideas", "for delete", "21/05/2023", "");
+insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values (13, 5, "active", "tasks count", "for check", "10/05/2023", "");
 
 insert into ObjectiveIdeas(id, objective_id, value) values (1, 10, "first");
 insert into ObjectiveIdeas(id, objective_id, value) values (2, 10, "second");
@@ -42,6 +44,7 @@ insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (19, 9, "active", "new", "D", "", "", "", "", "", "19/05/2023", "19/05/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (20, 9, "active", "missing", "D", "s", "m", "", "r", "t", "19/05/2023", "19/05/2023");
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (21, 9, "active", "not", "D", "s", "[!!!] m", "a", "r", "t", "19/05/2023", "19/05/2023");
+insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (22, 13, "active", "with tasks", "D", "s", "m", "a", "r", "t", "19/05/2023", "22/05/2023");
 
 insert into Tasks(id, kr_id, state, value) values (1, 3, "failed", "task1");
 insert into Tasks(id, kr_id, state, value) values (2, 4, "active", "task2.0");
@@ -54,3 +57,11 @@ insert into Tasks(id, kr_id, state, value) values (8, 9, "active", "no change");
 insert into Tasks(id, kr_id, state, value) values (9, 10, "active", "add one more");
 insert into Tasks(id, kr_id, state, value) values (10, 11, "active", "should stay");
 insert into Tasks(id, kr_id, state, value) values (11, 11, "active", "to del");
+insert into Tasks(id, kr_id, state, value) values (12, 22, "active", "activeX");
+insert into Tasks(id, kr_id, state, value) values (13, 22, "failed", "failedX");
+insert into Tasks(id, kr_id, state, value) values (14, 22, "active", "activeX");
+insert into Tasks(id, kr_id, state, value) values (15, 22, "finished", "finishedX");
+insert into Tasks(id, kr_id, state, value) values (16, 22, "finished", "finishedX");
+insert into Tasks(id, kr_id, state, value) values (17, 22, "active", "activeX");
+insert into Tasks(id, kr_id, state, value) values (18, 22, "failed", "failedX");
+insert into Tasks(id, kr_id, state, value) values (19, 22, "active", "activeX");

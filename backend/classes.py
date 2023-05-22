@@ -45,11 +45,11 @@ class KeyResult:
     def set_tasks(self, tasks: list[Task]):
         self.tasks: list[Task] = tasks
         # self.all_tasks_count = len(tasks)
-        # self.finished_tasks_count = sum(map(lambda x : x.state == 'finished', tasks))
+        # self.resolved_tasks_count = sum(map(lambda x : x.state != 'active', tasks))
 
-    def set_tasks_count(self, all_tasks_count, finished_tasks_count):
+    def set_tasks_count(self, all_tasks_count, resolved_tasks_count):
         self.all_tasks_count = all_tasks_count
-        self.finished_tasks_count = finished_tasks_count
+        self.resolved_tasks_count = resolved_tasks_count
 
 
 class Objective:

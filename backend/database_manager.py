@@ -105,9 +105,9 @@ class DatabaseManager:
 
                 cursor.execute(sql('select count(*) from Tasks where kr_id=?'), (int(key_result.id),))
                 all_tasks_count = cursor.fetchone()[0]
-                cursor.execute(sql('select count(*) from Tasks where kr_id=? and state=?'), (int(key_result.id), 'finished'))
-                finished_tasks_count = cursor.fetchone()[0]
-                key_result.set_tasks_count(all_tasks_count, finished_tasks_count)
+                cursor.execute(sql('select count(*) from Tasks where kr_id=? and not state=?'), (int(key_result.id), 'active'))
+                resolved_tasks_count = cursor.fetchone()[0]
+                key_result.set_tasks_count(all_tasks_count, resolved_tasks_count)
 
                 key_results.append(key_result)
         return key_results

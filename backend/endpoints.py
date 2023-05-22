@@ -114,7 +114,7 @@ class KeyResults(Resource):
             data["state"] = "active"
             data["date_reviewed"] = date_created
             data["all_tasks_count"] = 0
-            data["finished_tasks_count"] = 0
+            data["resolved_tasks_count"] = 0
             return create_response(data, 201)
         except Exception as e:
             return create_exception_response(e)
