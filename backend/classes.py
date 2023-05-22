@@ -7,12 +7,12 @@ class JsonEncoder(JSONEncoder):
         return o.__dict__
 
 
+@dataclass(frozen=True)
 class Task:
-    def __init__(self, attributes: tuple):
-        self.id: str = attributes[0]
-        self.kr_id: str = attributes[1]
-        self.state: str = attributes[2]
-        self.value: str = attributes[3]
+    id: str
+    kr_id: str
+    state: str
+    value: str
 
 
 class KeyResult:
@@ -31,14 +31,25 @@ class KeyResult:
             self.r: str = attributes[8]
             self.t: str = attributes[9]
 
+        self.is_smart = len(attributes[5]) > 0 \
+                        and len(attributes[6]) > 0 \
+                        and len(attributes[7]) > 0 \
+                        and len(attributes[8]) > 0 \
+                        and len(attributes[9]) > 0 \
+                        and not str(attributes[5]).startswith("[!!!]") \
+                        and not str(attributes[6]).startswith("[!!!]") \
+                        and not str(attributes[7]).startswith("[!!!]") \
+                        and not str(attributes[8]).startswith("[!!!]") \
+                        and not str(attributes[9]).startswith("[!!!]")
+
     def set_tasks(self, tasks: list[Task]):
         self.tasks: list[Task] = tasks
         # self.all_tasks_count = len(tasks)
-        # self.finished_tasks_count = sum(map(lambda x : x.state == 'finished', tasks))
+        # self.resolved_tasks_count = sum(map(lambda x : x.state != 'active', tasks))
 
-    def set_tasks_count(self, all_tasks_count, finished_tasks_count):
+    def set_tasks_count(self, all_tasks_count, resolved_tasks_count):
         self.all_tasks_count = all_tasks_count
-        self.finished_tasks_count = finished_tasks_count
+        self.resolved_tasks_count = resolved_tasks_count
 
 
 class Objective:
@@ -54,6 +65,8 @@ class Objective:
     def set_key_results(self, key_results: list[KeyResult]):
         self.key_results: list[KeyResult] = key_results
 
+    def set_ideas_count(self, ideas_count):
+        self.ideas_count = ideas_count
 
 class Value:
     def __init__(self, attributes: tuple):
@@ -78,6 +91,13 @@ class Value:
 @dataclass(frozen=True)
 class Idea:
     id: str
+    value: str
+
+
+@dataclass(frozen=True)
+class ObjectiveIdea:
+    id: str
+    objective_id: str
     value: str
 
 

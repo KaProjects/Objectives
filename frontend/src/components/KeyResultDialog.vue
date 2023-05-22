@@ -4,7 +4,7 @@ import Editable from "@/components/Editable.vue";
 </script>
 
 <script>
-import {backend_fetch} from "@/properties";
+import {backend_fetch, string_to_html} from "@/utils";
 import {app_state} from "@/main";
 
 export default {
@@ -17,7 +17,8 @@ export default {
       editingValue: "",
       selectedTask: -1,
       confirmDeletionDialogs: [],
-      confirmStateDialogs: [false, false, false]
+      confirmStateDialogs: [false, false, false],
+      showSmart: false
     }
   },
   watch: {
@@ -47,7 +48,7 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(kr)
       }
-      await backend_fetch("/keyresult/" + this.kr.id, requestOptions)
+      await backend_fetch("/key_result/" + this.kr.id, requestOptions)
         .then(async response => {
           const body = await response.text();
           if (response.ok) {
@@ -62,6 +63,9 @@ export default {
 
             this.kr_parent.name = this.kr.name
             this.kr_parent.date_reviewed = this.kr.date_reviewed
+            this.kr.is_smart = this.validateSmart(this.kr.s) && this.validateSmart(this.kr.m)
+                && this.validateSmart(this.kr.a) && this.validateSmart(this.kr.r) && this.validateSmart(this.kr.t)
+            this.kr_parent.is_smart = this.kr.is_smart
           } else {
             this.handleUpdateKeyResultError(body)
           }})
@@ -80,7 +84,7 @@ export default {
       this.values[6] = this.kr.t
     },
     startEditing(index){
-      if (this.kr.state === 'active') {
+      if (this.kr.state === 'active' && this.kr_parent.obj_state === 'active') {
         this.stopEditing()
         this.editingValue = this.values[index]
         this.editing[index] = true
@@ -92,7 +96,7 @@ export default {
       this.updateKeyResult()
     },
     startEditingTask(index){
-      if (this.kr.state === 'active') {
+      if (this.kr.state === 'active' && this.kr_parent.obj_state === 'active') {
         this.stopEditing()
         this.editingValue = this.kr.tasks[index].value
         this.editing[8][index] = true
@@ -123,6 +127,7 @@ export default {
     },
     closeDialog(){
       this.stopEditing()
+      this.showSmart = false
       app_state.krDialogToggle = false
     },
     stopEditing(){
@@ -165,11 +170,11 @@ export default {
         .then(async response => {
           if (response.ok){
             const body = await response.json();
-            if (this.kr.tasks[index].state === 'finished' && body.state !== 'finished'){
-              this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count - 1
+            if (this.kr.tasks[index].state === 'active' && body.state !== 'active'){
+              this.kr_parent.resolved_tasks_count += 1
             }
-            if (this.kr.tasks[index].state !== 'finished' && body.state === 'finished'){
-              this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count + 1
+            if (this.kr.tasks[index].state !== 'active' && body.state === 'active'){
+              this.kr_parent.resolved_tasks_count -= 1
             }
             this.kr.tasks[index].state = body.state
             await this.retrieveKeyResultReviewDate()
@@ -184,8 +189,8 @@ export default {
           if (response.ok) {
             this.kr.tasks.splice(this.kr.tasks.indexOf(task), 1);
             this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count - 1
-            if (task.state === 'finished') {
-              this.kr_parent.finished_tasks_count = this.kr_parent.finished_tasks_count - 1
+            if (task.state !== 'active') {
+              this.kr_parent.resolved_tasks_count -= 1
             }
             await this.retrieveKeyResultReviewDate()
           } else {
@@ -196,7 +201,7 @@ export default {
       this.confirmDeletionDialogs[index] = false
     },
     async retrieveKeyResultReviewDate(){
-      await backend_fetch("/keyresult/" + this.kr.id)
+      await backend_fetch("/key_result/" + this.kr.id)
         .then(async response => {
           if (response.ok){
             const body = await response.json();
@@ -221,9 +226,9 @@ export default {
       const requestOptions = {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(state)
+        body: JSON.stringify({"state": state})
       }
-      await backend_fetch("/keyresult/" + this.kr.id + "/state", requestOptions)
+      await backend_fetch("/key_result/" + this.kr.id + "/state", requestOptions)
         .then(async response => {
           const body = await response.text();
           if (response.ok){
@@ -235,6 +240,10 @@ export default {
             this.handleFetchError(body)
           }})
         .catch(error => this.handleFetchError(error))
+    },
+    string_to_html,
+    validateSmart(value){
+      return value !== null && value !== undefined && value.length > 0 && !value.startsWith("[!!!]")
     }
   },
 }
@@ -261,16 +270,21 @@ export default {
       </div>
 
       <Editable v-if="editing[1]" :cancel="stopEditing" :submit="update" :index=1>
-        <v-text-field @keydown.enter="update(1)" @keydown.esc="stopEditing"
-                      v-model="editingValue"
-                      label="Description"
-        ></v-text-field>
+        <v-textarea @keydown.esc="stopEditing"
+                    v-model="editingValue"
+                    label="Description"
+        ></v-textarea>
       </Editable>
-      <v-card-text v-else @click="startEditing(1)">
-        {{kr.description}}
-      </v-card-text>
+      <v-card-text v-else v-html="string_to_html(kr.description)" @click="startEditing(1)"/>
 
       <v-divider></v-divider>
+
+      <div v-if="kr.state === 'active' && kr_parent.obj_state === 'active' && kr.is_smart && !showSmart"
+           class="smartMark"
+           @click="showSmart = true">
+        <v-icon style="vertical-align: top;" icon="mdi-check-bold" />
+        SMART
+      </div>
 
       <Editable v-if="editing[2]" :cancel="stopEditing" :submit="update" :index=2>
         <v-text-field @keydown.enter="update(2)" @keydown.esc="stopEditing"
@@ -279,8 +293,11 @@ export default {
                       hint="The goal should have a clear, highly-specific endpoint. If your goal is too vague, it won’t be SMART."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(2)">
-        Specific: {{kr.s}}
+      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active' && (!kr.is_smart || showSmart)"
+           @click="startEditing(2)"
+           class="smart" :class="validateSmart(kr.s).toString()">
+        <div class="smartLabel">Specific:</div>
+        <div class="smartValue">{{kr.s}}</div>
       </div>
 
       <Editable v-if="editing[3]" :cancel="stopEditing" :submit="update" :index=3>
@@ -290,8 +307,11 @@ export default {
                       hint="You need to be able to accurately track your progress, so you can judge when a goal will be met."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(3)">
-        Measurable: {{kr.m}}
+      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active' && (!kr.is_smart || showSmart)"
+           @click="startEditing(3)"
+           class="smart" :class="validateSmart(kr.m).toString()">
+        <div class="smartLabel">Measurable:</div>
+        <div class="smartValue">{{kr.m}}</div>
       </div>
 
       <Editable v-if="editing[4]" :cancel="stopEditing" :submit="update" :index=4>
@@ -301,8 +321,11 @@ export default {
                       hint="Of course, setting a goal that’s too ambitious will see you struggle to achieve it. This will sap at your motivation, both now and in the future."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(4)">
-        Attainable: {{kr.a}}
+      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active' && (!kr.is_smart || showSmart)"
+           @click="startEditing(4)"
+           class="smart" :class="validateSmart(kr.a).toString()">
+        <div class="smartLabel">Attainable:</div>
+        <div class="smartValue">{{kr.a}}</div>
       </div>
 
       <Editable v-if="editing[5]" :cancel="stopEditing" :submit="update" :index=5>
@@ -312,8 +335,11 @@ export default {
                       hint="The goal you pick should be pertinent to your chosen field, or should benefit you directly."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(5)">
-        Relevant: {{kr.r}}
+      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active' && (!kr.is_smart || showSmart)"
+           @click="startEditing(5)"
+           class="smart" :class="validateSmart(kr.r).toString()">
+        <div class="smartLabel">Relevant:</div>
+        <div class="smartValue">{{kr.r}}</div>
       </div>
 
       <Editable v-if="editing[6]" :cancel="stopEditing" :submit="update" :index=6>
@@ -323,8 +349,11 @@ export default {
                       hint="Finally, setting a timeframe for your goal helps quantify it further, and helps keep your focus on track."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active'" class="smart" @click="startEditing(6)">
-        Time-Bound: {{kr.t}}
+      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active' && (!kr.is_smart || showSmart)"
+           @click="startEditing(6)"
+           class="smart" :class="validateSmart(kr.t).toString()">
+        <div class="smartLabel">Time-Bound:</div>
+        <div class="smartValue">{{kr.t}}</div>
       </div>
 
       <v-divider></v-divider>
@@ -339,20 +368,21 @@ export default {
         <div v-else class="task"
              @mouseover="selectedTask = index"
              @mouseleave="selectedTask = -1">
-          <div style="flex: 25;" @click="startEditingTask(index)">
+          <div :class="task.state">
             <v-icon icon="mdi-close-box-outline" large v-if="task.state === 'failed'"/>
             <v-icon icon="mdi-checkbox-marked-outline" large v-if="task.state === 'finished'"/>
             <v-icon icon="mdi-checkbox-blank-outline" large v-if="task.state === 'active'"/>
-            {{task.value}}
           </div>
+          <div v-html="string_to_html(task.value)" @click="startEditingTask(index)" :class="task.state" style="display: inline; padding-left: 3px; flex: 25;"/>
+
           <v-icon style="flex: 1;" icon="mdi-checkbox-blank-outline" large
-                  v-if="selectedTask === index && task.state !== 'active' && kr.state === 'active'"
+                  v-if="selectedTask === index && task.state !== 'active' && kr.state === 'active' && kr_parent.obj_state === 'active'"
                   @click="updateTaskState(index, 'active')"/>
           <v-icon style="flex: 1;" icon="mdi-checkbox-marked-outline" large
-                  v-if="selectedTask === index && task.state !== 'finished' && kr.state === 'active'"
+                  v-if="selectedTask === index && task.state !== 'finished' && kr.state === 'active' && kr_parent.obj_state === 'active'"
                   @click="updateTaskState(index, 'finished')"/>
           <v-icon style="flex: 1;" icon="mdi-close-box-outline" large
-                  v-if="selectedTask === index && task.state !== 'failed' && kr.state === 'active'"
+                  v-if="selectedTask === index && task.state !== 'failed' && kr.state === 'active' && kr_parent.obj_state === 'active'"
                   @click="updateTaskState(index, 'failed')"/>
 
           <v-dialog
@@ -360,7 +390,7 @@ export default {
               width="300"
           >
             <template v-slot:activator="{ props }">
-              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedTask === index && kr.state === 'active'"/>
+              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedTask === index && kr.state === 'active' && kr_parent.obj_state === 'active'"/>
             </template>
 
             <v-card>
@@ -384,14 +414,14 @@ export default {
                       label="Add Task"
         ></v-text-field>
       </Editable>
-      <v-btn v-else v-if="kr.state === 'active'" color="secondary" @click="startEditing(7)">
+      <v-btn v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active'" color="secondary" @click="startEditing(7)">
         Add Task
       </v-btn>
 
     </v-card>
 
     <div>
-      <v-dialog v-model="confirmStateDialogs[0]" width="300" v-if="kr.state === 'active'">
+      <v-dialog v-model="confirmStateDialogs[0]" width="300" v-if="kr.state === 'active' && kr_parent.obj_state === 'active'">
         <template v-slot:activator="{ props }">
           <v-btn style="width: 50%;" color="red" v-bind="props">fail</v-btn>
         </template>
@@ -404,7 +434,7 @@ export default {
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-dialog v-model="confirmStateDialogs[1]" width="300" v-if="kr.state === 'active'">
+      <v-dialog v-model="confirmStateDialogs[1]" width="300" v-if="kr.state === 'active' && kr_parent.obj_state === 'active'">
         <template v-slot:activator="{ props }">
           <v-btn style="width: 50%;" color="green" v-bind="props">complete</v-btn>
         </template>
@@ -443,11 +473,39 @@ export default {
   background: white;
 }
 .task:hover {
-  display: flex;
   background: #f5f5f5;
 }
+.task > div.failed {
+  color: rgba(246, 28, 28, 0.40);
+  text-decoration: line-through;
+}
+.task > div.finished {
+  color: rgba(74, 194, 6, 0.35);
+  text-decoration: line-through;
+}
 .smart {
+  display: flex;
   padding-left: 5px;
+}
+.smart.false {
+  color: #ff0000;
+}
+.smart.true {
+
+}
+.smartLabel {
+  min-width: 95px;
+}
+.smartValue {
+  display: inline;
+}
+.smartMark {
+  padding-left: 10px;
+  color: #017901;
+  font-weight: normal;
+}
+.smartMark:hover {
+  font-weight: bold;
 }
 .datesInfo {
   position: relative;

@@ -4,10 +4,17 @@
      check envs_prod_db.json
      bump build deploy sh versions
 
-## 1.1
+## 1.2
 Released: TODO
 
     TODO
+
+## 1.1
+Released: 22.5.2023
+
+    - rewrited rest using flask-restx
+    - rest api docs
+    - ObjectiveIdeas crud
 
 ## 1.0
 Released: 29.4.2023

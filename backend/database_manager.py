@@ -6,7 +6,7 @@ from sqlite3 import Connection
 
 import mysql.connector
 
-from classes import Value, Objective, KeyResult, Task
+from classes import Value, Objective, KeyResult, Task, ObjectiveIdea
 
 
 class DataSource(Enum):
@@ -90,7 +90,10 @@ class DatabaseManager:
         with self.cursor() as cursor:
             cursor.execute(sql('select * from Objectives where value_id=?'), (int(value_id),))
             for objective in cursor.fetchall():
-                objectives.append(Objective(objective))
+                obj = Objective(objective)
+                cursor.execute(sql('select count(*) from ObjectiveIdeas where objective_id=?'), (int(obj.id),))
+                obj.set_ideas_count(cursor.fetchone()[0])
+                objectives.append(obj)
         return objectives
 
     def select_key_results_for_objective(self, objective_id: str) -> list:
@@ -102,9 +105,9 @@ class DatabaseManager:
 
                 cursor.execute(sql('select count(*) from Tasks where kr_id=?'), (int(key_result.id),))
                 all_tasks_count = cursor.fetchone()[0]
-                cursor.execute(sql('select count(*) from Tasks where kr_id=? and state=?'), (int(key_result.id), 'finished'))
-                finished_tasks_count = cursor.fetchone()[0]
-                key_result.set_tasks_count(all_tasks_count, finished_tasks_count)
+                cursor.execute(sql('select count(*) from Tasks where kr_id=? and not state=?'), (int(key_result.id), 'active'))
+                resolved_tasks_count = cursor.fetchone()[0]
+                key_result.set_tasks_count(all_tasks_count, resolved_tasks_count)
 
                 key_results.append(key_result)
         return key_results
@@ -139,9 +142,9 @@ class DatabaseManager:
     def select_tasks_for_key_result(self, id):
         tasks = list()
         with self.cursor() as cursor:
-            cursor.execute(sql('select * from Tasks where kr_id=?'), (int(id),))
+            cursor.execute(sql('select id,kr_id,state,value from Tasks where kr_id=?'), (int(id),))
             for task in cursor.fetchall():
-                tasks.append(Task(task))
+                tasks.append(Task(task[0], task[1], task[2], task[3]))
         return tasks
 
     def insert_task(self, value, kr_id) -> int:
@@ -177,3 +180,25 @@ class DatabaseManager:
     def update_objective_state(self, id, state, date):
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update Objectives set state=?,date_finished=? where id=?'), (state, date, int(id)))
+
+    def select_ideas_for_objective(self, objective_id):
+        ideas = list()
+        with self.cursor() as cursor:
+            cursor.execute(sql('select id,objective_id,value from ObjectiveIdeas where objective_id=?'), (int(objective_id),))
+            for idea in cursor.fetchall():
+                ideas.append(ObjectiveIdea(idea[0], idea[1], idea[2]))
+        return ideas
+
+    def update_objective_idea(self, idea_id, value):
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql('update ObjectiveIdeas set value=? where id=?'), (value, int(idea_id)))
+
+    def insert_objective_idea(self, objective_id, value) -> int:
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql("insert into ObjectiveIdeas(objective_id, value) values (?,?)"), (objective_id, value))
+            id = cursor.lastrowid
+            return id
+
+    def delete_objective_idea(self, idea_id):
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql('delete from ObjectiveIdeas where id=?'), (int(idea_id),))

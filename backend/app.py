@@ -41,4 +41,5 @@ if __name__ == '__main__':
     app = Flask(__name__)
     CORS(rest, resources={r"/*": {"origins": origins}})
     app.register_blueprint(rest)
+    app.config["RESTX_MASK_SWAGGER"] = False
     app.run(port=port, debug=debug, host="0.0.0.0")

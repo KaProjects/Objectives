@@ -1,10 +1,9 @@
 <script setup>
-import { app_state } from '@/main'
-import Editable from "@/components/Editable.vue";
-</script>
+import {app_state} from '@/main'
+import Editable from "@/components/Editable.vue";</script>
 
 <script>
-import {backend_fetch} from "@/properties";
+import {backend_fetch, string_to_html} from "@/utils";
 import {app_state} from "@/main";
 
 export default {
@@ -12,16 +11,20 @@ export default {
   props: ["obj"],
   data() {
     return {
-      values: [null, null],
-      editing: [false, false],
+      values: [null, null, ""],
+      editing: [false, false, false, []],
       editingValue: "",
       confirmStateDialogs: [false, false, false],
+      selectedIdea: -1,
+      ideas: [],
+      confirmDeletionDialogs: [],
     }
   },
   watch: {
     obj() {
       this.values[0] = this.obj.name
       this.values[1] = this.obj.description
+      this.loadIdeas()
     }
   },
   methods: {
@@ -71,7 +74,7 @@ export default {
       app_state.objDialogToggle = false
     },
     stopEditing(){
-      this.editing = [false, false]
+      this.editing = [false, false, false, []]
     },
     async updateObjectiveState(index) {
       let state = null
@@ -87,7 +90,7 @@ export default {
       const requestOptions = {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(state)
+        body: JSON.stringify({"state": state})
       }
       await backend_fetch("/objective/" + this.obj.id + "/state", requestOptions)
         .then(async response => {
@@ -102,6 +105,77 @@ export default {
             this.handleFetchError(await response.text())
           }})
         .catch(error => this.handleFetchError(error))
+    },
+    string_to_html,
+    async loadIdeas() {
+      await backend_fetch("/objective/" + this.obj.id + "/idea")
+          .then(async response => {
+            if (response.ok){
+              this.ideas = await response.json()
+            } else {
+              this.handleFetchError(await response.text())
+            }})
+          .catch(error => this.handleFetchError(error))
+    },
+    startEditingIdea(index){
+      if (this.obj.state === 'active') {
+        this.stopEditing()
+        this.editingValue = this.ideas[index].value
+        this.editing[3][index] = true
+      }
+    },
+    async updateIdeaValue(index){
+      const idea = {value: this.editingValue}
+
+      const requestOptions = {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(idea)
+      }
+      await backend_fetch("/objective/" + this.obj.id + "/idea/" + this.ideas[index].id, requestOptions)
+          .then(async response => {
+            if (response.ok){
+              const body = await response.json();
+              this.ideas[index].value = body.value
+            } else {
+              this.handleFetchError(await response.text())
+            }})
+          .catch(error => this.handleFetchError(error))
+
+      this.stopEditing()
+    },
+    async addIdea(){
+      const idea = {value: this.editingValue}
+
+      const requestOptions = {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(idea)
+      }
+      await backend_fetch("/objective/" + this.obj.id + "/idea", requestOptions)
+          .then(async response => {
+            if (response.ok){
+              this.ideas.push(await response.json())
+              this.obj.ideas_count = this.obj.ideas_count + 1
+            } else {
+              this.handleFetchError(await response.text())
+            }})
+          .catch(error => this.handleFetchError(error))
+
+      this.editing[2] = false
+    },
+    async deleteIdea(idea, index){
+      await backend_fetch("/objective/" + this.obj.id + "/idea/" + idea.id, {method: "DELETE"})
+          .then(async response => {
+            if (response.ok) {
+              this.ideas.splice(this.ideas.indexOf(idea), 1);
+              this.obj.ideas_count = this.obj.ideas_count - 1
+            } else {
+              this.handleFetchError(await response.text())
+            }})
+          .catch(error => this.handleFetchError(error))
+
+      this.confirmDeletionDialogs[index] = false
     },
   }
 }
@@ -126,14 +200,60 @@ export default {
       </div>
 
       <Editable v-if="editing[1]" :cancel="stopEditing" :submit="updateObjective" :index=1>
-        <v-text-field @keydown.enter="updateObjective(1)" @keydown.esc="stopEditing"
+        <v-textarea @keydown.esc="stopEditing"
+                    v-model="editingValue"
+                    label="Description"
+        ></v-textarea>
+      </Editable>
+      <v-card-text v-else v-html="string_to_html(obj.description)" @click="startEditing(1)"/>
+
+      <v-divider></v-divider>
+
+      <div v-for="(idea, index) in this.ideas">
+        <Editable v-if="editing[3][index]" :cancel="stopEditing" :submit="updateIdeaValue" :index=index>
+          <v-text-field @keydown.enter="updateIdeaValue(index)" @keydown.esc="stopEditing"
+                        v-model="editingValue"
+                        label="Idea"
+          ></v-text-field>
+        </Editable>
+        <div v-else class="idea"
+             @mouseover="selectedIdea = index"
+             @mouseleave="selectedIdea = -1">
+          <div v-if="idea.value === ''">|</div>
+          <div v-html="string_to_html(idea.value)" @click="startEditingIdea(index)" style="margin-left: 5px; flex: 25;"/>
+
+          <v-dialog
+              v-model="confirmDeletionDialogs[index]"
+              width="300"
+          >
+            <template v-slot:activator="{ props }">
+              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedIdea === index && this.obj.state === 'active'"/>
+            </template>
+
+            <v-card>
+              <v-card-title class="text-h5 grey lighten-2">
+                Delete Idea?
+              </v-card-title>
+              <v-card-text>
+                {{ idea.value }}
+              </v-card-text>
+              <v-card-actions>
+                <v-btn block @click="deleteIdea(idea, index)">Confirm</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+        </div>
+      </div>
+
+      <Editable v-if="editing[2]" :cancel="stopEditing" :submit="addIdea">
+        <v-text-field @keydown.enter="addIdea" @keydown.esc="stopEditing"
                       v-model="editingValue"
-                      label="Description"
+                      label="Add Idea"
         ></v-text-field>
       </Editable>
-      <v-card-text v-else @click="startEditing(1)">
-        {{obj.description}}
-      </v-card-text>
+      <v-btn v-else v-if="obj.state === 'active'" color="secondary" @click="startEditing(2)">
+        Add Idea
+      </v-btn>
 
     </v-card>
 
@@ -185,6 +305,13 @@ export default {
 </template>
 
 <style scoped>
+.idea {
+  display: flex;
+  background: white;
+}
+.idea:hover {
+  background: #f5f5f5;
+}
 .datesInfo {
   position: relative;
 }
