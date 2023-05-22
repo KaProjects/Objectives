@@ -209,7 +209,7 @@ export default {
 
       <v-divider></v-divider>
 
-      <div v-for="(idea, index) in this.ideas">
+      <div v-for="(idea, index) in ideas">
         <Editable v-if="editing[3][index]" :cancel="stopEditing" :submit="updateIdeaValue" :index=index>
           <v-text-field @keydown.enter="updateIdeaValue(index)" @keydown.esc="stopEditing"
                         v-model="editingValue"
@@ -227,7 +227,7 @@ export default {
               width="300"
           >
             <template v-slot:activator="{ props }">
-              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedIdea === index && this.obj.state === 'active'"/>
+              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedIdea === index && obj.state === 'active'"/>
             </template>
 
             <v-card>
