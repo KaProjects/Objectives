@@ -11,4 +11,6 @@ RUN pip install --user firebase-admin==4.5.2
 RUN pip install --user mysql-connector-python
 RUN pip install --user flask-restx
 
+ENV TZ=Europe/Prague
+
 CMD ["python3","-u","app.py", "prod"]
