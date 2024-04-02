@@ -1,5 +1,5 @@
 <script setup>
-import Value from "@/components/Value.vue";
+import Value from "@/view/Value.vue";
 import { app_state } from './main.js'
 </script>
 <script>
