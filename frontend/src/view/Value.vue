@@ -23,6 +23,7 @@ export default {
       newObj: {name: "", description: ""},
       selectedObjective_index: -1,
       selectedObjective: Object,
+      showIdeas: false,
     }
   },
   watch: {
@@ -178,7 +179,7 @@ export default {
   <div>
 
     <div class="appbar">
-      <v-btn class="backBtn" icon="mdi-arrow-left" @click="app_state.unselect_value()"/>
+      <v-btn class="button" icon="mdi-arrow-left" @click="app_state.unselect_value()"/>
       <h1 class="title">{{value.name}}</h1>
 
       <v-tabs v-model="tab" bg-color="primary">
@@ -186,9 +187,12 @@ export default {
         <v-tab value="inactive">Done</v-tab>
       </v-tabs>
 
+      <v-btn class="button" icon="mdi-lightbulb" @click.stop="showIdeas = false" v-if="showIdeas"/>
+      <v-btn class="button" icon="mdi-lightbulb-outline" @click.stop="showIdeas = true" v-else/>
+
       <v-dialog v-model="openAddObjDialog" width="300">
         <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" class="addObj" icon="mdi-plus"/>
+          <v-btn v-bind="props" class="button" icon="mdi-plus"/>
         </template>
         <v-card>
           <v-text-field label="Name" v-model="newObj.name"/>
@@ -205,7 +209,7 @@ export default {
     <ObjectiveDialog :obj="selectedObjective" v-on:selectTab="selectTab" />
 
     <div style="display: flex;">
-      <Ideas :valueId="app_state.value.id" class="obj"  />
+      <Ideas :valueId="app_state.value.id" class="obj" v-if="showIdeas" />
 
       <div style="display: flex; overflow-x:scroll;">
         <v-card class="obj" :class="objective.state" width="300" elevation="3" shaped
@@ -354,21 +358,14 @@ export default {
 .title {
   width: 300px;
 }
-.backBtn {
+.button {
   margin-left: 10px;
   margin-right: 10px;
   background: #181818;
   color: darkgrey
 }
-.backBtn:hover {
+.button:hover {
   background: #2f2f2f;
-}
-.addObj {
-  background: #181818;
-  color: darkgrey;
-}
-.addObj:hover {
-  background: grey;
 }
 
 </style>
