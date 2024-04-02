@@ -175,21 +175,19 @@ export default {
 <template>
   <div>
 
-    <div>
-      <v-btn class="backBtn" >
-        <v-icon icon="mdi-arrow-left" size="25" @click="app_state.unselect_value()"/>
-      </v-btn>
+    <div class="appbar">
+      <v-btn class="backBtn" icon="mdi-arrow-left" @click="app_state.unselect_value()"/>
 
-      <h1 class="inLine" style="width: 300px;" >{{value.name}}</h1>
+      <h1 class="title">{{value.name}}</h1>
 
-      <v-tabs class="inLine" v-model="tab" bg-color="primary">
+      <v-tabs v-model="tab" bg-color="primary">
         <v-tab value="active">Active</v-tab>
         <v-tab value="inactive">Done</v-tab>
       </v-tabs>
 
       <v-dialog v-model="newObjDialog" width="300">
         <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" class="addObj">ADD</v-btn>
+          <v-btn v-bind="props" class="addObj" icon="mdi-plus"/>
         </template>
         <v-card>
           <v-text-field
@@ -357,21 +355,28 @@ export default {
   position: absolute;
   bottom: 0;
 }
-.addObj {
-  background: #181818;
-  color: darkgrey;
-  margin-top: -40px
+
+.appbar {
+  display: inline-flex;
 }
-.addObj:hover {
-  background: grey;
+.title {
+  width: 300px;
 }
 .backBtn {
-  width: 80px;
-  margin-top: -10px;
+  margin-left: 10px;
+  margin-right: 10px;
   background: #181818;
   color: darkgrey
 }
 .backBtn:hover {
   background: #2f2f2f;
 }
+.addObj {
+  background: #181818;
+  color: darkgrey;
+}
+.addObj:hover {
+  background: grey;
+}
+
 </style>
