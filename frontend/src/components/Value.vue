@@ -19,11 +19,14 @@ export default {
       selectedKr: Object,
       selectedKr_parent: Object,
       tab: "active",
-      newObjDialog: false,
+      openAddObjDialog: false,
       newObj: {name: "", description: ""},
       selectedObjective_index: -1,
       selectedObjective: Object,
     }
+  },
+  watch: {
+    openAddObjDialog(flag) {if (flag) {this.newObj = {name: "", description: ""}}}
   },
   methods: {
     async loadData() {
@@ -140,8 +143,7 @@ export default {
           if (response.ok){
             const body = await response.json()
             this.value.objectives.push(body)
-            this.newObjDialog = false
-            this.newObj = {name: "", description: ""}
+            this.openAddObjDialog = false
             this.tab = "active"
           } else {
             this.handleFetchError(await response.text())
@@ -177,7 +179,6 @@ export default {
 
     <div class="appbar">
       <v-btn class="backBtn" icon="mdi-arrow-left" @click="app_state.unselect_value()"/>
-
       <h1 class="title">{{value.name}}</h1>
 
       <v-tabs v-model="tab" bg-color="primary">
@@ -185,27 +186,18 @@ export default {
         <v-tab value="inactive">Done</v-tab>
       </v-tabs>
 
-      <v-dialog v-model="newObjDialog" width="300">
+      <v-dialog v-model="openAddObjDialog" width="300">
         <template v-slot:activator="{ props }">
           <v-btn v-bind="props" class="addObj" icon="mdi-plus"/>
         </template>
         <v-card>
-          <v-text-field
-              label="Name"
-              v-model="newObj.name"
-              required
-          ></v-text-field>
-          <v-text-field
-              label="Description"
-              v-model="newObj.description"
-              required
-          ></v-text-field>
+          <v-text-field label="Name" v-model="newObj.name"/>
+          <v-text-field label="Description" v-model="newObj.description"/>
           <v-card-actions>
-            <v-btn block @click="addObjective">Add</v-btn>
+            <v-btn block @click="addObjective" :disabled="!newObj.name">Add</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
-
     </div>
 
     <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" />
