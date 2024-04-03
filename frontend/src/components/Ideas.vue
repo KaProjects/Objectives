@@ -68,7 +68,7 @@ export default {
 }
 </script>
 <template>
-  <v-card width="300" elevation="3" shaped>
+  <v-card width="300" elevation="3" shaped max-height="calc(100vh - 70px)" style="overflow-y:scroll;">
     <v-card-title>Ideas</v-card-title>
     <v-progress-circular v-if="loading" style="margin: 0 0 10px 30px" indeterminate color="primary"></v-progress-circular>
     <div v-else>
@@ -77,7 +77,7 @@ export default {
                              @mouseover="selectedIdea = index"
                              @mouseleave="selectedIdea = -1">
           <div class="idea">
-            <v-list-item class="inLine">{{idea.value}}</v-list-item>
+            <v-list-item>{{idea.value}}</v-list-item>
 
             <v-dialog
                 v-model="confirmDeletionDialogs[index]"
@@ -141,7 +141,5 @@ export default {
   position: absolute;
   right: 0px;
 }
-.inLine {
-  display: inline-block;
-}
+
 </style>
