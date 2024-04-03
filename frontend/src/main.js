@@ -12,8 +12,6 @@ export const app_state = reactive({
     unselect_value() {
         this.value = null
     },
-    krDialogToggle: false,
-    objDialogToggle: false,
 })
 
 // Vuetify

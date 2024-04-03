@@ -33,3 +33,20 @@ export function string_to_html(string){
 
     return string
 }
+export function compare_dates(a, b){
+    let dateA = a.split("/")
+    let dateB = b.split("/")
+    if (dateA[2] !== dateB[2]){
+        return parseInt(dateA[2]) - parseInt(dateB[2])
+    } else {
+        if (dateA[1] !== dateB[1]) {
+            return parseInt(dateA[1]) - parseInt(dateB[1])
+        } else {
+            if (dateA[0] !== dateB[0]) {
+                return parseInt(dateA[0]) - parseInt(dateB[0])
+            } else {
+                return 0
+            }
+        }
+    }
+}

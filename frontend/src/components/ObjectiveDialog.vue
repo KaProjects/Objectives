@@ -1,10 +1,8 @@
 <script setup>
-import {app_state} from '@/main'
 import Editable from "@/components/Editable.vue";</script>
 
 <script>
 import {backend_fetch, string_to_html} from "@/utils";
-import {app_state} from "@/main";
 
 export default {
   name: "ObjectiveDialog",
@@ -71,7 +69,7 @@ export default {
     },
     closeDialog(){
       this.stopEditing()
-      app_state.objDialogToggle = false
+      this.$emit('close')
     },
     stopEditing(){
       this.editing = [false, false, false, []]
@@ -182,7 +180,7 @@ export default {
 </script>
 
 <template>
-  <v-dialog v-model="app_state.objDialogToggle" persistent width="600">
+  <v-dialog persistent width="600">
     <v-card>
       <Editable v-if="editing[0]" :cancel="stopEditing" :submit="updateObjective" :index=0>
         <v-text-field @keydown.enter="updateObjective(0)" @keydown.esc="stopEditing"

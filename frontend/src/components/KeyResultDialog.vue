@@ -1,11 +1,9 @@
 <script setup>
-import { app_state } from '@/main'
 import Editable from "@/components/Editable.vue";
 </script>
 
 <script>
 import {backend_fetch, string_to_html} from "@/utils";
-import {app_state} from "@/main";
 
 export default {
   name: "KeyResultDialog",
@@ -128,7 +126,7 @@ export default {
     closeDialog(){
       this.stopEditing()
       this.showSmart = false
-      app_state.krDialogToggle = false
+      this.$emit('close')
     },
     stopEditing(){
       this.editing = [false, false, false, false, false, false, false, false, []]
@@ -250,7 +248,7 @@ export default {
 </script>
 
 <template>
-  <v-dialog v-model="app_state.krDialogToggle" persistent width="600">
+  <v-dialog persistent width="600">
     <v-card>
 
       <Editable v-if="editing[0]" :cancel="stopEditing" :submit="update" :index=0>
