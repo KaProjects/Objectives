@@ -18,15 +18,8 @@ export default {
   },
   methods: {
     async loadData() {
-      await backend_fetch("/value/" + this.valueId + "/idea")
-        .then(async response => {
-          if (response.ok){
-            this.ideas = await response.json()
-            this.loading = false
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
+      this.ideas = await backend_fetch("/value/" + this.valueId + "/idea")
+      this.loading = false
     },
     async addIdea() {
       const requestOptions = {
@@ -34,32 +27,15 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({idea: this.newIdea})
       }
-      await backend_fetch("/value/" + this.valueId + "/idea", requestOptions)
-        .then(async response => {
-          if (response.ok){
-            const body = await response.json()
-            this.ideas.push({id: body.new_id, value: body.idea})
-            this.newIdeaDialog = false
-            this.newIdea = ""
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
-    },
-    handleFetchError(error){
-      console.error(error)
-      alert(error)
+      const body = await backend_fetch("/value/" + this.valueId + "/idea", requestOptions)
+      this.ideas.push({id: body.new_id, value: body.idea})
+      this.newIdeaDialog = false
+      this.newIdea = ""
     },
     async deleteIdea(idea, index){
       await backend_fetch("/value/" + this.valueId + "/idea/" + idea.id, {method: "DELETE"})
-        .then(async response => {
-          if (response.ok){
-            this.ideas.splice(this.ideas.indexOf(idea), 1);
-            this.confirmDeletionDialogs[index] = false
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
+      this.ideas.splice(this.ideas.indexOf(idea), 1);
+      this.confirmDeletionDialogs[index] = false
     },
   },
   mounted() {
