@@ -47,25 +47,14 @@ export default {
         body: JSON.stringify(obj)
       }
 
-      await backend_fetch("/objective/" + this.obj.id, requestOptions)
-        .then(async response => {
-          const body = await response.text();
-          if (response.ok) {
-            this.obj.name = this.values[0]
-            this.obj.description = this.values[1]
-          } else {
-            this.handleUpdateObjectiveError(body)
-          }})
-        .catch(error => this.handleUpdateObjectiveError(error))
-    },
-    handleUpdateObjectiveError(error){
-      this.handleFetchError(error)
-      this.values[0] = this.obj.name
-      this.values[1] = this.obj.description
-    },
-    handleFetchError(error){
-      console.error(error)
-      alert(error)
+      const body = await backend_fetch("/objective/" + this.obj.id, requestOptions)
+      if (body === undefined) {
+        this.values[0] = this.obj.name
+        this.values[1] = this.obj.description
+      } else {
+        this.obj.name = this.values[0]
+        this.obj.description = this.values[1]
+      }
     },
     closeDialog(){
       this.stopEditing()
@@ -90,30 +79,16 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({"state": state})
       }
-      await backend_fetch("/objective/" + this.obj.id + "/state", requestOptions)
-        .then(async response => {
-          if (response.ok) {
-            const body = await response.json();
-            this.obj.state = body.state
-            this.obj.date_finished = body.date
-            this.confirmStateDialogs[index] = false
-            this.closeDialog()
-            this.$emit('selectTab', body.state)
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
+      const body = await backend_fetch("/objective/" + this.obj.id + "/state", requestOptions)
+      this.obj.state = body.state
+      this.obj.date_finished = body.date
+      this.confirmStateDialogs[index] = false
+      this.closeDialog()
+      this.$emit('selectTab', body.state)
     },
     string_to_html,
     async loadIdeas() {
-      await backend_fetch("/objective/" + this.obj.id + "/idea")
-          .then(async response => {
-            if (response.ok){
-              this.ideas = await response.json()
-            } else {
-              this.handleFetchError(await response.text())
-            }})
-          .catch(error => this.handleFetchError(error))
+      this.ideas = await backend_fetch("/objective/" + this.obj.id + "/idea")
     },
     startEditingIdea(index){
       if (this.obj.state === 'active') {
@@ -130,16 +105,8 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(idea)
       }
-      await backend_fetch("/objective/" + this.obj.id + "/idea/" + this.ideas[index].id, requestOptions)
-          .then(async response => {
-            if (response.ok){
-              const body = await response.json();
-              this.ideas[index].value = body.value
-            } else {
-              this.handleFetchError(await response.text())
-            }})
-          .catch(error => this.handleFetchError(error))
-
+      const body = await backend_fetch("/objective/" + this.obj.id + "/idea/" + this.ideas[index].id, requestOptions)
+      this.ideas[index].value = body.value
       this.stopEditing()
     },
     async addIdea(){
@@ -150,29 +117,15 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(idea)
       }
-      await backend_fetch("/objective/" + this.obj.id + "/idea", requestOptions)
-          .then(async response => {
-            if (response.ok){
-              this.ideas.push(await response.json())
-              this.obj.ideas_count = this.obj.ideas_count + 1
-            } else {
-              this.handleFetchError(await response.text())
-            }})
-          .catch(error => this.handleFetchError(error))
-
+      const body = await backend_fetch("/objective/" + this.obj.id + "/idea", requestOptions)
+      this.ideas.push(body)
+      this.obj.ideas_count = this.obj.ideas_count + 1
       this.editing[2] = false
     },
     async deleteIdea(idea, index){
       await backend_fetch("/objective/" + this.obj.id + "/idea/" + idea.id, {method: "DELETE"})
-          .then(async response => {
-            if (response.ok) {
-              this.ideas.splice(this.ideas.indexOf(idea), 1);
-              this.obj.ideas_count = this.obj.ideas_count - 1
-            } else {
-              this.handleFetchError(await response.text())
-            }})
-          .catch(error => this.handleFetchError(error))
-
+      this.ideas.splice(this.ideas.indexOf(idea), 1);
+      this.obj.ideas_count = this.obj.ideas_count - 1
       this.confirmDeletionDialogs[index] = false
     },
   }

@@ -17,6 +17,7 @@ export default {
       newKr: {name: "", description: ""},
       selectedKr: Object,
       selectedKr_parent: Object,
+      selectedObj: Object,
       openKrDialog: false,
     }
   },
@@ -47,17 +48,14 @@ export default {
       }
     },
     async openKeyResult(kr, obj_state) {
-      await backend_fetch("/key_result/" + kr.id)
-          .then(async response => {
-            if (response.ok){
-              this.selectedKr = await response.json()
-              this.selectedKr_parent = kr
-              this.selectedKr_parent.obj_state = obj_state
-              this.openKrDialog = true
-            } else {
-              this.handleFetchError(await response.text())
-            }})
-          .catch(error => this.handleFetchError(error))
+      this.selectedKr = await backend_fetch("/key_result/" + kr.id)
+      this.selectedKr_parent = kr
+      this.selectedKr_parent.obj_state = obj_state
+      this.openKrDialog = true
+    },
+    openObjective() {
+      this.selectedObj = this.objective
+      this.openObjDialog = true
     },
     async addKeyResult() {
       const requestOptions = {
@@ -65,16 +63,9 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({name: this.newKr.name, description: this.newKr.description, objective_id: this.objective.id})
       }
-      await backend_fetch("/key_result", requestOptions)
-          .then(async response => {
-            if (response.ok){
-              const body = await response.json()
-              this.objective.key_results.push(body)
-              this.openAddKrDialog = false
-            } else {
-              this.handleFetchError(await response.text())
-            }})
-          .catch(error => this.handleFetchError(error))
+      const body = await backend_fetch("/key_result", requestOptions)
+      this.objective.key_results.push(body)
+      this.openAddKrDialog = false
     },
   },
   components: {
@@ -88,7 +79,7 @@ export default {
           @mouseover="focused = true"
           @mouseleave="focused = false"
   >
-    <ObjectiveDialog :obj="objective" v-model="openObjDialog" v-on:close="this.openObjDialog=false" v-on:selectTab="selectTab"/>
+    <ObjectiveDialog :obj="selectedObj" v-model="openObjDialog" v-on:close="this.openObjDialog=false" v-on:selectTab="selectTab"/>
     <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" v-model="openKrDialog" v-on:close="this.openKrDialog=false" />
 
     <v-card-title>{{objective.name}}</v-card-title>
@@ -96,7 +87,7 @@ export default {
 
     <v-icon class="objEdit" icon="mdi-pencil-circle-outline" large
             v-if="focused"
-            @click="this.openObjDialog = true"/>
+            @click="openObjective()"/>
 
     <div class="objIdeas" v-if="objective.ideas_count > 0">
       <v-icon icon="mdi-lightbulb-variant-outline" size="15" style="margin: 0 auto;"/>

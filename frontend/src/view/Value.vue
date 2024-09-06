@@ -24,18 +24,7 @@ export default {
   },
   methods: {
     async loadData() {
-      await backend_fetch("/value/" + app_state.value.id)
-        .then(async response => {
-          if (response.ok){
-            this.value = await response.json()
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
-    },
-    handleFetchError(error){
-      console.error(error)
-      alert(error)
+      this.value = await backend_fetch("/value/" + app_state.value.id)
     },
     compareObjectives(a, b) {
       let comparison
@@ -60,17 +49,10 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({name: this.newObj.name, description: this.newObj.description, value_id: this.value.id})
       }
-      await backend_fetch("/objective", requestOptions)
-        .then(async response => {
-          if (response.ok){
-            const body = await response.json()
-            this.value.objectives.push(body)
-            this.openAddObjDialog = false
-            this.tab = "active"
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
+      const body = await backend_fetch("/objective", requestOptions)
+      this.value.objectives.push(body)
+      this.openAddObjDialog = false
+      this.tab = "active"
     },
     openObjectiveDialog(objective) {
       this.selectedObjective = objective

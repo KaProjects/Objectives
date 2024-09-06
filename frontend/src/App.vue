@@ -13,18 +13,7 @@ export default {
   },
   methods: {
     async loadData() {
-      await backend_fetch("/values")
-        .then(async response => {
-          if (response.ok) {
-            this.values = await response.json()
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
-    },
-    handleFetchError(error){
-      console.error(error)
-      alert(error)
+      this.values = await backend_fetch("/values")
     },
     addValue() {
       alert('add value')
@@ -37,40 +26,50 @@ export default {
 </script>
 
 <template>
-  <div class="values0" v-if="app_state.value == null">
-    <div class="values">
 
-      <v-card class="value" width="600" elevation="20" outlined shaped
+  <v-alert
+      v-if=app_state.fetchErrorValue
+      title="Backend Error"
+      type="error"
+  >
+    {{app_state.fetchErrorValue}}
+  </v-alert>
 
-              v-for="value in values"
-              @click.stop="app_state.select_value(value)">
-        <v-card-text>
-          <div style="display: flex; justify-content: space-around">
-            <div class="text-h4 text--primary">
-              {{value.name}}
+  <div v-else>
+    <div class="values0" v-if="app_state.value == null">
+      <div class="values">
+
+        <v-card class="value" width="600" elevation="20" outlined shaped
+
+                v-for="value in values"
+                @click.stop="app_state.select_value(value)">
+          <v-card-text>
+            <div style="display: flex; justify-content: space-around">
+              <div class="text-h4 text--primary">
+                {{value.name}}
+              </div>
+              <div style="display: flex; justify-content: flex-end" >
+                Active: {{value.active_count}} Achievements: {{value.achievements_count}}
+              </div>
             </div>
-            <div style="display: flex; justify-content: flex-end" >
-              Active: {{value.active_count}} Achievements: {{value.achievements_count}}
+            <div class="text--primary">
+              {{value.description}}
             </div>
-          </div>
-          <div class="text--primary">
-            {{value.description}}
-          </div>
-        </v-card-text>
-      </v-card>
+          </v-card-text>
+        </v-card>
 
-      <v-card class="addValue" width="600" elevation="20" outlined shaped @click="addValue">
-        <v-card-actions>
+        <v-card class="addValue" width="600" elevation="20" outlined shaped @click="addValue">
+          <v-card-actions>
             <v-icon class="centerButton" icon="mdi-plus" large/>
-        </v-card-actions>
-      </v-card>
+          </v-card-actions>
+        </v-card>
 
+      </div>
     </div>
+
+    <Value v-else></Value>
+
   </div>
-
-  <Value v-else></Value>
-
-
 </template>
 <style scoped>
 

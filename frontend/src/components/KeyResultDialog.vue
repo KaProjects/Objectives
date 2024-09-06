@@ -46,40 +46,31 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(kr)
       }
-      await backend_fetch("/key_result/" + this.kr.id, requestOptions)
-        .then(async response => {
-          const body = await response.text();
-          if (response.ok) {
-            this.kr.name = this.values[0]
-            this.kr.description = this.values[1]
-            this.kr.s = this.values[2]
-            this.kr.m = this.values[3]
-            this.kr.a = this.values[4]
-            this.kr.r = this.values[5]
-            this.kr.t = this.values[6]
-            this.kr.date_reviewed = body
+      const body = await backend_fetch("/key_result/" + this.kr.id, requestOptions)
+      if (body === undefined){
+        this.values[0] = this.kr.name
+        this.values[1] = this.kr.description
+        this.values[2] = this.kr.s
+        this.values[3] = this.kr.m
+        this.values[4] = this.kr.a
+        this.values[5] = this.kr.r
+        this.values[6] = this.kr.t
+      } else {
+        this.kr.name = this.values[0]
+        this.kr.description = this.values[1]
+        this.kr.s = this.values[2]
+        this.kr.m = this.values[3]
+        this.kr.a = this.values[4]
+        this.kr.r = this.values[5]
+        this.kr.t = this.values[6]
+        this.kr.date_reviewed = body
 
-            this.kr_parent.name = this.kr.name
-            this.kr_parent.date_reviewed = this.kr.date_reviewed
-            this.kr.is_smart = this.validateSmart(this.kr.s) && this.validateSmart(this.kr.m)
-                && this.validateSmart(this.kr.a) && this.validateSmart(this.kr.r) && this.validateSmart(this.kr.t)
-            this.kr_parent.is_smart = this.kr.is_smart
-          } else {
-            this.handleUpdateKeyResultError(body)
-          }})
-        .catch(error => this.handleUpdateKeyResultError(error))
-    },
-    handleUpdateKeyResultError(error){
-      console.error(error)
-      alert(error)
-
-      this.values[0] = this.kr.name
-      this.values[1] = this.kr.description
-      this.values[2] = this.kr.s
-      this.values[3] = this.kr.m
-      this.values[4] = this.kr.a
-      this.values[5] = this.kr.r
-      this.values[6] = this.kr.t
+        this.kr_parent.name = this.kr.name
+        this.kr_parent.date_reviewed = this.kr.date_reviewed
+        this.kr.is_smart = this.validateSmart(this.kr.s) && this.validateSmart(this.kr.m)
+            && this.validateSmart(this.kr.a) && this.validateSmart(this.kr.r) && this.validateSmart(this.kr.t)
+        this.kr_parent.is_smart = this.kr.is_smart
+      }
     },
     startEditing(index){
       if (this.kr.state === 'active' && this.kr_parent.obj_state === 'active') {
@@ -108,19 +99,9 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
       }
-      await backend_fetch("/task/" + this.kr.tasks[index].id, requestOptions)
-        .then(async response => {
-          if (response.ok){
-            const body = await response.json();
-            this.kr.tasks[index].value = body.value
-            await this.retrieveKeyResultReviewDate()
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
-
-
-
+      const body = await backend_fetch("/task/" + this.kr.tasks[index].id, requestOptions)
+      this.kr.tasks[index].value = body.value
+      await this.retrieveKeyResultReviewDate()
       this.stopEditing()
     },
     closeDialog(){
@@ -139,22 +120,11 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
       }
-      await backend_fetch("/task", requestOptions)
-        .then(async response => {
-          if (response.ok){
-            this.kr.tasks.push(await response.json())
-            this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count + 1
-            await this.retrieveKeyResultReviewDate()
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
-
+      const body = await backend_fetch("/task", requestOptions)
+      this.kr.tasks.push(body)
+      this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count + 1
+      await this.retrieveKeyResultReviewDate()
       this.editing[7] = false
-    },
-    handleFetchError(error){
-      console.error(error)
-      alert(error)
     },
     async updateTaskState(index, state){
       const task = {kr_id: this.kr.id, value: this.kr.tasks[index].value, state: state}
@@ -164,51 +134,30 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(task)
       }
-      await backend_fetch("/task/" + this.kr.tasks[index].id, requestOptions)
-        .then(async response => {
-          if (response.ok){
-            const body = await response.json();
-            if (this.kr.tasks[index].state === 'active' && body.state !== 'active'){
-              this.kr_parent.resolved_tasks_count += 1
-            }
-            if (this.kr.tasks[index].state !== 'active' && body.state === 'active'){
-              this.kr_parent.resolved_tasks_count -= 1
-            }
-            this.kr.tasks[index].state = body.state
-            await this.retrieveKeyResultReviewDate()
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
+      const body = await backend_fetch("/task/" + this.kr.tasks[index].id, requestOptions)
+      if (this.kr.tasks[index].state === 'active' && body.state !== 'active'){
+        this.kr_parent.resolved_tasks_count += 1
+      }
+      if (this.kr.tasks[index].state !== 'active' && body.state === 'active'){
+        this.kr_parent.resolved_tasks_count -= 1
+      }
+      this.kr.tasks[index].state = body.state
+      await this.retrieveKeyResultReviewDate()
     },
     async deleteTask(task, index){
       await backend_fetch("/task/" + task.id, {method: "DELETE"})
-        .then(async response => {
-          if (response.ok) {
-            this.kr.tasks.splice(this.kr.tasks.indexOf(task), 1);
-            this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count - 1
-            if (task.state !== 'active') {
-              this.kr_parent.resolved_tasks_count -= 1
-            }
-            await this.retrieveKeyResultReviewDate()
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
-
+      this.kr.tasks.splice(this.kr.tasks.indexOf(task), 1);
+      this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count - 1
+      if (task.state !== 'active') {
+        this.kr_parent.resolved_tasks_count -= 1
+      }
+      await this.retrieveKeyResultReviewDate()
       this.confirmDeletionDialogs[index] = false
     },
     async retrieveKeyResultReviewDate(){
-      await backend_fetch("/key_result/" + this.kr.id)
-        .then(async response => {
-          if (response.ok){
-            const body = await response.json();
-            this.kr.date_reviewed = body.date_reviewed
-            this.kr_parent.date_reviewed = this.kr.date_reviewed
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
+      const body = await backend_fetch("/key_result/" + this.kr.id)
+      this.kr.date_reviewed = body.date_reviewed
+      this.kr_parent.date_reviewed = this.kr.date_reviewed
     },
     async updateKeyResultState(index){
       let state = null
@@ -226,18 +175,11 @@ export default {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({"state": state})
       }
-      await backend_fetch("/key_result/" + this.kr.id + "/state", requestOptions)
-        .then(async response => {
-          const body = await response.text();
-          if (response.ok){
-            this.kr.state = body
-            this.kr_parent.state = body
-            await this.retrieveKeyResultReviewDate()
-            this.confirmStateDialogs[index] = false
-          } else {
-            this.handleFetchError(body)
-          }})
-        .catch(error => this.handleFetchError(error))
+      const body = await backend_fetch("/key_result/" + this.kr.id + "/state", requestOptions)
+      this.kr.state = body
+      this.kr_parent.state = body
+      await this.retrieveKeyResultReviewDate()
+      this.confirmStateDialogs[index] = false
     },
     string_to_html,
     validateSmart(value){

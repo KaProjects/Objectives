@@ -1,7 +1,20 @@
 import {properties} from "@/properties";
+import {app_state} from "@/main";
 
 export function backend_fetch(path, requestOptions = null) {
     return fetch("http://" + properties.backend_host + ":" + properties.backend_port + path, requestOptions)
+        .then(async response => {
+            if (response.ok) {
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    return await response.json()
+                } else {
+                    return await response.text()
+                }
+            } else {
+                app_state.handle_fetch_error("[" + response.status + "] " + await response.text())
+            }})
+        .catch(error => app_state.handle_fetch_error(error))
 }
 export function string_to_html(string){
     let urls = string.match(/https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)/g)

@@ -12,6 +12,11 @@ export const app_state = reactive({
     unselect_value() {
         this.value = null
     },
+    fetchErrorValue: null,
+    handle_fetch_error(error) {
+        console.error(error)
+        this.fetchErrorValue = error
+    }
 })
 
 // Vuetify
