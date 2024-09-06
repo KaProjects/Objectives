@@ -22,14 +22,14 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'dev':
         database_manager.datasource = database_manager.DataSource.DEVEL
         database_manager.DatabaseManager()\
-            .execute_scripts(["drop_tables.sql", "create_tables.sql", "data_dev.sql"])
+            .execute_scripts(["sql/drop_tables.sql", "sql/create_tables.sql", "sql/data_dev.sql"])
         port = 7702
         debug = True
-        origins = "http://localhost:5173"
+        origins = "http://127.0.0.1:5173"
     elif sys.argv[1] == 'test':
         database_manager.datasource = database_manager.DataSource.TEST
         database_manager.DatabaseManager()\
-            .execute_scripts(["drop_tables.sql", "create_tables.sql", "data_test.sql"])
+            .execute_scripts(["sql/drop_tables.sql", "sql/create_tables.sql", "sql/data_test.sql"])
         port = 7890
         debug = True
         origins = "http://*:*"

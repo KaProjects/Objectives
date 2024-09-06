@@ -4,5 +4,5 @@ envs_prod_db.json filter=git-crypt diff=git-crypt
 
 build_deploy.sh filter=git-crypt diff=git-crypt
 
-data_dev.sql filter=git-crypt diff=git-crypt
-data_prod.sql filter=git-crypt diff=git-crypt
+sql/data_dev.sql filter=git-crypt diff=git-crypt
+sql/data_prod.sql filter=git-crypt diff=git-crypt

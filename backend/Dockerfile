@@ -13,4 +13,4 @@ RUN pip install --user flask-restx
 
 ENV TZ=Europe/Prague
 
-CMD ["python3","-u","app.py", "prod"]
+CMD ["python3","-u","src/app.py", "prod"]
