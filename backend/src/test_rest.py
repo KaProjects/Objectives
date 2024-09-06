@@ -157,9 +157,9 @@ class TestKeyResultsApi(unittest.TestCase):
 
 
     def test_get_key_result_nonexistent(self):
-        status, error, message = get_request("/key_result/33")
+        status, error, message = get_request("/key_result/333")
         self.assertEqual(status, 404, message)
-        self.assertTrue("id '33' not found" in error, message)
+        self.assertTrue("id '333' not found" in error, message)
 
     
     def test_get_key_result_invalid_id(self):
@@ -331,9 +331,9 @@ class TestKeyResultsApi(unittest.TestCase):
 
     def test_update_key_result_nonexistent(self):
         payload = json.dumps({"name": "new name", "description": "new desc", "s": "s", "m": "m", "a": "a", "r": "r", "t": "t"})
-        status, error, message = put_request("/key_result/33", payload)
+        status, error, message = put_request("/key_result/333", payload)
         self.assertEqual(status, 404, message)
-        self.assertTrue("id '33' not found" in error, message)
+        self.assertTrue("id '333' not found" in error, message)
 
     
     def test_update_key_result_invalid_id(self):
@@ -374,9 +374,9 @@ class TestKeyResultsApi(unittest.TestCase):
 
 
     def test_review_key_result_nonexistent(self):
-        status, error, message = put_request("/key_result/33/review", None)
+        status, error, message = put_request("/key_result/333/review", None)
         self.assertEqual(status, 404, message)
-        self.assertTrue("id '33' not found" in error, message)
+        self.assertTrue("id '333' not found" in error, message)
 
     
     def test_review_key_result_invalid_id(self):
@@ -442,9 +442,9 @@ class TestKeyResultsApi(unittest.TestCase):
 
 
     def test_update_key_result_state_nonexistent(self):
-        status, error, message = put_request("/key_result/33/state", json.dumps({"state": "failed"}))
+        status, error, message = put_request("/key_result/333/state", json.dumps({"state": "failed"}))
         self.assertEqual(status, 404, message)
-        self.assertTrue("id '33' not found" in error, message)
+        self.assertTrue("id '333' not found" in error, message)
 
     
     def test_update_key_result_state_invalid_id(self):
@@ -480,6 +480,54 @@ class TestKeyResultsApi(unittest.TestCase):
             status, key_result, message = get_request("/key_result/" + str(id))
             self.assertEqual(status, 200, message)
             self.assertFalse(key_result["is_smart"], message)
+
+    def test_delete_key_result(self):
+        status, before_value, message = get_request("/value/5")
+        self.assertEqual(status, 200, message)
+        before_obj = next(obj for obj in before_value["objectives"] if obj["id"] == 14)
+        kr_id_to_del = str(before_obj["key_results"][1]["id"])
+
+        status, key_result_to_del, message = get_request("/key_result/" + kr_id_to_del)
+        self.assertEqual(status, 200, message)
+
+        status, del_result, del_message = delete_request("/key_result/" + kr_id_to_del)
+        self.assertEqual(status, 204, del_message)
+
+        status, after_value, message = get_request("/value/5")
+        self.assertEqual(status, 200, message)
+        after_obj = next(obj for obj in after_value["objectives"] if obj["id"] == 14)
+
+        self.assertEqual(len(before_obj["key_results"]), len(after_obj["key_results"]) + 1, str(after_obj) + "should contain less KR than " + str(before_obj))
+
+        status, content, message = delete_request("/task/" + str(key_result_to_del["tasks"][0]["id"]))
+        self.assertEqual(status, 404, message)
+
+        status, content, message = delete_request("/task/" + str(key_result_to_del["tasks"][1]["id"]))
+        self.assertEqual(status, 404, message)
+
+        rollback_status, rollback_kr, rollback_message = post_request("/key_result", json.dumps({"name": "to del", "description": "", "objective_id": 14}))
+        self.assertEqual(rollback_status, 201, message)
+        status, new_task, message = post_request("/task", json.dumps({"kr_id": rollback_kr["id"], "value": "3"}))
+        self.assertEqual(status, 201, message)
+        status, new_task, message = post_request("/task", json.dumps({"kr_id": rollback_kr["id"], "value": "4"}))
+        self.assertEqual(status, 201, message)
+
+
+    def test_delete_key_result_nonexistent(self):
+        status, error, message = delete_request("/key_result/333")
+        self.assertEqual(status, 404, message)
+        self.assertTrue("id '333' not found" in error, message)
+
+
+    def test_delete_key_result_invalid_id(self):
+        status, error, message = delete_request("/key_result/x")
+        self.assertEqual(status, 500, message)
+        self.assertTrue("ValueError" in error, message)
+
+
+    def test_delete_key_result_no_id(self):
+        status, error, message = delete_request("/key_result")
+        assertMethodNotAllowed(self, status, error, message)
 
 
 class TestTasksApi(unittest.TestCase):

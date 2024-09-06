@@ -154,6 +154,17 @@ class KeyResult(Resource):
         except Exception as e:
             return create_exception_response(e)
 
+    @key_result.response(204, 'Deleted')
+    def delete(self, id):
+        try:
+            if not Service().check_key_result_exist(id):
+                return create_response("key result with id '" + id + "' not found", 404)
+
+            Service().delete_key_result(id)
+            return create_response(None, 204)
+        except Exception as e:
+            return create_exception_response(e)
+
 
 @key_result.route('/<id>/review')
 @key_result.response(404, 'Key Result not found')

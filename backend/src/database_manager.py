@@ -131,6 +131,10 @@ class DatabaseManager:
             cursor.execute(sql('update KeyResults set name=?,description=?,s=?,m=?,a=?,r=?,t=?,date_reviewed=? where id=?'),
                               (name, description, s, m, a, r, t, date_reviewed, int(id)))
 
+    def delete_key_result(self, id):
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql('delete from KeyResults where id=?'), (int(id),))
+
     def review_key_result(self, kr_id, date_reviewed):
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update KeyResults set date_reviewed=? where id=?'), (date_reviewed, int(kr_id)))
@@ -160,6 +164,10 @@ class DatabaseManager:
     def delete_task(self, task_id):
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('delete from Tasks where id=?'), (int(task_id),))
+
+    def delete_tasks(self, kr_id):
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql('delete from Tasks where kr_id=?'), (int(kr_id),))
 
     def count_records(self, table, id):
         with self.cursor() as cursor:

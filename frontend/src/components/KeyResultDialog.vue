@@ -7,7 +7,7 @@ import {backend_fetch, string_to_html} from "@/utils";
 
 export default {
   name: "KeyResultDialog",
-  props: ["kr", "kr_parent"],
+  props: ["kr", "kr_parent", "delete"],
   data() {
     return {
       values: [null, null, null, null, null, null, null, ""],
@@ -16,7 +16,8 @@ export default {
       selectedTask: -1,
       confirmDeletionDialogs: [],
       confirmStateDialogs: [false, false, false],
-      showSmart: false
+      showSmart: false,
+      confirmDeleteKrDialog: false,
     }
   },
   watch: {
@@ -184,6 +185,11 @@ export default {
     string_to_html,
     validateSmart(value){
       return value !== null && value !== undefined && value.length > 0 && !value.startsWith("[!!!]")
+    },
+    deleteKeyResult(){
+      this.delete(this.kr_parent)
+      this.confirmDeleteKrDialog = false
+      this.closeDialog()
     }
   },
 }
@@ -215,7 +221,23 @@ export default {
                     label="Description"
         ></v-textarea>
       </Editable>
-      <v-card-text v-else v-html="string_to_html(kr.description)" @click="startEditing(1)"/>
+      <div v-else>
+        <v-card-text  v-html="string_to_html(kr.description)" @click="startEditing(1)"/>
+        <v-dialog v-model="confirmDeleteKrDialog" width="300">
+          <template v-slot:activator="{ props }">
+            <v-btn style="bottom: -10px; right: -10px; position: absolute;" variant="plain" icon="mdi-trash-can" v-bind="props"/>
+          </template>
+          <v-card>
+            <v-card-title class="text-h5 grey lighten-2">
+              Delete permanently?
+            </v-card-title>
+            <v-card-actions>
+              <v-btn block @click="deleteKeyResult()">Confirm</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </div>
+
 
       <v-divider></v-divider>
 

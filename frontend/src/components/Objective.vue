@@ -67,6 +67,10 @@ export default {
       this.objective.key_results.push(body)
       this.openAddKrDialog = false
     },
+    async deleteKeyResult(kr) {
+      await backend_fetch("/key_result/" + kr.id, {method: "DELETE"})
+      this.objective.key_results.splice(this.objective.key_results.indexOf(kr), 1);
+    }
   },
   components: {
     KeyResultDialog,
@@ -80,7 +84,7 @@ export default {
           @mouseleave="focused = false"
   >
     <ObjectiveDialog :obj="selectedObj" v-model="openObjDialog" v-on:close="this.openObjDialog=false" v-on:selectTab="selectTab"/>
-    <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" v-model="openKrDialog" v-on:close="this.openKrDialog=false" />
+    <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" :delete="deleteKeyResult" v-model="openKrDialog" v-on:close="this.openKrDialog=false" />
 
     <v-card-title>{{objective.name}}</v-card-title>
     <v-card-text v-html="string_to_html(objective.description)"/>
