@@ -313,6 +313,21 @@ class Objective(Resource):
         except Exception as e:
             return create_exception_response(e)
 
+    @key_result.response(204, 'Deleted')
+    @key_result.response(403, 'Objective has key results')
+    def delete(self, id):
+        try:
+            if not Service().check_objective_exist(id):
+                return create_response("objective with id '" + str(id) + "' not found", 404)
+
+            if Service().check_objective_has_kr(id):
+                return create_response("unable to delete objective with key results present", 403)
+
+            Service().delete_objective(id)
+            return create_response(None, 204)
+        except Exception as e:
+            return create_exception_response(e)
+
 
 @objective.route('/<id>/state')
 @objective.response(404, 'Objective not found')
@@ -394,11 +409,11 @@ class ObjectiveIdea(Resource):
     @objective.response(204, 'Deleted')
     def delete(self, id, idea_id):
         try:
-            if not Service().check_objective_exist(id):
-                return create_response("objective with id '" + str(id) + "' not found", 404)
-
             if not Service().check_objective_idea_exist(idea_id):
                 return create_response("objective idea with id '" + str(idea_id) + "' not found", 404)
+
+            if not Service().check_objective_exist(id):
+                return create_response("objective with id '" + str(id) + "' not found", 404)
 
             Service().delete_objective_idea(idea_id)
             return create_response(None, 204)

@@ -938,6 +938,55 @@ class TestObjectivesApi(unittest.TestCase):
         self.assertEqual(status, 422, message)
         self.assertTrue("invalid objective state" in error, message)
 
+
+    def test_delete_objective(self):
+        before_status, before_value, before_message = get_request("/value/5")
+        self.assertEqual(before_status, 200, before_message)
+
+        payload = json.dumps({"name": "obj to del", "description": "description", "value_id": 5})
+        created_status, created_obj, created_message = post_request("/objective", payload)
+        self.assertEqual(created_status, 201, created_message)
+        obj_id = str(created_obj["id"])
+
+        status, idea, message = post_request("/objective/" + obj_id + "/idea", json.dumps({"value": "value"}))
+        self.assertEqual(status, 201, message)
+        idea_id = str(idea["id"])
+
+        del_status, nothing, del_message = delete_request("/objective/" + obj_id)
+        self.assertEqual(del_status, 204, del_message)
+
+        after_status, after_value, after_message = get_request("/value/5")
+        self.assertEqual(after_status, 200, after_message)
+
+        self.assertEqual(len(before_value["objectives"]), len(after_value["objectives"]), str(before_value["objectives"]) + " should be same as " + str(after_value["objectives"]))
+
+        status, error, message = delete_request("/objective/" + obj_id + "/idea/" + idea_id)
+        self.assertEqual(status, 404, message)
+        self.assertTrue("id '" + idea_id + "' not found" in error, message)
+
+
+    def test_delete_objective_with_key_results(self):
+        del_status, nothing, del_message = delete_request("/objective/14")
+        self.assertEqual(del_status, 403, del_message)
+
+
+    def test_delete_objective_nonexistent(self):
+        status, error, message = delete_request("/objective/333")
+        self.assertEqual(status, 404, message)
+        self.assertTrue("id '333' not found" in error, message)
+
+
+    def test_delete_objective_invalid_id(self):
+        status, error, message = delete_request("/objective/x")
+        self.assertEqual(status, 500, message)
+        self.assertTrue("ValueError" in error, message)
+
+
+    def test_delete_objective_no_id(self):
+        status, error, message = delete_request("/objective")
+        assertMethodNotAllowed(self, status, error, message)
+
+
     def test_objective_ideas(self):
         status, ideas, message = get_request("/objective/10/idea")
         self.assertEqual(status, 200, message)

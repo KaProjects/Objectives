@@ -65,6 +65,10 @@ export default {
         this.tab = "inactive"
       }
     },
+    async deleteObjective(obj) {
+      await backend_fetch("/objective/" + obj.id, {method: "DELETE"})
+      this.value.objectives.splice(this.value.objectives.indexOf(obj), 1);
+    }
   },
   components: {
     Ideas,
@@ -106,7 +110,8 @@ export default {
 
     <div style="display: flex; overflow-x:scroll;">
       <Ideas class="obj" :valueId="app_state.value.id" v-if="showIdeas"/>
-      <Objective v-for="(objective) in filterObjectives(value.objectives, tab === 'active')" :objective="objective" :selectTab="selectTab"/>
+      <Objective v-for="(objective) in filterObjectives(value.objectives, tab === 'active')"
+                 :objective="objective" :selectTab="selectTab" :delete="deleteObjective"/>
     </div>
   </div>
 </template>

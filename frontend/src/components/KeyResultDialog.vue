@@ -222,7 +222,7 @@ export default {
         ></v-textarea>
       </Editable>
       <div v-else>
-        <v-card-text  v-html="string_to_html(kr.description)" @click="startEditing(1)"/>
+        <v-card-text v-html="string_to_html(kr.description)" @click="startEditing(1)"/>
         <v-dialog v-model="confirmDeleteKrDialog" width="300">
           <template v-slot:activator="{ props }">
             <v-btn style="bottom: -10px; right: -10px; position: absolute;" variant="plain" icon="mdi-trash-can" v-bind="props"/>

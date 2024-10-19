@@ -98,6 +98,13 @@ class Service:
     def update_objective(self, id, name, description):
         DatabaseManager().update_objective(id, name, description)
 
+    def check_objective_has_kr(self, id):
+        return 0 < len(DatabaseManager().select_key_results_for_objective(id))
+
+    def delete_objective(self, id):
+        DatabaseManager().delete_objective_ideas(id)
+        DatabaseManager().delete_objective(id)
+
     def update_objective_state(self, id, state):
         today = ""
         if state != "active":

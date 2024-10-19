@@ -6,7 +6,7 @@ import {backend_fetch, string_to_html} from "@/utils";
 
 export default {
   name: "ObjectiveDialog",
-  props: ["obj"],
+  props: ["obj", "delete"],
   data() {
     return {
       values: [null, null, ""],
@@ -16,6 +16,7 @@ export default {
       selectedIdea: -1,
       ideas: [],
       confirmDeletionDialogs: [],
+      confirmDeleteObjDialog: false,
     }
   },
   watch: {
@@ -128,6 +129,11 @@ export default {
       this.obj.ideas_count = this.obj.ideas_count - 1
       this.confirmDeletionDialogs[index] = false
     },
+    deleteObjective(){
+      this.delete(this.obj)
+      this.confirmDeleteObjDialog = false
+      this.closeDialog()
+    }
   }
 }
 </script>
@@ -156,7 +162,26 @@ export default {
                     label="Description"
         ></v-textarea>
       </Editable>
-      <v-card-text v-else v-html="string_to_html(obj.description)" @click="startEditing(1)"/>
+      <div v-else>
+        <v-card-text v-html="string_to_html(obj.description)" @click="startEditing(1)"/>
+
+        <v-dialog v-model="confirmDeleteObjDialog" width="300"> TODO only if no KR
+          <template v-slot:activator="{ props }">
+            <v-btn :disabled="obj.key_results.length > 0"
+                   style="bottom: -10px; right: -10px; position: absolute;"
+                   variant="plain" icon="mdi-trash-can" v-bind="props"
+            />
+          </template>
+          <v-card>
+            <v-card-title class="text-h5 grey lighten-2">
+              Delete permanently?
+            </v-card-title>
+            <v-card-actions>
+              <v-btn block @click="deleteObjective()">Confirm</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </div>
 
       <v-divider></v-divider>
 

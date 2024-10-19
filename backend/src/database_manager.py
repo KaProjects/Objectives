@@ -181,6 +181,10 @@ class DatabaseManager:
             id = cursor.lastrowid
             return id
 
+    def delete_objective(self, id):
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql('delete from Objectives where id=?'), (int(id),))
+
     def update_objective(self, id, name, description):
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update Objectives set name=?,description=? where id=?'), (name, description, int(id)))
@@ -210,3 +214,7 @@ class DatabaseManager:
     def delete_objective_idea(self, idea_id):
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('delete from ObjectiveIdeas where id=?'), (int(idea_id),))
+
+    def delete_objective_ideas(self, obj_id):
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql('delete from ObjectiveIdeas where objective_id=?'), (int(obj_id),))

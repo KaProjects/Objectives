@@ -8,7 +8,7 @@ import ObjectiveDialog from "@/components/ObjectiveDialog.vue";
 
 export default {
   name: "Value",
-  props: ["objective", "selectTab"],
+  props: ["objective", "selectTab", "delete"],
   data() {
     return {
       focused: false,
@@ -83,7 +83,7 @@ export default {
           @mouseover="focused = true"
           @mouseleave="focused = false"
   >
-    <ObjectiveDialog :obj="selectedObj" v-model="openObjDialog" v-on:close="this.openObjDialog=false" v-on:selectTab="selectTab"/>
+    <ObjectiveDialog :obj="selectedObj" :delete="this.delete" v-model="openObjDialog" v-on:close="this.openObjDialog=false" v-on:selectTab="selectTab"/>
     <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" :delete="deleteKeyResult" v-model="openKrDialog" v-on:close="this.openKrDialog=false" />
 
     <v-card-title>{{objective.name}}</v-card-title>
