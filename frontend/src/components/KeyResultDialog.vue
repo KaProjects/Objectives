@@ -85,23 +85,23 @@ export default {
       this.editing[index] = false
       this.updateKeyResult()
     },
-    startEditingTask(index){
+    startEditingTask(task){
       if (this.kr.state === 'active' && this.kr_parent.obj_state === 'active') {
         this.stopEditing()
-        this.editingValue = this.kr.tasks[index].value
-        this.editing[8][index] = true
+        this.editingValue = task.value
+        this.editing[8][this.kr.tasks.slice().sort(this.compareTasks).indexOf(task)] = true
       }
     },
-    async updateTaskValue(index){
-      const task = {kr_id: this.kr.id, value: this.editingValue, state: this.kr.tasks[index].state}
+    async updateTaskValue(task){
+      const updatedTask = {kr_id: this.kr.id, value: this.editingValue, state: task.state}
 
       const requestOptions = {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(task)
+        body: JSON.stringify(updatedTask)
       }
-      const body = await backend_fetch("/task/" + this.kr.tasks[index].id, requestOptions)
-      this.kr.tasks[index].value = body.value
+      const body = await backend_fetch("/task/" + task.id, requestOptions)
+      task.value = body.value
       await this.retrieveKeyResultReviewDate()
       this.stopEditing()
     },
@@ -127,33 +127,33 @@ export default {
       await this.retrieveKeyResultReviewDate()
       this.editing[7] = false
     },
-    async updateTaskState(index, state){
-      const task = {kr_id: this.kr.id, value: this.kr.tasks[index].value, state: state}
+    async updateTaskState(task, state){
+      const updatedTask = {kr_id: this.kr.id, value: task.value, state: state}
 
       const requestOptions = {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(task)
+        body: JSON.stringify(updatedTask)
       }
-      const body = await backend_fetch("/task/" + this.kr.tasks[index].id, requestOptions)
-      if (this.kr.tasks[index].state === 'active' && body.state !== 'active'){
+      const body = await backend_fetch("/task/" + task.id, requestOptions)
+      if (task.state === 'active' && body.state !== 'active'){
         this.kr_parent.resolved_tasks_count += 1
       }
-      if (this.kr.tasks[index].state !== 'active' && body.state === 'active'){
+      if (task.state !== 'active' && body.state === 'active'){
         this.kr_parent.resolved_tasks_count -= 1
       }
-      this.kr.tasks[index].state = body.state
+      task.state = body.state
       await this.retrieveKeyResultReviewDate()
     },
-    async deleteTask(task, index){
+    async deleteTask(task){
       await backend_fetch("/task/" + task.id, {method: "DELETE"})
+      this.confirmDeletionDialogs[this.kr.tasks.slice().sort(this.compareTasks).indexOf(task)] = false
       this.kr.tasks.splice(this.kr.tasks.indexOf(task), 1);
       this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count - 1
       if (task.state !== 'active') {
         this.kr_parent.resolved_tasks_count -= 1
       }
       await this.retrieveKeyResultReviewDate()
-      this.confirmDeletionDialogs[index] = false
     },
     async retrieveKeyResultReviewDate(){
       const body = await backend_fetch("/key_result/" + this.kr.id)
@@ -190,6 +190,11 @@ export default {
       this.delete(this.kr_parent)
       this.confirmDeleteKrDialog = false
       this.closeDialog()
+    },
+    compareTasks(a, b){
+      if (a.state === 'active' && b.state !== 'active') return -1
+      if (a.state !== 'active' && b.state === 'active') return 1
+      return a.id - b.id
     }
   },
 }
@@ -320,9 +325,9 @@ export default {
 
       <v-divider></v-divider>
 
-      <div v-for="(task, index) in kr.tasks">
-        <Editable v-if="editing[8][index]" :cancel="stopEditing" :submit="updateTaskValue" :index=index>
-          <v-text-field @keydown.enter="updateTaskValue(index)" @keydown.esc="stopEditing"
+      <div v-for="(task, index) in kr.tasks.slice().sort(compareTasks)">
+        <Editable v-if="editing[8][index]" :cancel="stopEditing" :submit="updateTaskValue" :index=task>
+          <v-text-field @keydown.enter="updateTaskValue(task)" @keydown.esc="stopEditing"
                         v-model="editingValue"
                         label="Task"
           ></v-text-field>
@@ -335,17 +340,17 @@ export default {
             <v-icon icon="mdi-checkbox-marked-outline" large v-if="task.state === 'finished'"/>
             <v-icon icon="mdi-checkbox-blank-outline" large v-if="task.state === 'active'"/>
           </div>
-          <div v-html="string_to_html(task.value)" @click="startEditingTask(index)" :class="task.state" style="display: inline; padding-left: 3px; flex: 25;"/>
+          <div v-html="string_to_html(task.value)" @click="startEditingTask(task)" :class="task.state" style="display: inline; padding-left: 3px; flex: 25;"/>
 
           <v-icon style="flex: 1;" icon="mdi-checkbox-blank-outline" large
                   v-if="selectedTask === index && task.state !== 'active' && kr.state === 'active' && kr_parent.obj_state === 'active'"
-                  @click="updateTaskState(index, 'active')"/>
+                  @click="updateTaskState(task, 'active')"/>
           <v-icon style="flex: 1;" icon="mdi-checkbox-marked-outline" large
                   v-if="selectedTask === index && task.state !== 'finished' && kr.state === 'active' && kr_parent.obj_state === 'active'"
-                  @click="updateTaskState(index, 'finished')"/>
+                  @click="updateTaskState(task, 'finished')"/>
           <v-icon style="flex: 1;" icon="mdi-close-box-outline" large
                   v-if="selectedTask === index && task.state !== 'failed' && kr.state === 'active' && kr_parent.obj_state === 'active'"
-                  @click="updateTaskState(index, 'failed')"/>
+                  @click="updateTaskState(task, 'failed')"/>
 
           <v-dialog
               v-model="confirmDeletionDialogs[index]"
