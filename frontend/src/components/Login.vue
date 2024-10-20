@@ -24,6 +24,7 @@ export default {
       const token = await backend_fetch("/authenticate", requestOptions)
       if (token) {
         app_state.set_token(token)
+        sessionStorage.setItem('token', token)
         this.onLoggedIn(token)
       }
     }

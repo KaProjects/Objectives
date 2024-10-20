@@ -5,6 +5,7 @@ import Login from "@/components/Login.vue";
 </script>
 <script>
 import {backend_fetch} from "@/utils";
+import {app_state as state} from "@/main";
 
 export default {
   data() {
@@ -22,6 +23,13 @@ export default {
     },
     addValue() {
       alert('add value')
+    }
+  },
+  mounted() {
+    const token = sessionStorage.getItem('token')
+    if (token) {
+      state.set_token(token)
+      this.loadData(token)
     }
   }
 }
