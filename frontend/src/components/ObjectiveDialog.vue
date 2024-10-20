@@ -195,7 +195,7 @@ export default {
         <div v-else class="idea"
              @mouseover="selectedIdea = index"
              @mouseleave="selectedIdea = -1">
-          <div v-if="idea.value === ''">|</div>
+          <v-icon icon="mdi-lightbulb-variant-outline" large/>
           <div v-html="string_to_html(idea.value)" @click="startEditingIdea(index)" style="margin-left: 5px; flex: 25;"/>
 
           <v-dialog
