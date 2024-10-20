@@ -44,6 +44,13 @@ export function string_to_html(string){
         }
     }
 
+    let strikes = string.match(/\^[^*]*\^/g)
+    if (strikes !== null) {
+        for (let strike of strikes){
+            string = string.replace(strike, strike.replace("^","<s>").replace("^","</s>"))
+        }
+    }
+
     return string
 }
 export function compare_dates(a, b){
