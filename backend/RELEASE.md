@@ -4,10 +4,17 @@
      check envs_prod_db.json
      bump build deploy sh versions
 
-## 1.2
+## 1.3
 Released: TODO
 
     TODO
+
+## 1.2
+Released: 21.10.2024
+
+    reorganised files
+    delete objective & key result
+    authentication
 
 ## 1.1
 Released: 22.5.2023
