@@ -1,6 +1,7 @@
 <script setup>
 import Value from "@/view/Value.vue";
-import { app_state } from './main.js'
+import {app_state} from './main.js'
+import Login from "@/components/Login.vue";
 </script>
 <script>
 import {backend_fetch} from "@/utils";
@@ -12,63 +13,64 @@ export default {
     }
   },
   methods: {
-    async loadData() {
-      this.values = await backend_fetch("/values")
+    async loadData(token) {
+      const requestOptions = {
+        method: "GET",
+        headers: {"Authorization": "Bearer " + token},
+      }
+      this.values = await backend_fetch("/values", requestOptions)
     },
     addValue() {
       alert('add value')
     }
-  },
-  mounted() {
-    this.loadData()
   }
 }
 </script>
 
 <template>
 
-  <v-alert
-      v-if=app_state.fetchErrorValue
-      title="Backend Error"
-      type="error"
-  >
+  <v-alert v-if=app_state.fetchErrorValue title="Backend Error" type="error">
     {{app_state.fetchErrorValue}}
   </v-alert>
 
   <div v-else>
-    <div class="values0" v-if="app_state.value == null">
-      <div class="values">
+    <Login v-if="app_state.token == null" :onLoggedIn="loadData"/>
 
-        <v-card class="value" width="600" elevation="20" outlined shaped
+    <div v-else>
+      <div class="values0" v-if="app_state.value == null">
+        <div class="values">
 
-                v-for="value in values"
-                @click.stop="app_state.select_value(value)">
-          <v-card-text>
-            <div style="display: flex; justify-content: space-around">
-              <div class="text-h4 text--primary">
-                {{value.name}}
+          <v-card class="value" width="600" elevation="20" outlined shaped
+
+                  v-for="value in values"
+                  @click.stop="app_state.select_value(value)">
+            <v-card-text>
+              <div style="display: flex; justify-content: space-around">
+                <div class="text-h4 text--primary">
+                  {{value.name}}
+                </div>
+                <div style="display: flex; justify-content: flex-end" >
+                  Active: {{value.active_count}} Achievements: {{value.achievements_count}}
+                </div>
               </div>
-              <div style="display: flex; justify-content: flex-end" >
-                Active: {{value.active_count}} Achievements: {{value.achievements_count}}
+              <div class="text--primary">
+                {{value.description}}
               </div>
-            </div>
-            <div class="text--primary">
-              {{value.description}}
-            </div>
-          </v-card-text>
-        </v-card>
+            </v-card-text>
+          </v-card>
 
-        <v-card class="addValue" width="600" elevation="20" outlined shaped @click="addValue">
-          <v-card-actions>
-            <v-icon class="centerButton" icon="mdi-plus" large/>
-          </v-card-actions>
-        </v-card>
+          <v-card class="addValue" width="600" elevation="20" outlined shaped @click="addValue">
+            <v-card-actions>
+              <v-icon class="centerButton" icon="mdi-plus" large/>
+            </v-card-actions>
+          </v-card>
 
+        </div>
       </div>
+
+      <Value v-else></Value>
+
     </div>
-
-    <Value v-else></Value>
-
   </div>
 </template>
 <style scoped>
@@ -95,6 +97,7 @@ export default {
 
 .value {
   background-color: #b2d5f3;
+  margin: 1px;
 }
 .value:hover {
   background-color: #96c6ef;

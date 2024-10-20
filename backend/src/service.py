@@ -1,6 +1,7 @@
 from datetime import date
 
 import firebase_manager
+from auth_manager import authenticate
 from classes import Value, Idea
 from database_manager import DatabaseManager
 
@@ -128,3 +129,6 @@ class Service:
 
     def delete_objective_idea(self, idea_id):
         DatabaseManager().delete_objective_idea(idea_id)
+
+    def authenticate(self, user, password) -> str:
+        return authenticate(user, password)

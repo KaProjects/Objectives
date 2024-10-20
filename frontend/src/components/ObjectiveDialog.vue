@@ -2,7 +2,7 @@
 import Editable from "@/components/Editable.vue";</script>
 
 <script>
-import {backend_fetch, string_to_html} from "@/utils";
+import {backend_delete, backend_get, backend_post, backend_put, string_to_html} from "@/utils";
 
 export default {
   name: "ObjectiveDialog",
@@ -38,17 +38,7 @@ export default {
       this.values[index] = this.editingValue
       this.editing[index] = false
 
-      let obj = {}
-      obj.name = this.values[0]
-      obj.description = this.values[1]
-
-      const requestOptions = {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(obj)
-      }
-
-      const body = await backend_fetch("/objective/" + this.obj.id, requestOptions)
+      const body = await backend_put("/objective/" + this.obj.id, {name: this.values[0], description: this.values[1]})
       if (body === undefined) {
         this.values[0] = this.obj.name
         this.values[1] = this.obj.description
@@ -75,12 +65,7 @@ export default {
         return
       }
 
-      const requestOptions = {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({"state": state})
-      }
-      const body = await backend_fetch("/objective/" + this.obj.id + "/state", requestOptions)
+      const body = await backend_put("/objective/" + this.obj.id + "/state", {"state": state})
       this.obj.state = body.state
       this.obj.date_finished = body.date
       this.confirmStateDialogs[index] = false
@@ -89,7 +74,7 @@ export default {
     },
     string_to_html,
     async loadIdeas() {
-      this.ideas = await backend_fetch("/objective/" + this.obj.id + "/idea")
+      this.ideas = await backend_get("/objective/" + this.obj.id + "/idea")
     },
     startEditingIdea(index){
       if (this.obj.state === 'active') {
@@ -100,31 +85,18 @@ export default {
     },
     async updateIdeaValue(index){
       const idea = {value: this.editingValue}
-
-      const requestOptions = {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(idea)
-      }
-      const body = await backend_fetch("/objective/" + this.obj.id + "/idea/" + this.ideas[index].id, requestOptions)
+      const body = await backend_put("/objective/" + this.obj.id + "/idea/" + this.ideas[index].id, idea)
       this.ideas[index].value = body.value
       this.stopEditing()
     },
     async addIdea(){
-      const idea = {value: this.editingValue}
-
-      const requestOptions = {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(idea)
-      }
-      const body = await backend_fetch("/objective/" + this.obj.id + "/idea", requestOptions)
+      const body = await backend_post("/objective/" + this.obj.id + "/idea", {value: this.editingValue})
       this.ideas.push(body)
       this.obj.ideas_count = this.obj.ideas_count + 1
       this.editing[2] = false
     },
     async deleteIdea(idea, index){
-      await backend_fetch("/objective/" + this.obj.id + "/idea/" + idea.id, {method: "DELETE"})
+      await backend_delete("/objective/" + this.obj.id + "/idea/" + idea.id)
       this.ideas.splice(this.ideas.indexOf(idea), 1);
       this.obj.ideas_count = this.obj.ideas_count - 1
       this.confirmDeletionDialogs[index] = false

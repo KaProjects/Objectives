@@ -1,10 +1,9 @@
 <script setup>
-import { app_state } from '@/main'
+import {app_state} from '@/main'
 import Objective from "@/components/Objective.vue";
-
 </script>
 <script>
-import {backend_fetch, compare_dates} from "@/utils";
+import {backend_delete, backend_get, backend_post, compare_dates} from "@/utils";
 import {app_state} from "@/main";
 import Ideas from "@/components/Ideas.vue";
 
@@ -24,7 +23,7 @@ export default {
   },
   methods: {
     async loadData() {
-      this.value = await backend_fetch("/value/" + app_state.value.id)
+      this.value = await backend_get("/value/" + app_state.value.id)
     },
     compareObjectives(a, b) {
       let comparison
@@ -44,12 +43,8 @@ export default {
       return objs.filter(obj => isActive ? obj.state === 'active' : obj.state !== 'active').slice().sort(this.compareObjectives);
     },
     async addObjective(){
-      const requestOptions = {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({name: this.newObj.name, description: this.newObj.description, value_id: this.value.id})
-      }
-      const body = await backend_fetch("/objective", requestOptions)
+      const newObj = {name: this.newObj.name, description: this.newObj.description, value_id: this.value.id}
+      const body = await backend_post("/objective", newObj)
       this.value.objectives.push(body)
       this.openAddObjDialog = false
       this.tab = "active"
@@ -66,7 +61,7 @@ export default {
       }
     },
     async deleteObjective(obj) {
-      await backend_fetch("/objective/" + obj.id, {method: "DELETE"})
+      await backend_delete("/objective/" + obj.id)
       this.value.objectives.splice(this.value.objectives.indexOf(obj), 1);
     }
   },

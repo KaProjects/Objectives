@@ -4,12 +4,16 @@ from flask import Blueprint, Response
 from flask_restx import Api, Resource, fields
 
 from classes import JsonEncoder
+from decorators import authenticated
 from service import Service
 
+
 rest = Blueprint('rest', __name__)
+authorizations = {"Bearer": {"type": "apiKey", "in": "header", "name": "Authorization"}}
 
-api = Api(rest, doc='/doc/')
+api = Api(rest, doc='/doc/', authorizations=authorizations)
 
+auth = api.namespace('authenticate', description='Auth operations')
 value = api.namespace('value', description='Values operations')
 key_result = api.namespace('key_result', description='Key Results operations')
 task = api.namespace('task', description='Tasks operations')
@@ -32,6 +36,8 @@ def create_exception_response(exception):
 
 @value.route('s')
 class Values(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @value.response(200, 'Success')
     def get(self):
         try:
@@ -45,6 +51,8 @@ class Values(Resource):
 @value.response(404, 'Value not found')
 @value.param('id', 'Value identifier')
 class Value(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @value.response(200, 'Success')
     def get(self, id):
         try:
@@ -60,6 +68,8 @@ class Value(Resource):
 @value.route('/<id>/idea')
 @value.param('id', 'Value identifier')
 class Ideas(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @value.response(200, 'Success')
     def get(self, id):
         try:
@@ -68,6 +78,8 @@ class Ideas(Resource):
         except Exception as e:
             return create_exception_response(e)
 
+    @value.doc(security="Bearer")
+    @authenticated
     @value.expect(api.model('IdeaCreate', {'idea': fields.String(required=True, example='new idea')}))
     @value.response(201, 'Created')
     def post(self, id):
@@ -84,6 +96,8 @@ class Ideas(Resource):
 @value.param('id', 'Value identifier')
 @value.param('idea_id', 'Idea identifier')
 class Idea(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @value.response(204, 'Deleted')
     def delete(self, id, idea_id):
         try:
@@ -95,6 +109,8 @@ class Idea(Resource):
 
 @key_result.route('')
 class KeyResults(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @key_result.expect(api.model('KeyResultCreate', {'name': fields.String(required=True, example='name'),
                                                      'description': fields.String(required=True, example='description'),
                                                      'objective_id': fields.String(required=True, example='id')}))
@@ -124,6 +140,8 @@ class KeyResults(Resource):
 @key_result.response(404, 'Key Result not found')
 @key_result.param('id', 'Key Result identifier')
 class KeyResult(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @key_result.response(200, 'Success')
     def get(self, id):
         try:
@@ -135,6 +153,8 @@ class KeyResult(Resource):
         except Exception as e:
             return create_exception_response(e)
 
+    @value.doc(security="Bearer")
+    @authenticated
     @key_result.expect(api.model('KeyResultUpdate', {'name': fields.String(required=True, example='name'),
                                                      'description': fields.String(required=True, example='description'),
                                                      's': fields.String(required=True, example='s'),
@@ -154,6 +174,8 @@ class KeyResult(Resource):
         except Exception as e:
             return create_exception_response(e)
 
+    @value.doc(security="Bearer")
+    @authenticated
     @key_result.response(204, 'Deleted')
     def delete(self, id):
         try:
@@ -170,6 +192,8 @@ class KeyResult(Resource):
 @key_result.response(404, 'Key Result not found')
 @key_result.param('id', 'Key Result identifier')
 class KeyResultReview(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @key_result.response(200, 'Success')
     def put(self, id):
         try:
@@ -186,6 +210,8 @@ class KeyResultReview(Resource):
 @key_result.response(404, 'Key Result not found')
 @key_result.param('id', 'Key Result identifier')
 class KeyResultState(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @key_result.expect(api.model('KeyResultState', {'state': fields.String(required=True, example='active')}))
     @key_result.response(200, 'Success')
     @key_result.response(422, 'Invalid Key Result State')
@@ -207,6 +233,8 @@ class KeyResultState(Resource):
 
 @task.route('')
 class Tasks(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @task.expect(api.model('TaskCreate', {'value': fields.String(required=True, example='value'),
                                           'kr_id': fields.String(required=True, example='id')}))
     @task.response(404, 'Key Result with ID not found')
@@ -230,6 +258,8 @@ class Tasks(Resource):
 @task.response(404, 'Task not found')
 @task.param('id', 'Task identifier')
 class Task(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @task.expect(api.model('TaskUpdate', {'value': fields.String(required=True, example='value'),
                                           'kr_id': fields.String(required=True, example='id'),
                                           'state': fields.String(required=True, example='active')}))
@@ -254,6 +284,8 @@ class Task(Resource):
         except Exception as e:
             return create_exception_response(e)
 
+    @value.doc(security="Bearer")
+    @authenticated
     @task.response(204, 'Deleted')
     def delete(self, id):
         try:
@@ -268,6 +300,8 @@ class Task(Resource):
 
 @objective.route('')
 class Objectives(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @objective.expect(api.model('ObjectiveCreate', {'name': fields.String(required=True, example='name'),
                                                     'description': fields.String(required=True, example='description'),
                                                     'value_id': fields.String(required=True, example='id')}))
@@ -298,6 +332,8 @@ class Objectives(Resource):
 @objective.response(404, 'Objective not found')
 @objective.param('id', 'Objective identifier')
 class Objective(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @objective.expect(api.model('ObjectiveUpdate', {'name': fields.String(required=True, example='name'),
                                                     'description': fields.String(required=True, example='description')}))
     @objective.response(200, 'Success')
@@ -313,6 +349,8 @@ class Objective(Resource):
         except Exception as e:
             return create_exception_response(e)
 
+    @value.doc(security="Bearer")
+    @authenticated
     @key_result.response(204, 'Deleted')
     @key_result.response(403, 'Objective has key results')
     def delete(self, id):
@@ -333,6 +371,8 @@ class Objective(Resource):
 @objective.response(404, 'Objective not found')
 @objective.param('id', 'Objective identifier')
 class ObjectiveState(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @objective.expect(api.model('ObjectiveState', {'state': fields.String(required=True, example='active')}))
     @objective.response(200, 'Success')
     @objective.response(422, 'Invalid Objective State')
@@ -355,6 +395,8 @@ class ObjectiveState(Resource):
 @objective.response(404, 'Objective not found')
 @objective.param('id', 'Objective identifier')
 class ObjectiveIdeas(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @objective.response(200, 'Success')
     def get(self, id):
         try:
@@ -366,6 +408,8 @@ class ObjectiveIdeas(Resource):
         except Exception as e:
             return create_exception_response(e)
 
+    @value.doc(security="Bearer")
+    @authenticated
     @objective.expect(api.model('ObjectiveIdeaCreate', {'value': fields.String(required=True, example='name')}))
     @objective.response(201, 'Created')
     def post(self, id):
@@ -388,6 +432,8 @@ class ObjectiveIdeas(Resource):
 @objective.param('id', 'Objective identifier')
 @objective.param('idea_id', 'Idea identifier')
 class ObjectiveIdea(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
     @objective.expect(api.model('ObjectiveIdeaUpdate', {'value': fields.String(required=True, example='value')}))
     @objective.response(404, 'Idea not found')
     @objective.response(200, 'Success')
@@ -405,6 +451,8 @@ class ObjectiveIdea(Resource):
         except Exception as e:
             return create_exception_response(e)
 
+    @value.doc(security="Bearer")
+    @authenticated
     @objective.response(404, 'Idea not found')
     @objective.response(204, 'Deleted')
     def delete(self, id, idea_id):
@@ -419,3 +467,19 @@ class ObjectiveIdea(Resource):
             return create_response(None, 204)
         except Exception as e:
             return create_exception_response(e)
+
+
+@auth.route('')
+class Auth(Resource):
+
+    @auth.expect(auth.model('Auth', {'user': fields.String(required=True, example='user'),
+                                     'password': fields.String(required=True, example='password')}))
+    @auth.response(201, "authorized")
+    @auth.response(401, "unauthorized")
+    def post(self):
+        data: dict = auth.payload
+        token = Service().authenticate(data["user"], data["password"])
+        if token:
+            return create_response(token, 201)
+        else:
+            return create_response("unauthorized", 401)

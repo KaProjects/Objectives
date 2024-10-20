@@ -16,6 +16,36 @@ export function backend_fetch(path, requestOptions = null) {
             }})
         .catch(error => app_state.handle_fetch_error(error))
 }
+export function backend_get(path) {
+    const requestOptions = {
+        method: "GET",
+        headers: {"Authorization": "Bearer " + app_state.token},
+    }
+    return backend_fetch(path, requestOptions)
+}
+export function backend_delete(path) {
+    const requestOptions = {
+        method: "DELETE",
+        headers: {"Authorization": "Bearer " + app_state.token},
+    }
+    return backend_fetch(path, requestOptions)
+}
+export function backend_post(path, data) {
+    const requestOptions = {
+        method: "POST",
+        headers: {"Content-Type": "application/json", "Authorization": "Bearer " + app_state.token},
+        body: JSON.stringify(data)
+    }
+    return backend_fetch(path, requestOptions)
+}
+export function backend_put(path, data) {
+    const requestOptions = {
+        method: "PUT",
+        headers: {"Content-Type": "application/json", "Authorization": "Bearer " + app_state.token},
+        body: JSON.stringify(data)
+    }
+    return backend_fetch(path, requestOptions)
+}
 export function string_to_html(string){
     let urls = string.match(/https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)/g)
     if (urls !== null) {

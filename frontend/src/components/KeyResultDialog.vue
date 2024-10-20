@@ -3,7 +3,7 @@ import Editable from "@/components/Editable.vue";
 </script>
 
 <script>
-import {backend_fetch, string_to_html} from "@/utils";
+import {backend_delete, backend_get, backend_post, backend_put, string_to_html} from "@/utils";
 
 export default {
   name: "KeyResultDialog",
@@ -42,12 +42,7 @@ export default {
       kr.r = this.values[5]
       kr.t = this.values[6]
 
-      const requestOptions = {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(kr)
-      }
-      const body = await backend_fetch("/key_result/" + this.kr.id, requestOptions)
+      const body = await backend_put("/key_result/" + this.kr.id, kr)
       if (body === undefined){
         this.values[0] = this.kr.name
         this.values[1] = this.kr.description
@@ -94,13 +89,7 @@ export default {
     },
     async updateTaskValue(task){
       const updatedTask = {kr_id: this.kr.id, value: this.editingValue, state: task.state}
-
-      const requestOptions = {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(updatedTask)
-      }
-      const body = await backend_fetch("/task/" + task.id, requestOptions)
+      const body = await backend_put("/task/" + task.id, updatedTask)
       task.value = body.value
       await this.retrieveKeyResultReviewDate()
       this.stopEditing()
@@ -114,14 +103,7 @@ export default {
       this.editing = [false, false, false, false, false, false, false, false, []]
     },
     async addTask(){
-      const task = {kr_id: this.kr.id, value: this.editingValue}
-
-      const requestOptions = {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(task)
-      }
-      const body = await backend_fetch("/task", requestOptions)
+      const body = await backend_post("/task", {kr_id: this.kr.id, value: this.editingValue})
       this.kr.tasks.push(body)
       this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count + 1
       await this.retrieveKeyResultReviewDate()
@@ -129,13 +111,7 @@ export default {
     },
     async updateTaskState(task, state){
       const updatedTask = {kr_id: this.kr.id, value: task.value, state: state}
-
-      const requestOptions = {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(updatedTask)
-      }
-      const body = await backend_fetch("/task/" + task.id, requestOptions)
+      const body = await backend_put("/task/" + task.id, updatedTask)
       if (task.state === 'active' && body.state !== 'active'){
         this.kr_parent.resolved_tasks_count += 1
       }
@@ -146,7 +122,7 @@ export default {
       await this.retrieveKeyResultReviewDate()
     },
     async deleteTask(task){
-      await backend_fetch("/task/" + task.id, {method: "DELETE"})
+      await backend_delete("/task/" + task.id)
       this.confirmDeletionDialogs[this.kr.tasks.slice().sort(this.compareTasks).indexOf(task)] = false
       this.kr.tasks.splice(this.kr.tasks.indexOf(task), 1);
       this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count - 1
@@ -156,7 +132,7 @@ export default {
       await this.retrieveKeyResultReviewDate()
     },
     async retrieveKeyResultReviewDate(){
-      const body = await backend_fetch("/key_result/" + this.kr.id)
+      const body = await backend_get("/key_result/" + this.kr.id)
       this.kr.date_reviewed = body.date_reviewed
       this.kr_parent.date_reviewed = this.kr.date_reviewed
     },
@@ -171,12 +147,7 @@ export default {
         return
       }
 
-      const requestOptions = {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({"state": state})
-      }
-      const body = await backend_fetch("/key_result/" + this.kr.id + "/state", requestOptions)
+      const body = await backend_put("/key_result/" + this.kr.id + "/state", {"state": state})
       this.kr.state = body
       this.kr_parent.state = body
       await this.retrieveKeyResultReviewDate()

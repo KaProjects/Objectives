@@ -2,7 +2,7 @@
 
 </script>
 <script>
-import {backend_fetch, compare_dates, string_to_html} from "@/utils";
+import {backend_delete, backend_get, backend_post, compare_dates, string_to_html} from "@/utils";
 import KeyResultDialog from "@/components/KeyResultDialog.vue";
 import ObjectiveDialog from "@/components/ObjectiveDialog.vue";
 
@@ -48,7 +48,7 @@ export default {
       }
     },
     async openKeyResult(kr, obj_state) {
-      this.selectedKr = await backend_fetch("/key_result/" + kr.id)
+      this.selectedKr = await backend_get("/key_result/" + kr.id)
       this.selectedKr_parent = kr
       this.selectedKr_parent.obj_state = obj_state
       this.openKrDialog = true
@@ -58,17 +58,13 @@ export default {
       this.openObjDialog = true
     },
     async addKeyResult() {
-      const requestOptions = {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({name: this.newKr.name, description: this.newKr.description, objective_id: this.objective.id})
-      }
-      const body = await backend_fetch("/key_result", requestOptions)
+      const newKr = {name: this.newKr.name, description: this.newKr.description, objective_id: this.objective.id}
+      const body = await backend_post("/key_result", newKr)
       this.objective.key_results.push(body)
       this.openAddKrDialog = false
     },
     async deleteKeyResult(kr) {
-      await backend_fetch("/key_result/" + kr.id, {method: "DELETE"})
+      await backend_delete("/key_result/" + kr.id)
       this.objective.key_results.splice(this.objective.key_results.indexOf(kr), 1);
     }
   },
