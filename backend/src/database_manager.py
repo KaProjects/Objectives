@@ -131,6 +131,10 @@ class DatabaseManager:
             cursor.execute(sql('update KeyResults set name=?,description=?,s=?,m=?,a=?,r=?,t=?,date_reviewed=? where id=?'),
                               (name, description, s, m, a, r, t, date_reviewed, int(id)))
 
+    def delete_key_result(self, id):
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql('delete from KeyResults where id=?'), (int(id),))
+
     def review_key_result(self, kr_id, date_reviewed):
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update KeyResults set date_reviewed=? where id=?'), (date_reviewed, int(kr_id)))
@@ -161,6 +165,10 @@ class DatabaseManager:
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('delete from Tasks where id=?'), (int(task_id),))
 
+    def delete_tasks(self, kr_id):
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql('delete from Tasks where kr_id=?'), (int(kr_id),))
+
     def count_records(self, table, id):
         with self.cursor() as cursor:
             cursor.execute(sql('select count(1) from ' + table + ' where id=?'), (int(id),))
@@ -172,6 +180,10 @@ class DatabaseManager:
                            (name, description, state, value_id, date_created, ""))
             id = cursor.lastrowid
             return id
+
+    def delete_objective(self, id):
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql('delete from Objectives where id=?'), (int(id),))
 
     def update_objective(self, id, name, description):
         with self.cursor(commit=True) as cursor:
@@ -202,3 +214,7 @@ class DatabaseManager:
     def delete_objective_idea(self, idea_id):
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('delete from ObjectiveIdeas where id=?'), (int(idea_id),))
+
+    def delete_objective_ideas(self, obj_id):
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql('delete from ObjectiveIdeas where objective_id=?'), (int(obj_id),))

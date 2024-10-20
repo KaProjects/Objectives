@@ -1,9 +1,11 @@
 <script setup>
-import Value from "@/components/Value.vue";
-import { app_state } from './main.js'
+import Value from "@/view/Value.vue";
+import {app_state} from './main.js'
+import Login from "@/components/Login.vue";
 </script>
 <script>
 import {backend_fetch} from "@/utils";
+import {app_state as state} from "@/main";
 
 export default {
   data() {
@@ -12,65 +14,72 @@ export default {
     }
   },
   methods: {
-    async loadData() {
-      await backend_fetch("/values")
-        .then(async response => {
-          if (response.ok) {
-            this.values = await response.json()
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
-    },
-    handleFetchError(error){
-      console.error(error)
-      alert(error)
+    async loadData(token) {
+      const requestOptions = {
+        method: "GET",
+        headers: {"Authorization": "Bearer " + token},
+      }
+      this.values = await backend_fetch("/values", requestOptions)
     },
     addValue() {
       alert('add value')
     }
   },
   mounted() {
-    this.loadData()
+    const token = sessionStorage.getItem('token')
+    if (token) {
+      state.set_token(token)
+      this.loadData(token)
+    }
   }
 }
 </script>
 
 <template>
-  <div class="values0" v-if="app_state.value == null">
-    <div class="values">
 
-      <v-card class="value" width="600" elevation="20" outlined shaped
+  <v-alert v-if=app_state.fetchErrorValue title="Backend Error" type="error">
+    {{app_state.fetchErrorValue}}
+  </v-alert>
 
-              v-for="value in values"
-              @click.stop="app_state.select_value(value)">
-        <v-card-text>
-          <div style="display: flex; justify-content: space-around">
-            <div class="text-h4 text--primary">
-              {{value.name}}
-            </div>
-            <div style="display: flex; justify-content: flex-end" >
-              Active: {{value.active_count}} Achievements: {{value.achievements_count}}
-            </div>
-          </div>
-          <div class="text--primary">
-            {{value.description}}
-          </div>
-        </v-card-text>
-      </v-card>
+  <div v-else>
+    <Login v-if="app_state.token == null" :onLoggedIn="loadData"/>
 
-      <v-card class="addValue" width="600" elevation="20" outlined shaped @click="addValue">
-        <v-card-actions>
-            <v-icon class="centerButton" icon="mdi-plus" large/>
-        </v-card-actions>
-      </v-card>
+    <div v-else>
+      <div class="values0" v-if="app_state.value == null">
+        <div class="values">
+
+          <v-card class="value" width="600" elevation="20" outlined shaped
+
+                  v-for="value in values"
+                  @click.stop="app_state.select_value(value)">
+            <v-card-text>
+              <div style="display: flex; justify-content: space-around">
+                <div class="text-h4 text--primary">
+                  {{value.name}}
+                </div>
+                <div style="display: flex; justify-content: flex-end" >
+                  Active: {{value.active_count}} Achievements: {{value.achievements_count}}
+                </div>
+              </div>
+              <div class="text--primary">
+                {{value.description}}
+              </div>
+            </v-card-text>
+          </v-card>
+
+          <v-card class="addValue" width="600" elevation="20" outlined shaped @click="addValue">
+            <v-card-actions>
+              <v-icon class="centerButton" icon="mdi-plus" large/>
+            </v-card-actions>
+          </v-card>
+
+        </div>
+      </div>
+
+      <Value v-else></Value>
 
     </div>
   </div>
-
-  <Value v-else></Value>
-
-
 </template>
 <style scoped>
 
@@ -96,6 +105,7 @@ export default {
 
 .value {
   background-color: #b2d5f3;
+  margin: 1px;
 }
 .value:hover {
   background-color: #96c6ef;

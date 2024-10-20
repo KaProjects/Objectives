@@ -1,5 +1,5 @@
 <script>
-import {backend_fetch} from "@/utils";
+import {backend_delete, backend_get, backend_post} from "@/utils";
 
 export default {
   name: "Ideas",
@@ -18,48 +18,19 @@ export default {
   },
   methods: {
     async loadData() {
-      await backend_fetch("/value/" + this.valueId + "/idea")
-        .then(async response => {
-          if (response.ok){
-            this.ideas = await response.json()
-            this.loading = false
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
+      this.ideas = await backend_get("/value/" + this.valueId + "/idea")
+      this.loading = false
     },
     async addIdea() {
-      const requestOptions = {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({idea: this.newIdea})
-      }
-      await backend_fetch("/value/" + this.valueId + "/idea", requestOptions)
-        .then(async response => {
-          if (response.ok){
-            const body = await response.json()
-            this.ideas.push({id: body.new_id, value: body.idea})
-            this.newIdeaDialog = false
-            this.newIdea = ""
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
-    },
-    handleFetchError(error){
-      console.error(error)
-      alert(error)
+      const body = await backend_post("/value/" + this.valueId + "/idea", {idea: this.newIdea})
+      this.ideas.push({id: body.new_id, value: body.idea})
+      this.newIdeaDialog = false
+      this.newIdea = ""
     },
     async deleteIdea(idea, index){
-      await backend_fetch("/value/" + this.valueId + "/idea/" + idea.id, {method: "DELETE"})
-        .then(async response => {
-          if (response.ok){
-            this.ideas.splice(this.ideas.indexOf(idea), 1);
-            this.confirmDeletionDialogs[index] = false
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
+      await backend_delete("/value/" + this.valueId + "/idea/" + idea.id)
+      this.ideas.splice(this.ideas.indexOf(idea), 1);
+      this.confirmDeletionDialogs[index] = false
     },
   },
   mounted() {
@@ -68,7 +39,7 @@ export default {
 }
 </script>
 <template>
-  <v-card width="300" elevation="3" shaped>
+  <v-card width="300" elevation="3" shaped max-height="calc(100vh - 70px)" style="overflow-y:scroll;">
     <v-card-title>Ideas</v-card-title>
     <v-progress-circular v-if="loading" style="margin: 0 0 10px 30px" indeterminate color="primary"></v-progress-circular>
     <div v-else>
@@ -77,7 +48,7 @@ export default {
                              @mouseover="selectedIdea = index"
                              @mouseleave="selectedIdea = -1">
           <div class="idea">
-            <v-list-item class="inLine">{{idea.value}}</v-list-item>
+            <v-list-item>{{idea.value}}</v-list-item>
 
             <v-dialog
                 v-model="confirmDeletionDialogs[index]"
@@ -141,7 +112,5 @@ export default {
   position: absolute;
   right: 0px;
 }
-.inLine {
-  display: inline-block;
-}
+
 </style>

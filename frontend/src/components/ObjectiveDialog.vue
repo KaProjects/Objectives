@@ -1,14 +1,12 @@
 <script setup>
-import {app_state} from '@/main'
 import Editable from "@/components/Editable.vue";</script>
 
 <script>
-import {backend_fetch, string_to_html} from "@/utils";
-import {app_state} from "@/main";
+import {backend_delete, backend_get, backend_post, backend_put, string_to_html} from "@/utils";
 
 export default {
   name: "ObjectiveDialog",
-  props: ["obj"],
+  props: ["obj", "delete"],
   data() {
     return {
       values: [null, null, ""],
@@ -18,6 +16,7 @@ export default {
       selectedIdea: -1,
       ideas: [],
       confirmDeletionDialogs: [],
+      confirmDeleteObjDialog: false,
     }
   },
   watch: {
@@ -39,39 +38,18 @@ export default {
       this.values[index] = this.editingValue
       this.editing[index] = false
 
-      let obj = {}
-      obj.name = this.values[0]
-      obj.description = this.values[1]
-
-      const requestOptions = {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(obj)
+      const body = await backend_put("/objective/" + this.obj.id, {name: this.values[0], description: this.values[1]})
+      if (body === undefined) {
+        this.values[0] = this.obj.name
+        this.values[1] = this.obj.description
+      } else {
+        this.obj.name = this.values[0]
+        this.obj.description = this.values[1]
       }
-
-      await backend_fetch("/objective/" + this.obj.id, requestOptions)
-        .then(async response => {
-          const body = await response.text();
-          if (response.ok) {
-            this.obj.name = this.values[0]
-            this.obj.description = this.values[1]
-          } else {
-            this.handleUpdateObjectiveError(body)
-          }})
-        .catch(error => this.handleUpdateObjectiveError(error))
-    },
-    handleUpdateObjectiveError(error){
-      this.handleFetchError(error)
-      this.values[0] = this.obj.name
-      this.values[1] = this.obj.description
-    },
-    handleFetchError(error){
-      console.error(error)
-      alert(error)
     },
     closeDialog(){
       this.stopEditing()
-      app_state.objDialogToggle = false
+      this.$emit('close')
     },
     stopEditing(){
       this.editing = [false, false, false, []]
@@ -87,35 +65,16 @@ export default {
         return
       }
 
-      const requestOptions = {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({"state": state})
-      }
-      await backend_fetch("/objective/" + this.obj.id + "/state", requestOptions)
-        .then(async response => {
-          if (response.ok) {
-            const body = await response.json();
-            this.obj.state = body.state
-            this.obj.date_finished = body.date
-            this.confirmStateDialogs[index] = false
-            this.closeDialog()
-            this.$emit('selectTab', body.state)
-          } else {
-            this.handleFetchError(await response.text())
-          }})
-        .catch(error => this.handleFetchError(error))
+      const body = await backend_put("/objective/" + this.obj.id + "/state", {"state": state})
+      this.obj.state = body.state
+      this.obj.date_finished = body.date
+      this.confirmStateDialogs[index] = false
+      this.closeDialog()
+      this.$emit('selectTab', body.state)
     },
     string_to_html,
     async loadIdeas() {
-      await backend_fetch("/objective/" + this.obj.id + "/idea")
-          .then(async response => {
-            if (response.ok){
-              this.ideas = await response.json()
-            } else {
-              this.handleFetchError(await response.text())
-            }})
-          .catch(error => this.handleFetchError(error))
+      this.ideas = await backend_get("/objective/" + this.obj.id + "/idea")
     },
     startEditingIdea(index){
       if (this.obj.state === 'active') {
@@ -126,63 +85,33 @@ export default {
     },
     async updateIdeaValue(index){
       const idea = {value: this.editingValue}
-
-      const requestOptions = {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(idea)
-      }
-      await backend_fetch("/objective/" + this.obj.id + "/idea/" + this.ideas[index].id, requestOptions)
-          .then(async response => {
-            if (response.ok){
-              const body = await response.json();
-              this.ideas[index].value = body.value
-            } else {
-              this.handleFetchError(await response.text())
-            }})
-          .catch(error => this.handleFetchError(error))
-
+      const body = await backend_put("/objective/" + this.obj.id + "/idea/" + this.ideas[index].id, idea)
+      this.ideas[index].value = body.value
       this.stopEditing()
     },
     async addIdea(){
-      const idea = {value: this.editingValue}
-
-      const requestOptions = {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(idea)
-      }
-      await backend_fetch("/objective/" + this.obj.id + "/idea", requestOptions)
-          .then(async response => {
-            if (response.ok){
-              this.ideas.push(await response.json())
-              this.obj.ideas_count = this.obj.ideas_count + 1
-            } else {
-              this.handleFetchError(await response.text())
-            }})
-          .catch(error => this.handleFetchError(error))
-
+      const body = await backend_post("/objective/" + this.obj.id + "/idea", {value: this.editingValue})
+      this.ideas.push(body)
+      this.obj.ideas_count = this.obj.ideas_count + 1
       this.editing[2] = false
     },
     async deleteIdea(idea, index){
-      await backend_fetch("/objective/" + this.obj.id + "/idea/" + idea.id, {method: "DELETE"})
-          .then(async response => {
-            if (response.ok) {
-              this.ideas.splice(this.ideas.indexOf(idea), 1);
-              this.obj.ideas_count = this.obj.ideas_count - 1
-            } else {
-              this.handleFetchError(await response.text())
-            }})
-          .catch(error => this.handleFetchError(error))
-
+      await backend_delete("/objective/" + this.obj.id + "/idea/" + idea.id)
+      this.ideas.splice(this.ideas.indexOf(idea), 1);
+      this.obj.ideas_count = this.obj.ideas_count - 1
       this.confirmDeletionDialogs[index] = false
     },
+    deleteObjective(){
+      this.delete(this.obj)
+      this.confirmDeleteObjDialog = false
+      this.closeDialog()
+    }
   }
 }
 </script>
 
 <template>
-  <v-dialog v-model="app_state.objDialogToggle" persistent width="600">
+  <v-dialog persistent width="600">
     <v-card>
       <Editable v-if="editing[0]" :cancel="stopEditing" :submit="updateObjective" :index=0>
         <v-text-field @keydown.enter="updateObjective(0)" @keydown.esc="stopEditing"
@@ -205,7 +134,26 @@ export default {
                     label="Description"
         ></v-textarea>
       </Editable>
-      <v-card-text v-else v-html="string_to_html(obj.description)" @click="startEditing(1)"/>
+      <div v-else>
+        <v-card-text v-html="string_to_html(obj.description)" @click="startEditing(1)"/>
+
+        <v-dialog v-model="confirmDeleteObjDialog" width="300"> TODO only if no KR
+          <template v-slot:activator="{ props }">
+            <v-btn :disabled="obj.key_results.length > 0"
+                   style="bottom: -10px; right: -10px; position: absolute;"
+                   variant="plain" icon="mdi-trash-can" v-bind="props"
+            />
+          </template>
+          <v-card>
+            <v-card-title class="text-h5 grey lighten-2">
+              Delete permanently?
+            </v-card-title>
+            <v-card-actions>
+              <v-btn block @click="deleteObjective()">Confirm</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </div>
 
       <v-divider></v-divider>
 
@@ -219,7 +167,7 @@ export default {
         <div v-else class="idea"
              @mouseover="selectedIdea = index"
              @mouseleave="selectedIdea = -1">
-          <div v-if="idea.value === ''">|</div>
+          <v-icon icon="mdi-lightbulb-variant-outline" large/>
           <div v-html="string_to_html(idea.value)" @click="startEditingIdea(index)" style="margin-left: 5px; flex: 25;"/>
 
           <v-dialog
