@@ -1,33 +1,31 @@
 <script setup>
-
-</script>
-<script>
+import {ref, watch} from 'vue'
 import {compare_dates, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
-import KeyResultDialog from "@/components/KeyResultDialog.vue";
-import ObjectiveDialog from "@/components/ObjectiveDialog.vue";
+import KeyResultDialog from '@/components/KeyResultDialog.vue'
+import ObjectiveDialog from '@/components/ObjectiveDialog.vue'
 
-export default {
-  name: "Value",
-  props: ["objective", "selectTab", "delete"],
-  data() {
-    return {
-      focused: false,
-      openObjDialog: false,
-      openAddKrDialog: false,
-      newKr: {name: "", description: ""},
-      selectedKr: Object,
-      selectedKr_parent: Object,
-      selectedObj: Object,
-      openKrDialog: false,
-    }
-  },
-  watch: {
-    openAddKrDialog(flag) {if (flag) {this.newKr = {name: "", description: ""}}}
-  },
-  methods: {
-    string_to_html,
-    compareKeyResults(a, b) {
+const props = defineProps({
+  objective: {type: Object, required: true},
+  selectTab: Function,
+  delete: Function,
+})
+
+const objective = props.objective
+const focused = ref(false)
+const openObjDialog = ref(false)
+const openAddKrDialog = ref(false)
+const newKr = ref({name: '', description: ''})
+const selectedKr = ref(null)
+const selectedKr_parent = ref(null)
+const selectedObj = ref(null)
+const openKrDialog = ref(false)
+
+watch(openAddKrDialog, (isOpen) => {
+  if (isOpen) newKr.value = {name: '', description: ''}
+})
+
+function compareKeyResults(a, b) {
       let comparison
       if (a.state === "active") {
         if (b.state === "completed" || b.state === "failed"){
@@ -42,37 +40,31 @@ export default {
           comparison = -1 * compare_dates(a.date_reviewed, b.date_reviewed)
         }
       }
-      if (comparison !== 0) {
-        return comparison
-      } else {
-        return b.id - a.id
-      }
-    },
-    async openKeyResult(kr, obj_state) {
-      this.selectedKr = await api.get('/key_result/' + kr.id)
-      this.selectedKr_parent = kr
-      this.selectedKr_parent.obj_state = obj_state
-      this.openKrDialog = true
-    },
-    openObjective() {
-      this.selectedObj = this.objective
-      this.openObjDialog = true
-    },
-    async addKeyResult() {
-      const newKr = {name: this.newKr.name, description: this.newKr.description, objective_id: this.objective.id}
-      const body = await api.post('/key_result', newKr)
-      this.objective.key_results.push(body)
-      this.openAddKrDialog = false
-    },
-    async deleteKeyResult(kr) {
-      await api.delete('/key_result/' + kr.id)
-      this.objective.key_results.splice(this.objective.key_results.indexOf(kr), 1);
-    }
-  },
-  components: {
-    KeyResultDialog,
-    ObjectiveDialog,
-  }
+  return comparison !== 0 ? comparison : b.id - a.id
+}
+
+async function openKeyResult(keyResult, objectiveState) {
+  selectedKr.value = await api.get('/key_result/' + keyResult.id)
+  selectedKr_parent.value = keyResult
+  selectedKr_parent.value.obj_state = objectiveState
+  openKrDialog.value = true
+}
+
+function openObjective() {
+  selectedObj.value = objective
+  openObjDialog.value = true
+}
+
+async function addKeyResult() {
+  const keyResult = {...newKr.value, objective_id: objective.id}
+  const body = await api.post('/key_result', keyResult)
+  objective.key_results.push(body)
+  openAddKrDialog.value = false
+}
+
+async function deleteKeyResult(keyResult) {
+  await api.delete('/key_result/' + keyResult.id)
+  objective.key_results.splice(objective.key_results.indexOf(keyResult), 1)
 }
 </script>
 <template>
@@ -80,8 +72,8 @@ export default {
           @mouseover="focused = true"
           @mouseleave="focused = false"
   >
-    <ObjectiveDialog :obj="selectedObj" :delete="this.delete" v-model="openObjDialog" v-on:close="this.openObjDialog=false" v-on:selectTab="selectTab"/>
-    <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" :delete="deleteKeyResult" v-model="openKrDialog" v-on:close="this.openKrDialog=false" />
+    <ObjectiveDialog :obj="selectedObj" :delete="props.delete" v-model="openObjDialog" @close="openObjDialog = false" @selectTab="props.selectTab"/>
+    <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" :delete="deleteKeyResult" v-model="openKrDialog" @close="openKrDialog = false" />
 
     <v-card-title>{{objective.name}}</v-card-title>
     <v-card-text v-html="string_to_html(objective.description)"/>
@@ -96,7 +88,7 @@ export default {
     </div>
 
     <div style="display: grid; overflow-x:scroll; max-height: 650px">
-      <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
+      <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)" :key="key_result.id"
                    class="kr" :class="key_result.state"
                    @click="openKeyResult(key_result, objective.state)">
         <v-list-item-content>

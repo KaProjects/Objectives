@@ -1,8 +1,9 @@
-<script>
-export default {
-  name: "Editable",
-  props : ["cancel", "submit", "index"]
-}
+<script setup>
+defineProps({
+  cancel: Function,
+  submit: Function,
+  index: [Number, Object, null],
+})
 </script>
 
 <template>

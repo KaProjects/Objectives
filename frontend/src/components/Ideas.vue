@@ -1,42 +1,37 @@
-<script>
+<script setup>
+import {onMounted, ref} from 'vue'
 import {api} from '@/services/apiClient'
 
-export default {
-  name: "Ideas",
-  props: {
-    valueId: Number
-  },
-  data() {
-    return {
-      ideas: Object,
-      loading: true,
-      newIdeaDialog: false,
-      newIdea: "",
-      selectedIdea: -1,
-      confirmDeletionDialogs: [],
-    }
-  },
-  methods: {
-    async loadData() {
-      this.ideas = await api.get('/value/' + this.valueId + '/idea')
-      this.loading = false
-    },
-    async addIdea() {
-      const body = await api.post('/value/' + this.valueId + '/idea', {idea: this.newIdea})
-      this.ideas.push({id: body.new_id, value: body.idea})
-      this.newIdeaDialog = false
-      this.newIdea = ""
-    },
-    async deleteIdea(idea, index){
-      await api.delete('/value/' + this.valueId + '/idea/' + idea.id)
-      this.ideas.splice(this.ideas.indexOf(idea), 1);
-      this.confirmDeletionDialogs[index] = false
-    },
-  },
-  mounted() {
-    this.loadData()
-  }
+const props = defineProps({
+  valueId: Number,
+})
+
+const ideas = ref([])
+const loading = ref(true)
+const newIdeaDialog = ref(false)
+const newIdea = ref('')
+const selectedIdea = ref(-1)
+const confirmDeletionDialogs = ref([])
+
+async function loadData() {
+  ideas.value = await api.get('/value/' + props.valueId + '/idea')
+  loading.value = false
 }
+
+async function addIdea() {
+  const body = await api.post('/value/' + props.valueId + '/idea', {idea: newIdea.value})
+  ideas.value.push({id: body.new_id, value: body.idea})
+  newIdeaDialog.value = false
+  newIdea.value = ''
+}
+
+async function deleteIdea(idea, index) {
+  await api.delete('/value/' + props.valueId + '/idea/' + idea.id)
+  ideas.value.splice(ideas.value.indexOf(idea), 1)
+  confirmDeletionDialogs.value[index] = false
+}
+
+onMounted(loadData)
 </script>
 <template>
   <v-card width="300" elevation="3" shaped max-height="calc(100vh - 70px)" style="overflow-y:scroll;">

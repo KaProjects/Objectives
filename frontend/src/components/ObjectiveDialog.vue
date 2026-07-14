@@ -1,114 +1,63 @@
 <script setup>
-import Editable from "@/components/Editable.vue";</script>
-
-<script>
+import {ref, watch} from 'vue'
+import Editable from '@/components/Editable.vue'
 import {string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 
-export default {
-  name: "ObjectiveDialog",
-  props: ["obj", "delete"],
-  data() {
-    return {
-      values: [null, null, ""],
-      editing: [false, false, false, []],
-      editingValue: "",
-      confirmStateDialogs: [false, false, false],
-      selectedIdea: -1,
-      ideas: [],
-      confirmDeletionDialogs: [],
-      confirmDeleteObjDialog: false,
-    }
-  },
-  watch: {
-    obj() {
-      this.values[0] = this.obj.name
-      this.values[1] = this.obj.description
-      this.loadIdeas()
-    }
-  },
-  methods: {
-    startEditing(index){
-      if (this.obj.state === 'active') {
-        this.stopEditing()
-        this.editingValue = this.values[index]
-        this.editing[index] = true
-      }
-    },
-    async updateObjective(index){
-      this.values[index] = this.editingValue
-      this.editing[index] = false
+const props = defineProps({obj: Object, delete: Function})
+const emit = defineEmits(['close', 'selectTab'])
+const obj = ref(null)
+const values = ref([null, null, ''])
+const editing = ref([false, false, false, []])
+const editingValue = ref('')
+const confirmStateDialogs = ref([false, false, false])
+const selectedIdea = ref(-1)
+const ideas = ref([])
+const confirmDeletionDialogs = ref([])
+const confirmDeleteObjDialog = ref(false)
 
-      const body = await api.put('/objective/' + this.obj.id, {name: this.values[0], description: this.values[1]})
-      if (body === undefined) {
-        this.values[0] = this.obj.name
-        this.values[1] = this.obj.description
-      } else {
-        this.obj.name = this.values[0]
-        this.obj.description = this.values[1]
-      }
-    },
-    closeDialog(){
-      this.stopEditing()
-      this.$emit('close')
-    },
-    stopEditing(){
-      this.editing = [false, false, false, []]
-    },
-    async updateObjectiveState(index) {
-      let state = null
-      if (index === 0) state = "failed"
-      if (index === 1) state = "achieved"
-      if (index === 2) state = "active"
-      if (state === null) {
-        console.log("invalid index " + index)
-        alert("invalid index " + index)
-        return
-      }
+watch(() => props.obj, async (value) => {
+  obj.value = value
+  if (!value) return
+  values.value[0] = value.name
+  values.value[1] = value.description
+  ideas.value = await api.get('/objective/' + value.id + '/idea')
+}, {immediate: true})
 
-      const body = await api.put('/objective/' + this.obj.id + '/state', {state})
-      this.obj.state = body.state
-      this.obj.date_finished = body.date
-      this.confirmStateDialogs[index] = false
-      this.closeDialog()
-      this.$emit('selectTab', body.state)
-    },
-    string_to_html,
-    async loadIdeas() {
-      this.ideas = await api.get('/objective/' + this.obj.id + '/idea')
-    },
-    startEditingIdea(index){
-      if (this.obj.state === 'active') {
-        this.stopEditing()
-        this.editingValue = this.ideas[index].value
-        this.editing[3][index] = true
-      }
-    },
-    async updateIdeaValue(index){
-      const idea = {value: this.editingValue}
-      const body = await api.put('/objective/' + this.obj.id + '/idea/' + this.ideas[index].id, idea)
-      this.ideas[index].value = body.value
-      this.stopEditing()
-    },
-    async addIdea(){
-      const body = await api.post('/objective/' + this.obj.id + '/idea', {value: this.editingValue})
-      this.ideas.push(body)
-      this.obj.ideas_count = this.obj.ideas_count + 1
-      this.editing[2] = false
-    },
-    async deleteIdea(idea, index){
-      await api.delete('/objective/' + this.obj.id + '/idea/' + idea.id)
-      this.ideas.splice(this.ideas.indexOf(idea), 1);
-      this.obj.ideas_count = this.obj.ideas_count - 1
-      this.confirmDeletionDialogs[index] = false
-    },
-    deleteObjective(){
-      this.delete(this.obj)
-      this.confirmDeleteObjDialog = false
-      this.closeDialog()
-    }
-  }
+function stopEditing() { editing.value = [false, false, false, []] }
+function startEditing(index) {
+  if (obj.value.state !== 'active') return
+  stopEditing(); editingValue.value = values.value[index]; editing.value[index] = true
 }
+async function updateObjective(index) {
+  values.value[index] = editingValue.value; editing.value[index] = false
+  await api.put('/objective/' + obj.value.id, {name: values.value[0], description: values.value[1]})
+  obj.value.name = values.value[0]; obj.value.description = values.value[1]
+}
+function closeDialog() { stopEditing(); emit('close') }
+async function updateObjectiveState(index) {
+  const states = ['failed', 'achieved', 'active']
+  const body = await api.put('/objective/' + obj.value.id + '/state', {state: states[index]})
+  obj.value.state = body.state; obj.value.date_finished = body.date
+  confirmStateDialogs.value[index] = false; closeDialog(); emit('selectTab', body.state)
+}
+function startEditingIdea(index) {
+  if (obj.value.state !== 'active') return
+  stopEditing(); editingValue.value = ideas.value[index].value; editing.value[3][index] = true
+}
+async function updateIdeaValue(index) {
+  const body = await api.put('/objective/' + obj.value.id + '/idea/' + ideas.value[index].id, {value: editingValue.value})
+  ideas.value[index].value = body.value; stopEditing()
+}
+async function addIdea() {
+  const body = await api.post('/objective/' + obj.value.id + '/idea', {value: editingValue.value})
+  ideas.value.push(body); obj.value.ideas_count += 1; editing.value[2] = false
+}
+async function deleteIdea(idea, index) {
+  await api.delete('/objective/' + obj.value.id + '/idea/' + idea.id)
+  ideas.value.splice(ideas.value.indexOf(idea), 1); obj.value.ideas_count -= 1; confirmDeletionDialogs.value[index] = false
+}
+function deleteObjective() { props.delete(obj.value); confirmDeleteObjDialog.value = false; closeDialog() }
 </script>
 
 <template>

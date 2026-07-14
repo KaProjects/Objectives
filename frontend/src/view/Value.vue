@@ -1,77 +1,59 @@
 <script setup>
+import {onMounted, ref, watch} from 'vue'
 import {appState, unselectValue} from '@/state/appState'
-import Objective from "@/components/Objective.vue";
-</script>
-<script>
+import Objective from '@/components/Objective.vue'
 import {compare_dates} from '@/utils'
 import {api} from '@/services/apiClient'
-import {appState as state} from '@/state/appState'
-import Ideas from "@/components/Ideas.vue";
+import Ideas from '@/components/Ideas.vue'
 
-export default {
-  name: "Value",
-  data() {
-    return {
-      value: Object,
-      tab: "active",
-      openAddObjDialog: false,
-      newObj: {name: "", description: ""},
-      showIdeas: false,
-    }
-  },
-  watch: {
-    openAddObjDialog(flag) {if (flag) {this.newObj = {name: "", description: ""}}}
-  },
-  methods: {
-    async loadData() {
-      this.value = await api.get('/value/' + state.selectedValue.id)
-    },
-    compareObjectives(a, b) {
+const value = ref({objectives: []})
+const tab = ref('active')
+const openAddObjDialog = ref(false)
+const newObj = ref({name: '', description: ''})
+const showIdeas = ref(false)
+
+watch(openAddObjDialog, (isOpen) => {
+  if (isOpen) newObj.value = {name: '', description: ''}
+})
+
+async function loadData() {
+  value.value = await api.get('/value/' + appState.selectedValue.id)
+}
+
+function compareObjectives(a, b) {
       let comparison
       if (a.state !== "active" &&  b.state !== "active") {
         comparison = - compare_dates(a.date_finished, b.date_finished)
       } else {
-        comparison = - compare_dates(a.date_created, b.date_created)
-      }
-      if (comparison !== 0) {
-        return comparison
-      } else {
-        return b.id - a.id
-      }
-    },
-    filterObjectives(objs, isActive){
-      if (typeof objs === "undefined") return objs;
-      return objs.filter(obj => isActive ? obj.state === 'active' : obj.state !== 'active').slice().sort(this.compareObjectives);
-    },
-    async addObjective(){
-      const newObj = {name: this.newObj.name, description: this.newObj.description, value_id: this.value.id}
-      const body = await api.post('/objective', newObj)
-      this.value.objectives.push(body)
-      this.openAddObjDialog = false
-      this.tab = "active"
-    },
-    openObjectiveDialog(objective) {
-      this.selectedObjective = objective
-    },
-    selectTab(state) {
-      if (state === "active") {
-        this.tab = "active"
-      } else {
-        this.tab = "inactive"
-      }
-    },
-    async deleteObjective(obj) {
-      await api.delete('/objective/' + obj.id)
-      this.value.objectives.splice(this.value.objectives.indexOf(obj), 1);
-    }
-  },
-  components: {
-    Ideas,
-  },
-  mounted() {
-    this.loadData()
+    comparison = - compare_dates(a.date_created, b.date_created)
   }
+  return comparison !== 0 ? comparison : b.id - a.id
 }
+
+function filterObjectives(objectives, isActive) {
+  if (objectives === undefined) return objectives
+  return objectives.filter((objective) => isActive ? objective.state === 'active' : objective.state !== 'active')
+    .slice().sort(compareObjectives)
+}
+
+async function addObjective() {
+  const objective = {...newObj.value, value_id: value.value.id}
+  const body = await api.post('/objective', objective)
+  value.value.objectives.push(body)
+  openAddObjDialog.value = false
+  tab.value = 'active'
+}
+
+function selectTab(state) {
+  tab.value = state === 'active' ? 'active' : 'inactive'
+}
+
+async function deleteObjective(objective) {
+  await api.delete('/objective/' + objective.id)
+  value.value.objectives.splice(value.value.objectives.indexOf(objective), 1)
+}
+
+onMounted(loadData)
 </script>
 
 <template>

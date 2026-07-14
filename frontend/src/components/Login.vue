@@ -1,28 +1,21 @@
 <script setup>
-
-</script>
-<script>
+import {ref} from 'vue'
 import {api} from '@/services/apiClient'
 import {setToken} from '@/state/appState'
 
-export default {
-  name: "login",
-  props: ["onLoggedIn"],
-  data() {
-    return {
-      username: "",
-      password: "",
-    }
-  },
-  methods: {
-    async login(){
-      const token = await api.login(this.username, this.password)
-      if (token) {
-        setToken(token)
-        sessionStorage.setItem('token', token)
-        this.onLoggedIn(token)
-      }
-    }
+const props = defineProps({
+  onLoggedIn: Function,
+})
+
+const username = ref('')
+const password = ref('')
+
+async function login() {
+  const token = await api.login(username.value, password.value)
+  if (token) {
+    setToken(token)
+    sessionStorage.setItem('token', token)
+    props.onLoggedIn(token)
   }
 }
 </script>

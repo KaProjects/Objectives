@@ -1,175 +1,49 @@
 <script setup>
-import Editable from "@/components/Editable.vue";
-</script>
-
-<script>
+import {ref, watch} from 'vue'
+import Editable from '@/components/Editable.vue'
 import {string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 
-export default {
-  name: "KeyResultDialog",
-  props: ["kr", "kr_parent", "delete"],
-  data() {
-    return {
-      values: [null, null, null, null, null, null, null, ""],
-      editing: [false, false, false, false, false, false, false, false, []],
-      editingValue: "",
-      selectedTask: -1,
-      confirmDeletionDialogs: [],
-      confirmStateDialogs: [false, false, false],
-      showSmart: false,
-      confirmDeleteKrDialog: false,
-    }
-  },
-  watch: {
-    kr(){
-      this.values[0] = this.kr.name
-      this.values[1] = this.kr.description
-      this.values[2] = this.kr.s
-      this.values[3] = this.kr.m
-      this.values[4] = this.kr.a
-      this.values[5] = this.kr.r
-      this.values[6] = this.kr.t
-    }
-  },
-  methods: {
-    async updateKeyResult(){
-      let kr = {}
-      kr.name = this.values[0]
-      kr.description = this.values[1]
-      kr.s = this.values[2]
-      kr.m = this.values[3]
-      kr.a = this.values[4]
-      kr.r = this.values[5]
-      kr.t = this.values[6]
+const props = defineProps({kr: Object, kr_parent: Object, delete: Function})
+const emit = defineEmits(['close'])
+const kr = ref(null)
+const kr_parent = ref(null)
+const values = ref([null, null, null, null, null, null, null, ''])
+const editing = ref([false, false, false, false, false, false, false, false, []])
+const editingValue = ref('')
+const selectedTask = ref(-1)
+const confirmDeletionDialogs = ref([])
+const confirmStateDialogs = ref([false, false, false])
+const showSmart = ref(false)
+const confirmDeleteKrDialog = ref(false)
 
-      const body = await api.put('/key_result/' + this.kr.id, kr)
-      if (body === undefined){
-        this.values[0] = this.kr.name
-        this.values[1] = this.kr.description
-        this.values[2] = this.kr.s
-        this.values[3] = this.kr.m
-        this.values[4] = this.kr.a
-        this.values[5] = this.kr.r
-        this.values[6] = this.kr.t
-      } else {
-        this.kr.name = this.values[0]
-        this.kr.description = this.values[1]
-        this.kr.s = this.values[2]
-        this.kr.m = this.values[3]
-        this.kr.a = this.values[4]
-        this.kr.r = this.values[5]
-        this.kr.t = this.values[6]
-        this.kr.date_reviewed = body
+watch(() => props.kr, (value) => {
+  kr.value = value; kr_parent.value = props.kr_parent
+  if (!value) return
+  values.value.splice(0, 7, value.name, value.description, value.s, value.m, value.a, value.r, value.t)
+}, {immediate: true})
 
-        this.kr_parent.name = this.kr.name
-        this.kr_parent.date_reviewed = this.kr.date_reviewed
-        this.kr.is_smart = this.validateSmart(this.kr.s) && this.validateSmart(this.kr.m)
-            && this.validateSmart(this.kr.a) && this.validateSmart(this.kr.r) && this.validateSmart(this.kr.t)
-        this.kr_parent.is_smart = this.kr.is_smart
-      }
-    },
-    startEditing(index){
-      if (this.kr.state === 'active' && this.kr_parent.obj_state === 'active') {
-        this.stopEditing()
-        this.editingValue = this.values[index]
-        this.editing[index] = true
-      }
-    },
-    update(index){
-      this.values[index] = this.editingValue
-      this.editing[index] = false
-      this.updateKeyResult()
-    },
-    startEditingTask(task){
-      if (this.kr.state === 'active' && this.kr_parent.obj_state === 'active') {
-        this.stopEditing()
-        this.editingValue = task.value
-        this.editing[8][this.kr.tasks.slice().sort(this.compareTasks).indexOf(task)] = true
-      }
-    },
-    async updateTaskValue(task){
-      const updatedTask = {kr_id: this.kr.id, value: this.editingValue, state: task.state}
-      const body = await api.put('/task/' + task.id, updatedTask)
-      task.value = body.value
-      await this.retrieveKeyResultReviewDate()
-      this.stopEditing()
-    },
-    closeDialog(){
-      this.stopEditing()
-      this.showSmart = false
-      this.$emit('close')
-    },
-    stopEditing(){
-      this.editing = [false, false, false, false, false, false, false, false, []]
-    },
-    async addTask(){
-      const body = await api.post('/task', {kr_id: this.kr.id, value: this.editingValue})
-      this.kr.tasks.push(body)
-      this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count + 1
-      await this.retrieveKeyResultReviewDate()
-      this.editing[7] = false
-    },
-    async updateTaskState(task, state){
-      const updatedTask = {kr_id: this.kr.id, value: task.value, state: state}
-      const body = await api.put('/task/' + task.id, updatedTask)
-      if (task.state === 'active' && body.state !== 'active'){
-        this.kr_parent.resolved_tasks_count += 1
-      }
-      if (task.state !== 'active' && body.state === 'active'){
-        this.kr_parent.resolved_tasks_count -= 1
-      }
-      task.state = body.state
-      await this.retrieveKeyResultReviewDate()
-    },
-    async deleteTask(task){
-      await api.delete('/task/' + task.id)
-      this.confirmDeletionDialogs[this.kr.tasks.slice().sort(this.compareTasks).indexOf(task)] = false
-      this.kr.tasks.splice(this.kr.tasks.indexOf(task), 1);
-      this.kr_parent.all_tasks_count = this.kr_parent.all_tasks_count - 1
-      if (task.state !== 'active') {
-        this.kr_parent.resolved_tasks_count -= 1
-      }
-      await this.retrieveKeyResultReviewDate()
-    },
-    async retrieveKeyResultReviewDate(){
-      const body = await api.get('/key_result/' + this.kr.id)
-      this.kr.date_reviewed = body.date_reviewed
-      this.kr_parent.date_reviewed = this.kr.date_reviewed
-    },
-    async updateKeyResultState(index){
-      let state = null
-      if (index===0) state = "failed"
-      if (index===1) state = "completed"
-      if (index===2) state = "active"
-      if (state===null) {
-        console.log("invalid index " + index)
-        alert("invalid index " + index)
-        return
-      }
-
-      const body = await api.put('/key_result/' + this.kr.id + '/state', {state})
-      this.kr.state = body
-      this.kr_parent.state = body
-      await this.retrieveKeyResultReviewDate()
-      this.confirmStateDialogs[index] = false
-    },
-    string_to_html,
-    validateSmart(value){
-      return value !== null && value !== undefined && value.length > 0 && !value.startsWith("[!!!]")
-    },
-    deleteKeyResult(){
-      this.delete(this.kr_parent)
-      this.confirmDeleteKrDialog = false
-      this.closeDialog()
-    },
-    compareTasks(a, b){
-      if (a.state === 'active' && b.state !== 'active') return -1
-      if (a.state !== 'active' && b.state === 'active') return 1
-      return a.id - b.id
-    }
-  },
+function stopEditing() { editing.value = [false, false, false, false, false, false, false, false, []] }
+function canEdit() { return kr.value.state === 'active' && kr_parent.value.obj_state === 'active' }
+function validateSmart(value) { return value !== null && value !== undefined && value.length > 0 && !value.startsWith('[!!!]') }
+function compareTasks(a, b) { if (a.state === 'active' && b.state !== 'active') return -1; if (a.state !== 'active' && b.state === 'active') return 1; return a.id - b.id }
+async function updateKeyResult() {
+  const updated = {name: values.value[0], description: values.value[1], s: values.value[2], m: values.value[3], a: values.value[4], r: values.value[5], t: values.value[6]}
+  const body = await api.put('/key_result/' + kr.value.id, updated)
+  Object.assign(kr.value, updated, {date_reviewed: body}); Object.assign(kr_parent.value, {name: kr.value.name, date_reviewed: body})
+  kr.value.is_smart = [kr.value.s, kr.value.m, kr.value.a, kr.value.r, kr.value.t].every(validateSmart); kr_parent.value.is_smart = kr.value.is_smart
 }
+function startEditing(index) { if (!canEdit()) return; stopEditing(); editingValue.value = values.value[index]; editing.value[index] = true }
+function update(index) { values.value[index] = editingValue.value; editing.value[index] = false; updateKeyResult() }
+function startEditingTask(task) { if (!canEdit()) return; stopEditing(); editingValue.value = task.value; editing.value[8][kr.value.tasks.slice().sort(compareTasks).indexOf(task)] = true }
+async function retrieveKeyResultReviewDate() { const body = await api.get('/key_result/' + kr.value.id); kr.value.date_reviewed = body.date_reviewed; kr_parent.value.date_reviewed = body.date_reviewed }
+async function updateTaskValue(task) { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: editingValue.value, state: task.state}); task.value = body.value; await retrieveKeyResultReviewDate(); stopEditing() }
+function closeDialog() { stopEditing(); showSmart.value = false; emit('close') }
+async function addTask() { const body = await api.post('/task', {kr_id: kr.value.id, value: editingValue.value}); kr.value.tasks.push(body); kr_parent.value.all_tasks_count += 1; await retrieveKeyResultReviewDate(); editing.value[7] = false }
+async function updateTaskState(task, state) { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: task.value, state}); if (task.state === 'active' && body.state !== 'active') kr_parent.value.resolved_tasks_count += 1; if (task.state !== 'active' && body.state === 'active') kr_parent.value.resolved_tasks_count -= 1; task.state = body.state; await retrieveKeyResultReviewDate() }
+async function deleteTask(task) { await api.delete('/task/' + task.id); confirmDeletionDialogs.value[kr.value.tasks.slice().sort(compareTasks).indexOf(task)] = false; kr.value.tasks.splice(kr.value.tasks.indexOf(task), 1); kr_parent.value.all_tasks_count -= 1; if (task.state !== 'active') kr_parent.value.resolved_tasks_count -= 1; await retrieveKeyResultReviewDate() }
+async function updateKeyResultState(index) { const body = await api.put('/key_result/' + kr.value.id + '/state', {state: ['failed', 'completed', 'active'][index]}); kr.value.state = body; kr_parent.value.state = body; await retrieveKeyResultReviewDate(); confirmStateDialogs.value[index] = false }
+function deleteKeyResult() { props.delete(kr_parent.value); confirmDeleteKrDialog.value = false; closeDialog() }
 </script>
 
 <template>

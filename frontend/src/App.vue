@@ -1,34 +1,28 @@
 <script setup>
-import Value from "@/view/Value.vue";
+import {onMounted, ref} from 'vue'
+import Value from '@/view/Value.vue'
 import {appState, selectValue} from '@/state/appState'
-import Login from "@/components/Login.vue";
-</script>
-<script>
+import Login from '@/components/Login.vue'
 import {api} from '@/services/apiClient'
-import {setToken as applyToken} from '@/state/appState'
+import {setToken} from '@/state/appState'
 
-export default {
-  data() {
-    return {
-      values: [],
-    }
-  },
-  methods: {
-    async loadData(token) {
-      this.values = await api.get('/values')
-    },
-    addValue() {
-      alert('add value')
-    }
-  },
-  mounted() {
-    const token = sessionStorage.getItem('token')
-    if (token) {
-      applyToken(token)
-      this.loadData(token)
-    }
-  }
+const values = ref([])
+
+async function loadData() {
+  values.value = await api.get('/values')
 }
+
+function addValue() {
+  alert('add value')
+}
+
+onMounted(() => {
+  const token = sessionStorage.getItem('token')
+  if (token) {
+    setToken(token)
+    loadData()
+  }
+})
 </script>
 
 <template>
