@@ -7,9 +7,8 @@ import ObjectiveDialog from '@/components/ObjectiveDialog.vue'
 
 const props = defineProps({
   objective: {type: Object, required: true},
-  selectTab: Function,
-  delete: Function,
 })
+const emit = defineEmits(['deleted', 'state-changed'])
 
 const objective = props.objective
 const focused = ref(false)
@@ -72,8 +71,8 @@ async function deleteKeyResult(keyResult) {
           @mouseover="focused = true"
           @mouseleave="focused = false"
   >
-    <ObjectiveDialog :obj="selectedObj" :delete="props.delete" v-model="openObjDialog" @close="openObjDialog = false" @selectTab="props.selectTab"/>
-    <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" :delete="deleteKeyResult" v-model="openKrDialog" @close="openKrDialog = false" />
+    <ObjectiveDialog :obj="selectedObj" v-model="openObjDialog" @close="openObjDialog = false" @deleted="emit('deleted', $event)" @state-changed="emit('state-changed', $event)"/>
+    <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" v-model="openKrDialog" @close="openKrDialog = false" @deleted="deleteKeyResult" />
 
     <v-card-title>{{objective.name}}</v-card-title>
     <v-card-text v-html="string_to_html(objective.description)"/>

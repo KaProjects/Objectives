@@ -4,8 +4,8 @@ import Editable from '@/components/Editable.vue'
 import {string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 
-const props = defineProps({obj: Object, delete: Function})
-const emit = defineEmits(['close', 'selectTab'])
+const props = defineProps({obj: Object})
+const emit = defineEmits(['close', 'deleted', 'state-changed'])
 const obj = ref(null)
 const values = ref([null, null, ''])
 const editing = ref([false, false, false, []])
@@ -39,7 +39,7 @@ async function updateObjectiveState(index) {
   const states = ['failed', 'achieved', 'active']
   const body = await api.put('/objective/' + obj.value.id + '/state', {state: states[index]})
   obj.value.state = body.state; obj.value.date_finished = body.date
-  confirmStateDialogs.value[index] = false; closeDialog(); emit('selectTab', body.state)
+  confirmStateDialogs.value[index] = false; closeDialog(); emit('state-changed', body.state)
 }
 function startEditingIdea(index) {
   if (obj.value.state !== 'active') return
@@ -57,7 +57,7 @@ async function deleteIdea(idea, index) {
   await api.delete('/objective/' + obj.value.id + '/idea/' + idea.id)
   ideas.value.splice(ideas.value.indexOf(idea), 1); obj.value.ideas_count -= 1; confirmDeletionDialogs.value[index] = false
 }
-function deleteObjective() { props.delete(obj.value); confirmDeleteObjDialog.value = false; closeDialog() }
+function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.value = false; closeDialog() }
 </script>
 
 <template>

@@ -4,8 +4,8 @@ import Editable from '@/components/Editable.vue'
 import {string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 
-const props = defineProps({kr: Object, kr_parent: Object, delete: Function})
-const emit = defineEmits(['close'])
+const props = defineProps({kr: Object, kr_parent: Object})
+const emit = defineEmits(['close', 'deleted'])
 const kr = ref(null)
 const kr_parent = ref(null)
 const draftKeyResult = ref({
@@ -55,7 +55,7 @@ async function addTask() { const body = await api.post('/task', {kr_id: kr.value
 async function updateTaskState(task, state) { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: task.value, state}); if (task.state === 'active' && body.state !== 'active') kr_parent.value.resolved_tasks_count += 1; if (task.state !== 'active' && body.state === 'active') kr_parent.value.resolved_tasks_count -= 1; task.state = body.state; await retrieveKeyResultReviewDate() }
 async function deleteTask(task) { await api.delete('/task/' + task.id); taskPendingDeletionId.value = null; kr.value.tasks.splice(kr.value.tasks.indexOf(task), 1); kr_parent.value.all_tasks_count -= 1; if (task.state !== 'active') kr_parent.value.resolved_tasks_count -= 1; await retrieveKeyResultReviewDate() }
 async function updateKeyResultState(index) { const body = await api.put('/key_result/' + kr.value.id + '/state', {state: ['failed', 'completed', 'active'][index]}); kr.value.state = body; kr_parent.value.state = body; await retrieveKeyResultReviewDate(); confirmStateDialogs.value[index] = false }
-function deleteKeyResult() { props.delete(kr_parent.value); confirmDeleteKrDialog.value = false; closeDialog() }
+function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDialog.value = false; closeDialog() }
 </script>
 
 <template>

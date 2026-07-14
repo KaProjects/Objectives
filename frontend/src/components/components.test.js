@@ -56,8 +56,7 @@ describe('frontend components', () => {
 
   it('Login authenticates, stores the token, and notifies its parent', async () => {
     api.login.mockResolvedValue('token')
-    const onLoggedIn = vi.fn()
-    const wrapper = mount(Login, {props: {onLoggedIn}})
+    const wrapper = mount(Login)
     const inputs = wrapper.findAll('input')
     await inputs[0].setValue('alice')
     await inputs[1].setValue('password')
@@ -65,7 +64,7 @@ describe('frontend components', () => {
     await flushPromises()
 
     expect(api.login).toHaveBeenCalledWith('alice', 'password')
-    expect(onLoggedIn).toHaveBeenCalledWith('token')
+    expect(wrapper.emitted('logged-in')).toEqual([['token']])
   })
 
   it('Ideas loads ideas and adds a newly created idea', async () => {
@@ -85,7 +84,7 @@ describe('frontend components', () => {
   it('Objective loads a key result before opening its dialog', async () => {
     api.get.mockResolvedValue(keyResult)
     const wrapper = shallowMount(Objective, {
-      props: {objective: {...objective}, selectTab: vi.fn(), delete: vi.fn()},
+      props: {objective: {...objective}},
     })
     await wrapper.vm.openKeyResult({id: 2}, 'active')
     expect(api.get).toHaveBeenCalledWith('/key_result/2')
@@ -95,7 +94,7 @@ describe('frontend components', () => {
   it('ObjectiveDialog loads ideas for its objective and emits close', async () => {
     api.get.mockResolvedValue([{id: 3, value: 'Idea'}])
     const wrapper = shallowMount(ObjectiveDialog, {
-      props: {obj: {...objective}, delete: vi.fn()},
+      props: {obj: {...objective}},
     })
     await flushPromises()
     expect(api.get).toHaveBeenCalledWith('/objective/1/idea')
@@ -108,7 +107,6 @@ describe('frontend components', () => {
       props: {
         kr: {...keyResult},
         kr_parent: {...keyResult, obj_state: 'active'},
-        delete: vi.fn(),
       },
     })
     wrapper.vm.closeDialog()
@@ -121,7 +119,6 @@ describe('frontend components', () => {
       props: {
         kr: {...keyResult},
         kr_parent: {...keyResult, obj_state: 'active'},
-        delete: vi.fn(),
       },
     })
     wrapper.vm.draftKeyResult.attainable = 'Reachable daily walk'

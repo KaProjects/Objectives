@@ -87,8 +87,11 @@ onMounted(loadData)
 
     <div style="display: flex; overflow-x:scroll;">
       <Ideas class="obj" :valueId="appState.selectedValue.id" v-if="showIdeas"/>
-      <Objective v-for="(objective) in filterObjectives(value.objectives, tab === 'active')"
-                 :objective="objective" :selectTab="selectTab" :delete="deleteObjective"/>
+      <Objective v-for="objective in filterObjectives(value.objectives, tab === 'active')"
+                 :key="objective.id"
+                 :objective="objective"
+                 @deleted="deleteObjective"
+                 @state-changed="selectTab"/>
     </div>
   </div>
 </template>

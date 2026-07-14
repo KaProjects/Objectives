@@ -3,9 +3,7 @@ import {ref} from 'vue'
 import {api} from '@/services/apiClient'
 import {setToken} from '@/state/appState'
 
-const props = defineProps({
-  onLoggedIn: Function,
-})
+const emit = defineEmits(['logged-in'])
 
 const username = ref('')
 const password = ref('')
@@ -15,7 +13,7 @@ async function login() {
   if (token) {
     setToken(token)
     sessionStorage.setItem('token', token)
-    props.onLoggedIn(token)
+    emit('logged-in', token)
   }
 }
 </script>

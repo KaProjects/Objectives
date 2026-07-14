@@ -32,7 +32,7 @@ onMounted(() => {
   </v-alert>
 
   <div v-else>
-    <Login v-if="appState.token == null" :onLoggedIn="loadData"/>
+    <Login v-if="appState.token == null" @logged-in="loadData"/>
 
     <div v-else>
       <div class="values0" v-if="appState.selectedValue == null">
