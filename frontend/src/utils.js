@@ -1,4 +1,7 @@
-export function string_to_html(string){
+import DOMPurify from 'dompurify'
+
+export function string_to_html(string = ''){
+    string = String(string)
     let urls = string.match(/https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)/g)
     if (urls !== null) {
         for (let url of urls){
@@ -13,7 +16,7 @@ export function string_to_html(string){
             } else {
                 text = url.split("\/\/")[1].split("\/")[0]
             }
-            string = string.replace(url, "<a href=\"" + url + "\" target=\"_blank\" onclick=\"event.cancelBubble=true;\">" + text + "</a>")
+            string = string.replace(url, "<a href=\"" + url + "\" target=\"_blank\" rel=\"noopener noreferrer\">" + text + "</a>")
         }
     }
 
@@ -33,7 +36,10 @@ export function string_to_html(string){
         }
     }
 
-    return string
+    return DOMPurify.sanitize(string, {
+        ALLOWED_TAGS: ['a', 'b', 'br', 's'],
+        ALLOWED_ATTR: ['href', 'rel', 'target'],
+    })
 }
 export function compare_dates(a, b){
     let dateA = a.split("/")

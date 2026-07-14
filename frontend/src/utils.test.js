@@ -12,4 +12,12 @@ describe('utility helpers', () => {
       .toContain('<b>bold</b><br><s>done</s>')
     expect(string_to_html('https://github.com/vuejs/core')).toContain('gh-vuejs-core')
   })
+
+  it('removes unsafe markup before it reaches v-html', () => {
+    const html = string_to_html('Hello <img src=x onerror="alert(1)"><script>alert(1)</script>')
+
+    expect(html).toBe('Hello ')
+    expect(html).not.toContain('onerror')
+    expect(html).not.toContain('<script')
+  })
 })
