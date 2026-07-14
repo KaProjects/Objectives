@@ -94,29 +94,33 @@ describe('frontend components', () => {
   it('ObjectiveDialog loads ideas for its objective and emits close', async () => {
     api.get.mockResolvedValue([{id: 3, value: 'Idea'}])
     const wrapper = shallowMount(ObjectiveDialog, {
-      props: {obj: {...objective}},
+      props: {modelValue: true, obj: {...objective}},
     })
     await flushPromises()
     expect(api.get).toHaveBeenCalledWith('/objective/1/idea')
     await wrapper.vm.closeDialog()
     expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('update:modelValue')).toEqual([[false]])
   })
 
   it('KeyResultDialog closes by emitting an event', () => {
     const wrapper = shallowMount(KeyResultDialog, {
       props: {
+        modelValue: true,
         kr: {...keyResult},
         kr_parent: {...keyResult, obj_state: 'active'},
       },
     })
     wrapper.vm.closeDialog()
     expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('update:modelValue')).toEqual([[false]])
   })
 
   it('KeyResultDialog sends named draft fields in its update payload', async () => {
     api.put.mockResolvedValue('02/01/2026')
     const wrapper = shallowMount(KeyResultDialog, {
       props: {
+        modelValue: true,
         kr: {...keyResult},
         kr_parent: {...keyResult, obj_state: 'active'},
       },

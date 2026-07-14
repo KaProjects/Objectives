@@ -1,11 +1,18 @@
 <script setup>
-import {ref, watch} from 'vue'
+import {computed, ref, watch} from 'vue'
 import Editable from '@/components/Editable.vue'
 import {string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 
-const props = defineProps({obj: Object})
-const emit = defineEmits(['close', 'deleted', 'state-changed'])
+const props = defineProps({
+  modelValue: Boolean,
+  obj: Object,
+})
+const emit = defineEmits(['update:modelValue', 'close', 'deleted', 'state-changed'])
+const isOpen = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value),
+})
 const obj = ref(null)
 const values = ref([null, null, ''])
 const editing = ref([false, false, false, []])
@@ -34,7 +41,7 @@ async function updateObjective(index) {
   await api.put('/objective/' + obj.value.id, {name: values.value[0], description: values.value[1]})
   obj.value.name = values.value[0]; obj.value.description = values.value[1]
 }
-function closeDialog() { stopEditing(); emit('close') }
+function closeDialog() { stopEditing(); isOpen.value = false; emit('close') }
 async function updateObjectiveState(index) {
   const states = ['failed', 'achieved', 'active']
   const body = await api.put('/objective/' + obj.value.id + '/state', {state: states[index]})
@@ -61,7 +68,7 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
 </script>
 
 <template>
-  <v-dialog persistent width="600">
+  <v-dialog v-model="isOpen" persistent width="600">
     <v-card>
       <Editable v-if="editing[0]" :cancel="stopEditing" :submit="updateObjective" :index=0>
         <v-text-field @keydown.enter="updateObjective(0)" @keydown.esc="stopEditing"

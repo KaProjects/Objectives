@@ -1,11 +1,19 @@
 <script setup>
-import {ref, watch} from 'vue'
+import {computed, ref, watch} from 'vue'
 import Editable from '@/components/Editable.vue'
 import {string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 
-const props = defineProps({kr: Object, kr_parent: Object})
-const emit = defineEmits(['close', 'deleted'])
+const props = defineProps({
+  modelValue: Boolean,
+  kr: Object,
+  kr_parent: Object,
+})
+const emit = defineEmits(['update:modelValue', 'close', 'deleted'])
+const isOpen = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value),
+})
 const kr = ref(null)
 const kr_parent = ref(null)
 const draftKeyResult = ref({
@@ -50,7 +58,7 @@ function startAddingTask() { if (!canEdit()) return; stopEditing(); editingValue
 function startEditingTask(task) { if (!canEdit()) return; stopEditing(); editingValue.value = task.value; editingTaskId.value = task.id }
 async function retrieveKeyResultReviewDate() { const body = await api.get('/key_result/' + kr.value.id); kr.value.date_reviewed = body.date_reviewed; kr_parent.value.date_reviewed = body.date_reviewed }
 async function updateTaskValue(task) { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: editingValue.value, state: task.state}); task.value = body.value; await retrieveKeyResultReviewDate(); stopEditing() }
-function closeDialog() { stopEditing(); showSmart.value = false; emit('close') }
+function closeDialog() { stopEditing(); showSmart.value = false; isOpen.value = false; emit('close') }
 async function addTask() { const body = await api.post('/task', {kr_id: kr.value.id, value: editingValue.value}); kr.value.tasks.push(body); kr_parent.value.all_tasks_count += 1; await retrieveKeyResultReviewDate(); isAddingTask.value = false }
 async function updateTaskState(task, state) { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: task.value, state}); if (task.state === 'active' && body.state !== 'active') kr_parent.value.resolved_tasks_count += 1; if (task.state !== 'active' && body.state === 'active') kr_parent.value.resolved_tasks_count -= 1; task.state = body.state; await retrieveKeyResultReviewDate() }
 async function deleteTask(task) { await api.delete('/task/' + task.id); taskPendingDeletionId.value = null; kr.value.tasks.splice(kr.value.tasks.indexOf(task), 1); kr_parent.value.all_tasks_count -= 1; if (task.state !== 'active') kr_parent.value.resolved_tasks_count -= 1; await retrieveKeyResultReviewDate() }
@@ -59,7 +67,7 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
 </script>
 
 <template>
-  <v-dialog persistent width="600">
+  <v-dialog v-model="isOpen" persistent width="600">
     <v-card>
 
       <Editable v-if="editingField === 'name'" :cancel="stopEditing" :submit="update" index="name">
