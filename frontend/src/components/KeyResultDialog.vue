@@ -3,6 +3,7 @@ import {computed, ref, watch} from 'vue'
 import Editable from '@/components/Editable.vue'
 import {string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
+import {setError} from '@/state/appState'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -43,26 +44,32 @@ function canEdit() { return kr.value.state === 'active' && kr_parent.value.obj_s
 function validateSmart(value) { return value !== null && value !== undefined && value.length > 0 && !value.startsWith('[!!!]') }
 function compareTasks(a, b) { if (a.state === 'active' && b.state !== 'active') return -1; if (a.state !== 'active' && b.state === 'active') return 1; return a.id - b.id }
 async function updateKeyResult() {
-  const updated = {
-    name: draftKeyResult.value.name, description: draftKeyResult.value.description,
-    s: draftKeyResult.value.specific, m: draftKeyResult.value.measurable,
-    a: draftKeyResult.value.attainable, r: draftKeyResult.value.relevant, t: draftKeyResult.value.timeBound,
+  try {
+    const updated = {
+      name: draftKeyResult.value.name, description: draftKeyResult.value.description,
+      s: draftKeyResult.value.specific, m: draftKeyResult.value.measurable,
+      a: draftKeyResult.value.attainable, r: draftKeyResult.value.relevant, t: draftKeyResult.value.timeBound,
+    }
+    const body = await api.put('/key_result/' + kr.value.id, updated)
+    Object.assign(kr.value, updated, {date_reviewed: body}); Object.assign(kr_parent.value, {name: kr.value.name, date_reviewed: body})
+    kr.value.is_smart = [kr.value.s, kr.value.m, kr.value.a, kr.value.r, kr.value.t].every(validateSmart); kr_parent.value.is_smart = kr.value.is_smart
+    return true
+  } catch (error) {
+    setError(error)
+    return false
   }
-  const body = await api.put('/key_result/' + kr.value.id, updated)
-  Object.assign(kr.value, updated, {date_reviewed: body}); Object.assign(kr_parent.value, {name: kr.value.name, date_reviewed: body})
-  kr.value.is_smart = [kr.value.s, kr.value.m, kr.value.a, kr.value.r, kr.value.t].every(validateSmart); kr_parent.value.is_smart = kr.value.is_smart
 }
 function startEditing(field) { if (!canEdit()) return; stopEditing(); editingValue.value = draftKeyResult.value[field]; editingField.value = field }
-function update(field) { draftKeyResult.value[field] = editingValue.value; editingField.value = null; updateKeyResult() }
+async function update(field) { const previousValue = draftKeyResult.value[field]; draftKeyResult.value[field] = editingValue.value; if (await updateKeyResult()) editingField.value = null; else draftKeyResult.value[field] = previousValue }
 function startAddingTask() { if (!canEdit()) return; stopEditing(); editingValue.value = ''; isAddingTask.value = true }
 function startEditingTask(task) { if (!canEdit()) return; stopEditing(); editingValue.value = task.value; editingTaskId.value = task.id }
-async function retrieveKeyResultReviewDate() { const body = await api.get('/key_result/' + kr.value.id); kr.value.date_reviewed = body.date_reviewed; kr_parent.value.date_reviewed = body.date_reviewed }
-async function updateTaskValue(task) { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: editingValue.value, state: task.state}); task.value = body.value; await retrieveKeyResultReviewDate(); stopEditing() }
+async function retrieveKeyResultReviewDate() { try { const body = await api.get('/key_result/' + kr.value.id); kr.value.date_reviewed = body.date_reviewed; kr_parent.value.date_reviewed = body.date_reviewed } catch (error) { setError(error) } }
+async function updateTaskValue(task) { try { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: editingValue.value, state: task.state}); task.value = body.value; await retrieveKeyResultReviewDate(); stopEditing() } catch (error) { setError(error) } }
 function closeDialog() { stopEditing(); showSmart.value = false; isOpen.value = false; emit('close') }
-async function addTask() { const body = await api.post('/task', {kr_id: kr.value.id, value: editingValue.value}); kr.value.tasks.push(body); kr_parent.value.all_tasks_count += 1; await retrieveKeyResultReviewDate(); isAddingTask.value = false }
-async function updateTaskState(task, state) { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: task.value, state}); if (task.state === 'active' && body.state !== 'active') kr_parent.value.resolved_tasks_count += 1; if (task.state !== 'active' && body.state === 'active') kr_parent.value.resolved_tasks_count -= 1; task.state = body.state; await retrieveKeyResultReviewDate() }
-async function deleteTask(task) { await api.delete('/task/' + task.id); taskPendingDeletionId.value = null; kr.value.tasks.splice(kr.value.tasks.indexOf(task), 1); kr_parent.value.all_tasks_count -= 1; if (task.state !== 'active') kr_parent.value.resolved_tasks_count -= 1; await retrieveKeyResultReviewDate() }
-async function updateKeyResultState(index) { const body = await api.put('/key_result/' + kr.value.id + '/state', {state: ['failed', 'completed', 'active'][index]}); kr.value.state = body; kr_parent.value.state = body; await retrieveKeyResultReviewDate(); confirmStateDialogs.value[index] = false }
+async function addTask() { try { const body = await api.post('/task', {kr_id: kr.value.id, value: editingValue.value}); kr.value.tasks.push(body); kr_parent.value.all_tasks_count += 1; await retrieveKeyResultReviewDate(); isAddingTask.value = false } catch (error) { setError(error) } }
+async function updateTaskState(task, state) { try { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: task.value, state}); if (task.state === 'active' && body.state !== 'active') kr_parent.value.resolved_tasks_count += 1; if (task.state !== 'active' && body.state === 'active') kr_parent.value.resolved_tasks_count -= 1; task.state = body.state; await retrieveKeyResultReviewDate() } catch (error) { setError(error) } }
+async function deleteTask(task) { try { await api.delete('/task/' + task.id); taskPendingDeletionId.value = null; kr.value.tasks.splice(kr.value.tasks.indexOf(task), 1); kr_parent.value.all_tasks_count -= 1; if (task.state !== 'active') kr_parent.value.resolved_tasks_count -= 1; await retrieveKeyResultReviewDate() } catch (error) { setError(error) } }
+async function updateKeyResultState(index) { try { const body = await api.put('/key_result/' + kr.value.id + '/state', {state: ['failed', 'completed', 'active'][index]}); kr.value.state = body; kr_parent.value.state = body; await retrieveKeyResultReviewDate(); confirmStateDialogs.value[index] = false } catch (error) { setError(error) } }
 function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDialog.value = false; closeDialog() }
 </script>
 

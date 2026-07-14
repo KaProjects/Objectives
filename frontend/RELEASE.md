@@ -1,7 +1,6 @@
 ## release workflow:
 
      rest/web same versioning
-     check src/properties.js
      bump package.json version
      bump build deploy sh versions
 

@@ -3,6 +3,7 @@ import {computed, ref, watch} from 'vue'
 import Editable from '@/components/Editable.vue'
 import {string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
+import {setError} from '@/state/appState'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -28,7 +29,11 @@ watch(() => props.obj, async (value) => {
   if (!value) return
   values.value[0] = value.name
   values.value[1] = value.description
-  ideas.value = await api.get('/objective/' + value.id + '/idea')
+  try {
+    ideas.value = await api.get('/objective/' + value.id + '/idea')
+  } catch (error) {
+    setError(error)
+  }
 }, {immediate: true})
 
 function stopEditing() { editing.value = [false, false, false, []] }
@@ -37,32 +42,52 @@ function startEditing(index) {
   stopEditing(); editingValue.value = values.value[index]; editing.value[index] = true
 }
 async function updateObjective(index) {
-  values.value[index] = editingValue.value; editing.value[index] = false
-  await api.put('/objective/' + obj.value.id, {name: values.value[0], description: values.value[1]})
-  obj.value.name = values.value[0]; obj.value.description = values.value[1]
+  try {
+    values.value[index] = editingValue.value; editing.value[index] = false
+    await api.put('/objective/' + obj.value.id, {name: values.value[0], description: values.value[1]})
+    obj.value.name = values.value[0]; obj.value.description = values.value[1]
+  } catch (error) {
+    setError(error)
+  }
 }
 function closeDialog() { stopEditing(); isOpen.value = false; emit('close') }
 async function updateObjectiveState(index) {
-  const states = ['failed', 'achieved', 'active']
-  const body = await api.put('/objective/' + obj.value.id + '/state', {state: states[index]})
-  obj.value.state = body.state; obj.value.date_finished = body.date
-  confirmStateDialogs.value[index] = false; closeDialog(); emit('state-changed', body.state)
+  try {
+    const states = ['failed', 'achieved', 'active']
+    const body = await api.put('/objective/' + obj.value.id + '/state', {state: states[index]})
+    obj.value.state = body.state; obj.value.date_finished = body.date
+    confirmStateDialogs.value[index] = false; closeDialog(); emit('state-changed', body.state)
+  } catch (error) {
+    setError(error)
+  }
 }
 function startEditingIdea(index) {
   if (obj.value.state !== 'active') return
   stopEditing(); editingValue.value = ideas.value[index].value; editing.value[3][index] = true
 }
 async function updateIdeaValue(index) {
-  const body = await api.put('/objective/' + obj.value.id + '/idea/' + ideas.value[index].id, {value: editingValue.value})
-  ideas.value[index].value = body.value; stopEditing()
+  try {
+    const body = await api.put('/objective/' + obj.value.id + '/idea/' + ideas.value[index].id, {value: editingValue.value})
+    ideas.value[index].value = body.value; stopEditing()
+  } catch (error) {
+    setError(error)
+  }
 }
 async function addIdea() {
-  const body = await api.post('/objective/' + obj.value.id + '/idea', {value: editingValue.value})
-  ideas.value.push(body); obj.value.ideas_count += 1; editing.value[2] = false
+  try {
+    const body = await api.post('/objective/' + obj.value.id + '/idea', {value: editingValue.value})
+    ideas.value.push(body); obj.value.ideas_count += 1; editing.value[2] = false
+  } catch (error) {
+    setError(error)
+  }
 }
 async function deleteIdea(idea, index) {
-  await api.delete('/objective/' + obj.value.id + '/idea/' + idea.id)
-  ideas.value.splice(ideas.value.indexOf(idea), 1); obj.value.ideas_count -= 1; confirmDeletionDialogs.value[index] = false
+  try {
+    await api.delete('/objective/' + obj.value.id + '/idea/' + idea.id)
+    ideas.value.splice(ideas.value.indexOf(idea), 1); obj.value.ideas_count -= 1; confirmDeletionDialogs.value[index] = false
+  } catch (error) {
+    setError(error)
+  }
 }
 function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.value = false; closeDialog() }
 </script>

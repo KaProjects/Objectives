@@ -1,6 +1,6 @@
 <script setup>
 import {onMounted, ref, watch} from 'vue'
-import {appState, unselectValue} from '@/state/appState'
+import {appState, setError, unselectValue} from '@/state/appState'
 import Objective from '@/components/Objective.vue'
 import {compare_dates} from '@/utils'
 import {api} from '@/services/apiClient'
@@ -17,7 +17,11 @@ watch(openAddObjDialog, (isOpen) => {
 })
 
 async function loadData() {
-  value.value = await api.get('/value/' + appState.selectedValue.id)
+  try {
+    value.value = await api.get('/value/' + appState.selectedValue.id)
+  } catch (error) {
+    setError(error)
+  }
 }
 
 function compareObjectives(a, b) {
@@ -37,11 +41,15 @@ function filterObjectives(objectives, isActive) {
 }
 
 async function addObjective() {
-  const objective = {...newObj.value, value_id: value.value.id}
-  const body = await api.post('/objective', objective)
-  value.value.objectives.push(body)
-  openAddObjDialog.value = false
-  tab.value = 'active'
+  try {
+    const objective = {...newObj.value, value_id: value.value.id}
+    const body = await api.post('/objective', objective)
+    value.value.objectives.push(body)
+    openAddObjDialog.value = false
+    tab.value = 'active'
+  } catch (error) {
+    setError(error)
+  }
 }
 
 function selectTab(state) {
@@ -49,8 +57,12 @@ function selectTab(state) {
 }
 
 async function deleteObjective(objective) {
-  await api.delete('/objective/' + objective.id)
-  value.value.objectives.splice(value.value.objectives.indexOf(objective), 1)
+  try {
+    await api.delete('/objective/' + objective.id)
+    value.value.objectives.splice(value.value.objectives.indexOf(objective), 1)
+  } catch (error) {
+    setError(error)
+  }
 }
 
 onMounted(loadData)

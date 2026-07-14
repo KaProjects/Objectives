@@ -2,6 +2,7 @@
 import {ref, watch} from 'vue'
 import {compare_dates, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
+import {setError} from '@/state/appState'
 import KeyResultDialog from '@/components/KeyResultDialog.vue'
 import ObjectiveDialog from '@/components/ObjectiveDialog.vue'
 
@@ -43,10 +44,14 @@ function compareKeyResults(a, b) {
 }
 
 async function openKeyResult(keyResult, objectiveState) {
-  selectedKr.value = await api.get('/key_result/' + keyResult.id)
-  selectedKr_parent.value = keyResult
-  selectedKr_parent.value.obj_state = objectiveState
-  openKrDialog.value = true
+  try {
+    selectedKr.value = await api.get('/key_result/' + keyResult.id)
+    selectedKr_parent.value = keyResult
+    selectedKr_parent.value.obj_state = objectiveState
+    openKrDialog.value = true
+  } catch (error) {
+    setError(error)
+  }
 }
 
 function openObjective() {
@@ -55,15 +60,23 @@ function openObjective() {
 }
 
 async function addKeyResult() {
-  const keyResult = {...newKr.value, objective_id: objective.id}
-  const body = await api.post('/key_result', keyResult)
-  objective.key_results.push(body)
-  openAddKrDialog.value = false
+  try {
+    const keyResult = {...newKr.value, objective_id: objective.id}
+    const body = await api.post('/key_result', keyResult)
+    objective.key_results.push(body)
+    openAddKrDialog.value = false
+  } catch (error) {
+    setError(error)
+  }
 }
 
 async function deleteKeyResult(keyResult) {
-  await api.delete('/key_result/' + keyResult.id)
-  objective.key_results.splice(objective.key_results.indexOf(keyResult), 1)
+  try {
+    await api.delete('/key_result/' + keyResult.id)
+    objective.key_results.splice(objective.key_results.indexOf(keyResult), 1)
+  } catch (error) {
+    setError(error)
+  }
 }
 </script>
 <template>

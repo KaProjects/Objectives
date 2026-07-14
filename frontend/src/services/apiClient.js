@@ -1,5 +1,14 @@
-import {backend} from '@/properties'
-import {appState, setError} from '@/state/appState'
+import {appState} from '@/state/appState'
+
+export class ApiError extends Error {
+    constructor(status, message) {
+        super(message)
+        this.name = 'ApiError'
+        this.status = status
+    }
+}
+
+const backend = import.meta.env.VITE_BACKEND_URL
 
 async function request(path, {method = 'GET', data, authenticated = true} = {}) {
     const headers = new Headers()
@@ -12,26 +21,21 @@ async function request(path, {method = 'GET', data, authenticated = true} = {}) 
         headers.set('Authorization', `Bearer ${appState.token}`)
     }
 
-    try {
-        const response = await fetch(`${backend}${path}`, {
-            method,
-            headers,
-            body: data === undefined ? undefined : JSON.stringify(data),
-        })
-        const contentType = response.headers.get('content-type') ?? ''
-        const body = contentType.includes('application/json')
-            ? await response.json()
-            : await response.text()
+    const response = await fetch(`${backend}${path}`, {
+        method,
+        headers,
+        body: data === undefined ? undefined : JSON.stringify(data),
+    })
+    const contentType = response.headers.get('content-type') ?? ''
+    const body = contentType.includes('application/json')
+        ? await response.json()
+        : await response.text()
 
-        if (!response.ok) {
-            throw new Error(`[${response.status}] ${typeof body === 'string' ? body : JSON.stringify(body)}`)
-        }
-
-        return body
-    } catch (error) {
-        setError(error)
-        throw error
+    if (!response.ok) {
+        throw new ApiError(response.status, `[${response.status}] ${typeof body === 'string' ? body : JSON.stringify(body)}`)
     }
+
+    return body
 }
 
 export const api = {

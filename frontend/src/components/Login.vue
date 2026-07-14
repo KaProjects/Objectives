@@ -1,7 +1,7 @@
 <script setup>
 import {ref} from 'vue'
 import {api} from '@/services/apiClient'
-import {setToken} from '@/state/appState'
+import {setError, setToken} from '@/state/appState'
 
 const emit = defineEmits(['logged-in'])
 
@@ -9,11 +9,13 @@ const username = ref('')
 const password = ref('')
 
 async function login() {
-  const token = await api.login(username.value, password.value)
-  if (token) {
+  try {
+    const token = await api.login(username.value, password.value)
     setToken(token)
     sessionStorage.setItem('token', token)
     emit('logged-in', token)
+  } catch (error) {
+    setError(error)
   }
 }
 </script>

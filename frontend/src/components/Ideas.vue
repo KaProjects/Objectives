@@ -1,6 +1,7 @@
 <script setup>
 import {onMounted, ref} from 'vue'
 import {api} from '@/services/apiClient'
+import {setError} from '@/state/appState'
 
 const props = defineProps({
   valueId: Number,
@@ -14,21 +15,34 @@ const selectedIdea = ref(-1)
 const confirmDeletionDialogs = ref([])
 
 async function loadData() {
-  ideas.value = await api.get('/value/' + props.valueId + '/idea')
-  loading.value = false
+  try {
+    ideas.value = await api.get('/value/' + props.valueId + '/idea')
+  } catch (error) {
+    setError(error)
+  } finally {
+    loading.value = false
+  }
 }
 
 async function addIdea() {
-  const body = await api.post('/value/' + props.valueId + '/idea', {idea: newIdea.value})
-  ideas.value.push({id: body.new_id, value: body.idea})
-  newIdeaDialog.value = false
-  newIdea.value = ''
+  try {
+    const body = await api.post('/value/' + props.valueId + '/idea', {idea: newIdea.value})
+    ideas.value.push({id: body.new_id, value: body.idea})
+    newIdeaDialog.value = false
+    newIdea.value = ''
+  } catch (error) {
+    setError(error)
+  }
 }
 
 async function deleteIdea(idea, index) {
-  await api.delete('/value/' + props.valueId + '/idea/' + idea.id)
-  ideas.value.splice(ideas.value.indexOf(idea), 1)
-  confirmDeletionDialogs.value[index] = false
+  try {
+    await api.delete('/value/' + props.valueId + '/idea/' + idea.id)
+    ideas.value.splice(ideas.value.indexOf(idea), 1)
+    confirmDeletionDialogs.value[index] = false
+  } catch (error) {
+    setError(error)
+  }
 }
 
 onMounted(loadData)

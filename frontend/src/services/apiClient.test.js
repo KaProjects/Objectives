@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
-import {appState, clearError, setToken} from '@/state/appState'
-import {api} from './apiClient'
+import {setToken} from '@/state/appState'
+import {ApiError, api} from './apiClient'
 
 function mockResponse({ok = true, status = 200, contentType = '', body = ''} = {}) {
   return {
@@ -17,7 +17,6 @@ function mockResponse({ok = true, status = 200, contentType = '', body = ''} = {
 describe('api client', () => {
   beforeEach(() => {
     setToken(null)
-    clearError()
     vi.restoreAllMocks()
   })
 
@@ -47,11 +46,14 @@ describe('api client', () => {
     expect(options.body).toBe(JSON.stringify({user: 'alice', password: 'password'}))
   })
 
-  it('sets global error state and rejects failed requests', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('throws a structured error for failed requests', async () => {
     global.fetch = vi.fn().mockResolvedValue(mockResponse({ok: false, status: 404, body: 'Not found'}))
 
-    await expect(api.get('/missing')).rejects.toThrow('[404] Not found')
-    expect(appState.error).toBe('[404] Not found')
+    await expect(api.get('/missing')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 404,
+      message: '[404] Not found',
+    })
+    await expect(api.get('/missing')).rejects.toBeInstanceOf(ApiError)
   })
 })

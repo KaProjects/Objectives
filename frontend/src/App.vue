@@ -1,15 +1,18 @@
 <script setup>
 import {onMounted, ref} from 'vue'
 import Value from '@/view/Value.vue'
-import {appState, selectValue} from '@/state/appState'
+import {appState, selectValue, setError, setToken} from '@/state/appState'
 import Login from '@/components/Login.vue'
 import {api} from '@/services/apiClient'
-import {setToken} from '@/state/appState'
 
 const values = ref([])
 
 async function loadData() {
-  values.value = await api.get('/values')
+  try {
+    values.value = await api.get('/values')
+  } catch (error) {
+    setError(error)
+  }
 }
 
 function addValue() {
