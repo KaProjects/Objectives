@@ -2,7 +2,8 @@
 
 </script>
 <script>
-import {backend_delete, backend_get, backend_post, compare_dates, string_to_html} from "@/utils";
+import {compare_dates, string_to_html} from '@/utils'
+import {api} from '@/services/apiClient'
 import KeyResultDialog from "@/components/KeyResultDialog.vue";
 import ObjectiveDialog from "@/components/ObjectiveDialog.vue";
 
@@ -48,7 +49,7 @@ export default {
       }
     },
     async openKeyResult(kr, obj_state) {
-      this.selectedKr = await backend_get("/key_result/" + kr.id)
+      this.selectedKr = await api.get('/key_result/' + kr.id)
       this.selectedKr_parent = kr
       this.selectedKr_parent.obj_state = obj_state
       this.openKrDialog = true
@@ -59,12 +60,12 @@ export default {
     },
     async addKeyResult() {
       const newKr = {name: this.newKr.name, description: this.newKr.description, objective_id: this.objective.id}
-      const body = await backend_post("/key_result", newKr)
+      const body = await api.post('/key_result', newKr)
       this.objective.key_results.push(body)
       this.openAddKrDialog = false
     },
     async deleteKeyResult(kr) {
-      await backend_delete("/key_result/" + kr.id)
+      await api.delete('/key_result/' + kr.id)
       this.objective.key_results.splice(this.objective.key_results.indexOf(kr), 1);
     }
   },

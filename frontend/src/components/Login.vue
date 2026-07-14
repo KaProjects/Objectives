@@ -2,8 +2,8 @@
 
 </script>
 <script>
-import {backend_fetch} from "@/utils";
-import {app_state} from "@/main";
+import {api} from '@/services/apiClient'
+import {setToken} from '@/state/appState'
 
 export default {
   name: "login",
@@ -16,14 +16,9 @@ export default {
   },
   methods: {
     async login(){
-      const requestOptions = {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({user: this.username, password: this.password})
-      }
-      const token = await backend_fetch("/authenticate", requestOptions)
+      const token = await api.login(this.username, this.password)
       if (token) {
-        app_state.set_token(token)
+        setToken(token)
         sessionStorage.setItem('token', token)
         this.onLoggedIn(token)
       }

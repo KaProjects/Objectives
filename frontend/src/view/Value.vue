@@ -1,10 +1,11 @@
 <script setup>
-import {app_state} from '@/main'
+import {appState, unselectValue} from '@/state/appState'
 import Objective from "@/components/Objective.vue";
 </script>
 <script>
-import {backend_delete, backend_get, backend_post, compare_dates} from "@/utils";
-import {app_state} from "@/main";
+import {compare_dates} from '@/utils'
+import {api} from '@/services/apiClient'
+import {appState as state} from '@/state/appState'
 import Ideas from "@/components/Ideas.vue";
 
 export default {
@@ -23,7 +24,7 @@ export default {
   },
   methods: {
     async loadData() {
-      this.value = await backend_get("/value/" + app_state.value.id)
+      this.value = await api.get('/value/' + state.selectedValue.id)
     },
     compareObjectives(a, b) {
       let comparison
@@ -44,14 +45,13 @@ export default {
     },
     async addObjective(){
       const newObj = {name: this.newObj.name, description: this.newObj.description, value_id: this.value.id}
-      const body = await backend_post("/objective", newObj)
+      const body = await api.post('/objective', newObj)
       this.value.objectives.push(body)
       this.openAddObjDialog = false
       this.tab = "active"
     },
     openObjectiveDialog(objective) {
       this.selectedObjective = objective
-      app_state.objDialogToggle = true
     },
     selectTab(state) {
       if (state === "active") {
@@ -61,7 +61,7 @@ export default {
       }
     },
     async deleteObjective(obj) {
-      await backend_delete("/objective/" + obj.id)
+      await api.delete('/objective/' + obj.id)
       this.value.objectives.splice(this.value.objectives.indexOf(obj), 1);
     }
   },
@@ -78,7 +78,7 @@ export default {
   <div>
 
     <div class="appbar">
-      <v-btn class="button" icon="mdi-arrow-left" @click="app_state.unselect_value()"/>
+      <v-btn class="button" icon="mdi-arrow-left" @click="unselectValue()"/>
       <h1 class="title">{{value.name}}</h1>
 
       <v-tabs v-model="tab" bg-color="primary">
@@ -104,7 +104,7 @@ export default {
     </div>
 
     <div style="display: flex; overflow-x:scroll;">
-      <Ideas class="obj" :valueId="app_state.value.id" v-if="showIdeas"/>
+      <Ideas class="obj" :valueId="appState.selectedValue.id" v-if="showIdeas"/>
       <Objective v-for="(objective) in filterObjectives(value.objectives, tab === 'active')"
                  :objective="objective" :selectTab="selectTab" :delete="deleteObjective"/>
     </div>

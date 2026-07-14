@@ -1,5 +1,5 @@
 <script>
-import {backend_delete, backend_get, backend_post} from "@/utils";
+import {api} from '@/services/apiClient'
 
 export default {
   name: "Ideas",
@@ -18,17 +18,17 @@ export default {
   },
   methods: {
     async loadData() {
-      this.ideas = await backend_get("/value/" + this.valueId + "/idea")
+      this.ideas = await api.get('/value/' + this.valueId + '/idea')
       this.loading = false
     },
     async addIdea() {
-      const body = await backend_post("/value/" + this.valueId + "/idea", {idea: this.newIdea})
+      const body = await api.post('/value/' + this.valueId + '/idea', {idea: this.newIdea})
       this.ideas.push({id: body.new_id, value: body.idea})
       this.newIdeaDialog = false
       this.newIdea = ""
     },
     async deleteIdea(idea, index){
-      await backend_delete("/value/" + this.valueId + "/idea/" + idea.id)
+      await api.delete('/value/' + this.valueId + '/idea/' + idea.id)
       this.ideas.splice(this.ideas.indexOf(idea), 1);
       this.confirmDeletionDialogs[index] = false
     },

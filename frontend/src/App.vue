@@ -1,11 +1,11 @@
 <script setup>
 import Value from "@/view/Value.vue";
-import {app_state} from './main.js'
+import {appState, selectValue} from '@/state/appState'
 import Login from "@/components/Login.vue";
 </script>
 <script>
-import {backend_fetch} from "@/utils";
-import {app_state as state} from "@/main";
+import {api} from '@/services/apiClient'
+import {setToken as applyToken} from '@/state/appState'
 
 export default {
   data() {
@@ -15,11 +15,7 @@ export default {
   },
   methods: {
     async loadData(token) {
-      const requestOptions = {
-        method: "GET",
-        headers: {"Authorization": "Bearer " + token},
-      }
-      this.values = await backend_fetch("/values", requestOptions)
+      this.values = await api.get('/values')
     },
     addValue() {
       alert('add value')
@@ -28,7 +24,7 @@ export default {
   mounted() {
     const token = sessionStorage.getItem('token')
     if (token) {
-      state.set_token(token)
+      applyToken(token)
       this.loadData(token)
     }
   }
@@ -37,21 +33,21 @@ export default {
 
 <template>
 
-  <v-alert v-if=app_state.fetchErrorValue title="Backend Error" type="error">
-    {{app_state.fetchErrorValue}}
+  <v-alert v-if="appState.error" title="Backend Error" type="error">
+    {{appState.error}}
   </v-alert>
 
   <div v-else>
-    <Login v-if="app_state.token == null" :onLoggedIn="loadData"/>
+    <Login v-if="appState.token == null" :onLoggedIn="loadData"/>
 
     <div v-else>
-      <div class="values0" v-if="app_state.value == null">
+      <div class="values0" v-if="appState.selectedValue == null">
         <div class="values">
 
           <v-card class="value" width="600" elevation="20" outlined shaped
 
                   v-for="value in values"
-                  @click.stop="app_state.select_value(value)">
+                  @click.stop="selectValue(value)">
             <v-card-text>
               <div style="display: flex; justify-content: space-around">
                 <div class="text-h4 text--primary">
