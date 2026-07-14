@@ -103,6 +103,21 @@ describe('frontend components', () => {
     expect(wrapper.emitted('update:modelValue')).toEqual([[false]])
   })
 
+  it('ObjectiveDialog emits updates instead of mutating its objective prop', async () => {
+    api.put.mockResolvedValue(undefined)
+    const inputObjective = {...objective}
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: inputObjective},
+    })
+    wrapper.vm.editingValue = 'Updated exercise'
+    await wrapper.vm.updateObjective(0)
+
+    expect(wrapper.emitted('updated')).toContainEqual([{
+      id: 1, name: 'Updated exercise', description: 'Move more',
+    }])
+    expect(inputObjective.name).toBe('Exercise')
+  })
+
   it('KeyResultDialog closes by emitting an event', () => {
     const wrapper = shallowMount(KeyResultDialog, {
       props: {
@@ -137,5 +152,9 @@ describe('frontend components', () => {
       r: 'Relevant',
       t: 'Timed',
     })
+    expect(wrapper.emitted('updated')).toContainEqual([expect.objectContaining({
+      id: 2,
+      a: 'Reachable daily walk',
+    })])
   })
 })

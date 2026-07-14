@@ -56,10 +56,33 @@ function selectTab(state) {
   tab.value = state === 'active' ? 'active' : 'inactive'
 }
 
+function updateObjective(updatedObjective) {
+  const objective = value.value.objectives.find((item) => item.id === updatedObjective.id)
+  if (objective) Object.assign(objective, updatedObjective)
+}
+
+function addKeyResult({objectiveId, keyResult}) {
+  const objective = value.value.objectives.find((item) => item.id === objectiveId)
+  if (objective) objective.key_results.push(keyResult)
+}
+
+function updateKeyResult({objectiveId, keyResult}) {
+  const objective = value.value.objectives.find((item) => item.id === objectiveId)
+  const existingKeyResult = objective?.key_results.find((item) => item.id === keyResult.id)
+  if (existingKeyResult) Object.assign(existingKeyResult, keyResult)
+}
+
+function removeKeyResult({objectiveId, keyResultId}) {
+  const objective = value.value.objectives.find((item) => item.id === objectiveId)
+  if (!objective) return
+  objective.key_results = objective.key_results.filter((item) => item.id !== keyResultId)
+}
+
 async function deleteObjective(objective) {
   try {
     await api.delete('/objective/' + objective.id)
-    value.value.objectives.splice(value.value.objectives.indexOf(objective), 1)
+    const index = value.value.objectives.findIndex((item) => item.id === objective.id)
+    if (index !== -1) value.value.objectives.splice(index, 1)
   } catch (error) {
     setError(error)
   }
@@ -103,7 +126,11 @@ onMounted(loadData)
                  :key="objective.id"
                  :objective="objective"
                  @deleted="deleteObjective"
-                 @state-changed="selectTab"/>
+                 @state-changed="selectTab"
+                 @updated="updateObjective"
+                 @key-result-created="addKeyResult"
+                 @key-result-updated="updateKeyResult"
+                 @key-result-deleted="removeKeyResult"/>
     </div>
   </div>
 </template>

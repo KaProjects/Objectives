@@ -9,7 +9,7 @@ const props = defineProps({
   modelValue: Boolean,
   obj: Object,
 })
-const emit = defineEmits(['update:modelValue', 'close', 'deleted', 'state-changed'])
+const emit = defineEmits(['update:modelValue', 'close', 'deleted', 'updated', 'state-changed'])
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
@@ -25,7 +25,7 @@ const confirmDeletionDialogs = ref([])
 const confirmDeleteObjDialog = ref(false)
 
 watch(() => props.obj, async (value) => {
-  obj.value = value
+  obj.value = value ? {...value, key_results: [...value.key_results]} : null
   if (!value) return
   values.value[0] = value.name
   values.value[1] = value.description
@@ -45,7 +45,8 @@ async function updateObjective(index) {
   try {
     values.value[index] = editingValue.value; editing.value[index] = false
     await api.put('/objective/' + obj.value.id, {name: values.value[0], description: values.value[1]})
-    obj.value.name = values.value[0]; obj.value.description = values.value[1]
+    Object.assign(obj.value, {name: values.value[0], description: values.value[1]})
+    emit('updated', {id: obj.value.id, name: obj.value.name, description: obj.value.description})
   } catch (error) {
     setError(error)
   }
@@ -55,7 +56,8 @@ async function updateObjectiveState(index) {
   try {
     const states = ['failed', 'achieved', 'active']
     const body = await api.put('/objective/' + obj.value.id + '/state', {state: states[index]})
-    obj.value.state = body.state; obj.value.date_finished = body.date
+    Object.assign(obj.value, {state: body.state, date_finished: body.date})
+    emit('updated', {id: obj.value.id, state: body.state, date_finished: body.date})
     confirmStateDialogs.value[index] = false; closeDialog(); emit('state-changed', body.state)
   } catch (error) {
     setError(error)
@@ -77,6 +79,7 @@ async function addIdea() {
   try {
     const body = await api.post('/objective/' + obj.value.id + '/idea', {value: editingValue.value})
     ideas.value.push(body); obj.value.ideas_count += 1; editing.value[2] = false
+    emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
   } catch (error) {
     setError(error)
   }
@@ -85,6 +88,7 @@ async function deleteIdea(idea, index) {
   try {
     await api.delete('/objective/' + obj.value.id + '/idea/' + idea.id)
     ideas.value.splice(ideas.value.indexOf(idea), 1); obj.value.ideas_count -= 1; confirmDeletionDialogs.value[index] = false
+    emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
   } catch (error) {
     setError(error)
   }

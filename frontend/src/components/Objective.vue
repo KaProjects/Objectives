@@ -9,7 +9,7 @@ import ObjectiveDialog from '@/components/ObjectiveDialog.vue'
 const props = defineProps({
   objective: {type: Object, required: true},
 })
-const emit = defineEmits(['deleted', 'state-changed'])
+const emit = defineEmits(['deleted', 'state-changed', 'updated', 'key-result-created', 'key-result-updated', 'key-result-deleted'])
 
 const objective = props.objective
 const focused = ref(false)
@@ -46,8 +46,7 @@ function compareKeyResults(a, b) {
 async function openKeyResult(keyResult, objectiveState) {
   try {
     selectedKr.value = await api.get('/key_result/' + keyResult.id)
-    selectedKr_parent.value = keyResult
-    selectedKr_parent.value.obj_state = objectiveState
+    selectedKr_parent.value = {...keyResult, obj_state: objectiveState}
     openKrDialog.value = true
   } catch (error) {
     setError(error)
@@ -63,7 +62,7 @@ async function addKeyResult() {
   try {
     const keyResult = {...newKr.value, objective_id: objective.id}
     const body = await api.post('/key_result', keyResult)
-    objective.key_results.push(body)
+    emit('key-result-created', {objectiveId: objective.id, keyResult: body})
     openAddKrDialog.value = false
   } catch (error) {
     setError(error)
@@ -73,7 +72,7 @@ async function addKeyResult() {
 async function deleteKeyResult(keyResult) {
   try {
     await api.delete('/key_result/' + keyResult.id)
-    objective.key_results.splice(objective.key_results.indexOf(keyResult), 1)
+    emit('key-result-deleted', {objectiveId: objective.id, keyResultId: keyResult.id})
   } catch (error) {
     setError(error)
   }
@@ -84,8 +83,8 @@ async function deleteKeyResult(keyResult) {
           @mouseover="focused = true"
           @mouseleave="focused = false"
   >
-    <ObjectiveDialog :obj="selectedObj" v-model="openObjDialog" @close="openObjDialog = false" @deleted="emit('deleted', $event)" @state-changed="emit('state-changed', $event)"/>
-    <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" v-model="openKrDialog" @close="openKrDialog = false" @deleted="deleteKeyResult" />
+    <ObjectiveDialog :obj="selectedObj" v-model="openObjDialog" @close="openObjDialog = false" @deleted="emit('deleted', $event)" @updated="emit('updated', $event)" @state-changed="emit('state-changed', $event)"/>
+    <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" v-model="openKrDialog" @close="openKrDialog = false" @updated="emit('key-result-updated', {objectiveId: objective.id, keyResult: $event})" @deleted="deleteKeyResult" />
 
     <v-card-title>{{objective.name}}</v-card-title>
     <v-card-text v-html="string_to_html(objective.description)"/>
