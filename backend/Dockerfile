@@ -1,6 +1,6 @@
 FROM python:3.9
 
-COPY . /workdir/
+COPY ./src/ /workdir/
 WORKDIR /workdir/
 
 RUN pip install --upgrade pip
@@ -13,4 +13,4 @@ RUN pip install --user flask-restx
 
 ENV TZ=Europe/Prague
 
-CMD ["python3","-u","src/app.py", "prod"]
+CMD ["python3","-u","app.py", "prod"]

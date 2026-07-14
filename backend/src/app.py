@@ -16,16 +16,16 @@ if __name__ == '__main__':
         database_manager.datasource = database_manager.DataSource.PRODUCTION
         port = 7777
         debug = False
-        if os.getenv('ORIGIN') is None:
+        if os.getenv('FRONTEND_ORIGIN') is None:
             raise Exception("using prod option without ORIGIN set")
-        origins = os.getenv('ORIGIN')
+        origins = os.getenv('FRONTEND_ORIGIN')
     elif sys.argv[1] == 'dev':
         database_manager.datasource = database_manager.DataSource.DEVEL
         database_manager.DatabaseManager()\
             .execute_scripts(["sql/drop_tables.sql", "sql/create_tables.sql", "sql/data_dev.sql"])
         port = 7702
         debug = True
-        origins = "http://127.0.0.1:5173"
+        origins = "http://localhost:5173"
     elif sys.argv[1] == 'test':
         database_manager.datasource = database_manager.DataSource.TEST
         database_manager.DatabaseManager()\

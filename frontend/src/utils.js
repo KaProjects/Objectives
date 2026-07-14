@@ -1,8 +1,8 @@
-import {properties} from "@/properties";
+import {backend} from "@/properties";
 import {app_state} from "@/main";
 
 export function backend_fetch(path, requestOptions = null) {
-    return fetch("http://" + properties.backend_host + ":" + properties.backend_port + path, requestOptions)
+    return fetch(backend + path, requestOptions)
         .then(async response => {
             if (response.ok) {
                 const contentType = response.headers.get("content-type");
