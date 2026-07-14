@@ -2,7 +2,7 @@
 defineProps({
   cancel: Function,
   submit: Function,
-  index: [Number, Object, null],
+  index: [String, Number, Object, null],
 })
 </script>
 

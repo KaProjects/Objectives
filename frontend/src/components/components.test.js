@@ -114,4 +114,27 @@ describe('frontend components', () => {
     wrapper.vm.closeDialog()
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
+
+  it('KeyResultDialog sends named draft fields in its update payload', async () => {
+    api.put.mockResolvedValue('02/01/2026')
+    const wrapper = shallowMount(KeyResultDialog, {
+      props: {
+        kr: {...keyResult},
+        kr_parent: {...keyResult, obj_state: 'active'},
+        delete: vi.fn(),
+      },
+    })
+    wrapper.vm.draftKeyResult.attainable = 'Reachable daily walk'
+    await wrapper.vm.updateKeyResult()
+
+    expect(api.put).toHaveBeenCalledWith('/key_result/2', {
+      name: 'Walk',
+      description: 'Walk daily',
+      s: 'Specific',
+      m: 'Measurable',
+      a: 'Reachable daily walk',
+      r: 'Relevant',
+      t: 'Timed',
+    })
+  })
 })
