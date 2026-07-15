@@ -11,8 +11,8 @@ const ideas = ref([])
 const loading = ref(true)
 const newIdeaDialog = ref(false)
 const newIdea = ref('')
-const selectedIdea = ref(-1)
-const confirmDeletionDialogs = ref([])
+const selectedIdeaId = ref(null)
+const ideaPendingDeletionId = ref(null)
 
 async function loadData() {
   try {
@@ -35,11 +35,11 @@ async function addIdea() {
   }
 }
 
-async function deleteIdea(idea, index) {
+async function deleteIdea(idea) {
   try {
     await api.delete('/value/' + props.valueId + '/idea/' + idea.id)
     ideas.value.splice(ideas.value.indexOf(idea), 1)
-    confirmDeletionDialogs.value[index] = false
+    ideaPendingDeletionId.value = null
   } catch (error) {
     setError(error)
   }
@@ -53,18 +53,19 @@ onMounted(loadData)
     <v-progress-circular v-if="loading" style="margin: 0 0 10px 30px" indeterminate color="primary"></v-progress-circular>
     <div v-else>
       <v-list-item>
-        <v-list-item-content v-for="(idea, index) in ideas"
-                             @mouseover="selectedIdea = index"
-                             @mouseleave="selectedIdea = -1">
+        <v-list-item-content v-for="idea in ideas" :key="idea.id"
+                             @mouseover="selectedIdeaId = idea.id"
+                             @mouseleave="selectedIdeaId = null">
           <div class="idea">
             <v-list-item>{{idea.value}}</v-list-item>
 
             <v-dialog
-                v-model="confirmDeletionDialogs[index]"
+                :model-value="ideaPendingDeletionId === idea.id"
+                @update:model-value="ideaPendingDeletionId = $event ? idea.id : null"
                 width="300"
             >
               <template v-slot:activator="{ props }">
-                <v-icon icon="mdi-delete" large v-bind="props" v-if="selectedIdea === index"/>
+                <v-icon icon="mdi-delete" large v-bind="props" v-if="selectedIdeaId === idea.id"/>
               </template>
 
               <v-card>
@@ -75,7 +76,7 @@ onMounted(loadData)
                   {{ idea.value }}
                 </v-card-text>
                 <v-card-actions>
-                  <v-btn block @click="deleteIdea(idea, index)">Confirm</v-btn>
+                  <v-btn block @click="deleteIdea(idea)">Confirm</v-btn>
                 </v-card-actions>
               </v-card>
             </v-dialog>

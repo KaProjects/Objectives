@@ -44,6 +44,7 @@ onMounted(() => {
           <v-card class="value" width="600" elevation="20" outlined shaped
 
                   v-for="value in values"
+                  :key="value.id"
                   @click.stop="selectValue(value)">
             <v-card-text>
               <div style="display: flex; justify-content: space-around">

@@ -110,7 +110,7 @@ describe('frontend components', () => {
       props: {modelValue: true, obj: inputObjective},
     })
     wrapper.vm.editingValue = 'Updated exercise'
-    await wrapper.vm.updateObjective(0)
+    await wrapper.vm.updateObjective('name')
 
     expect(wrapper.emitted('updated')).toContainEqual([{
       id: 1, name: 'Updated exercise', description: 'Move more',
