@@ -7,6 +7,7 @@ from sqlite3 import Connection
 import mysql.connector
 
 from classes import Value, Objective, KeyResult, Task, ObjectiveIdea
+from states import TaskState
 
 
 class DataSource(Enum):
@@ -105,7 +106,7 @@ class DatabaseManager:
 
                 cursor.execute(sql('select count(*) from Tasks where kr_id=?'), (int(key_result.id),))
                 all_tasks_count = cursor.fetchone()[0]
-                cursor.execute(sql('select count(*) from Tasks where kr_id=? and not state=?'), (int(key_result.id), 'active'))
+                cursor.execute(sql('select count(*) from Tasks where kr_id=? and not state=?'), (int(key_result.id), TaskState.ACTIVE.value))
                 resolved_tasks_count = cursor.fetchone()[0]
                 key_result.set_tasks_count(all_tasks_count, resolved_tasks_count)
 
@@ -153,7 +154,7 @@ class DatabaseManager:
 
     def insert_task(self, value, kr_id) -> int:
         with self.cursor(commit=True) as cursor:
-            cursor.execute(sql("insert into Tasks(kr_id, state, value) values (?,?,?)"), (kr_id, "active", value))
+            cursor.execute(sql("insert into Tasks(kr_id, state, value) values (?,?,?)"), (kr_id, TaskState.ACTIVE.value, value))
             id = cursor.lastrowid
             return id
 

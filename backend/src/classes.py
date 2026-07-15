@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from json import JSONEncoder
 
+from states import ObjectiveState
+
 
 class JsonEncoder(JSONEncoder):
     def default(self, o):
@@ -53,7 +55,6 @@ class KeyResult:
     def set_tasks(self, tasks: list[Task]):
         self.tasks: list[Task] = tasks
         # self.all_tasks_count = len(tasks)
-        # self.resolved_tasks_count = sum(map(lambda x : x.state != 'active', tasks))
 
     def set_tasks_count(self, all_tasks_count, resolved_tasks_count):
         self.all_tasks_count = all_tasks_count
@@ -86,9 +87,9 @@ class Value:
 
     def set_objective_counts(self, objectives: list[Objective]):
         for objective in objectives:
-            if objective.state == "achieved":
+            if objective.state == ObjectiveState.ACHIEVED.value:
                 self.achievements_count += 1
-            if objective.state == "active":
+            if objective.state == ObjectiveState.ACTIVE.value:
                 self.active_count += 1
 
     def set_objectives(self, objectives: list[Objective]):
@@ -107,8 +108,6 @@ class ObjectiveIdea:
     id: str
     objective_id: str
     value: str
-
-
 
 
 

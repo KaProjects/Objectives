@@ -6,6 +6,7 @@ from flask_restx import Api, Resource, fields
 from classes import JsonEncoder
 from decorators import authenticated
 from service import Service
+from states import KEY_RESULT_STATES, OBJECTIVE_STATES, TASK_STATES, KeyResultState, ObjectiveState, TaskState
 
 
 rest = Blueprint('rest', __name__)
@@ -127,7 +128,7 @@ class KeyResults(Resource):
 
             new_id, date_created = Service().create_key_result(name, description, objective_id)
             data["id"] = new_id
-            data["state"] = "active"
+            data["state"] = KeyResultState.ACTIVE.value
             data["date_reviewed"] = date_created
             data["all_tasks_count"] = 0
             data["resolved_tasks_count"] = 0
@@ -209,10 +210,10 @@ class KeyResultReview(Resource):
 @key_result.route('/<id>/state')
 @key_result.response(404, 'Key Result not found')
 @key_result.param('id', 'Key Result identifier')
-class KeyResultState(Resource):
+class KeyResultStateResource(Resource):
     @value.doc(security="Bearer")
     @authenticated
-    @key_result.expect(api.model('KeyResultState', {'state': fields.String(required=True, example='active')}))
+    @key_result.expect(api.model('KeyResultState', {'state': fields.String(required=True, example=KeyResultState.ACTIVE.value)}))
     @key_result.response(200, 'Success')
     @key_result.response(422, 'Invalid Key Result State')
     def put(self, id):
@@ -222,7 +223,7 @@ class KeyResultState(Resource):
             if not Service().check_key_result_exist(id):
                 return create_response("key result with id '" + id + "' not found", 404)
 
-            if state not in ["active", "failed", "completed"]:
+            if state not in KEY_RESULT_STATES:
                 return create_response("'" + str(state) + "' is invalid key result state", 422)
 
             new_state = Service().update_key_result_state(id, state)
@@ -248,7 +249,7 @@ class Tasks(Resource):
                 return create_response("key result with id '" + kr_id + "' not found", 404)
             new_id = Service().create_task(value, kr_id)
             data["id"] = new_id
-            data["state"] = "active"
+            data["state"] = TaskState.ACTIVE.value
             return create_response(data, 201)
         except Exception as e:
             return create_exception_response(e)
@@ -262,7 +263,7 @@ class Task(Resource):
     @authenticated
     @task.expect(api.model('TaskUpdate', {'value': fields.String(required=True, example='value'),
                                           'kr_id': fields.String(required=True, example='id'),
-                                          'state': fields.String(required=True, example='active')}))
+                                          'state': fields.String(required=True, example=TaskState.ACTIVE.value)}))
     @task.response(200, 'Success')
     @task.response(422, 'Invalid Key Result State')
     def put(self, id):
@@ -275,7 +276,7 @@ class Task(Resource):
             state = data["state"]
             kr_id = data["kr_id"]
 
-            if state not in ["active", "failed", "finished"]:
+            if state not in TASK_STATES:
                 return create_response("'" + str(state) + "' is invalid task state", 422)
 
             Service().update_task(id, value, state)
@@ -318,7 +319,7 @@ class Objectives(Resource):
 
             new_id, date_created = Service().create_objective(name, description, value_id)
             data["id"] = new_id
-            data["state"] = "active"
+            data["state"] = ObjectiveState.ACTIVE.value
             data["key_results"] = []
             data["date_created"] = date_created
             data["date_finished"] = ""
@@ -370,10 +371,10 @@ class Objective(Resource):
 @objective.route('/<id>/state')
 @objective.response(404, 'Objective not found')
 @objective.param('id', 'Objective identifier')
-class ObjectiveState(Resource):
+class ObjectiveStateResource(Resource):
     @value.doc(security="Bearer")
     @authenticated
-    @objective.expect(api.model('ObjectiveState', {'state': fields.String(required=True, example='active')}))
+    @objective.expect(api.model('ObjectiveState', {'state': fields.String(required=True, example=ObjectiveState.ACTIVE.value)}))
     @objective.response(200, 'Success')
     @objective.response(422, 'Invalid Objective State')
     def put(self, id):
@@ -382,7 +383,7 @@ class ObjectiveState(Resource):
                 return create_response("objective with id '" + str(id) + "' not found", 404)
 
             state = api.payload["state"]
-            if state not in ["active", "failed", "achieved"]:
+            if state not in OBJECTIVE_STATES:
                 return create_response("'" + str(state) + "' is invalid objective state", 422)
 
             new_state, date = Service().update_objective_state(id, state)
