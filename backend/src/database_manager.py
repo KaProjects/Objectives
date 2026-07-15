@@ -71,9 +71,18 @@ class DatabaseManager:
     def select_all_values(self) -> list:
         values = list()
         with self.cursor() as cursor:
-            cursor.execute(sql('select * from PValues'))
-            for value in cursor.fetchall():
-                values.append(Value(value))
+            cursor.execute(sql('''
+                select values_table.id, values_table.name, values_table.description,
+                       sum(case when objectives.state = 'active' then 1 else 0 end) as active_count,
+                       sum(case when objectives.state = 'achieved' then 1 else 0 end) as achievements_count
+                from PValues values_table
+                left join Objectives objectives on objectives.value_id = values_table.id
+                group by values_table.id, values_table.name, values_table.description
+            '''))
+            for row in cursor.fetchall():
+                value = Value(row[:3])
+                value.set_counts(row[3], row[4])
+                values.append(value)
         return values
 
     # def insert_value(self, name, description) -> int:
@@ -91,26 +100,41 @@ class DatabaseManager:
     def select_objectives_for_value(self, value_id: str) -> list:
         objectives = list()
         with self.cursor() as cursor:
-            cursor.execute(sql('select * from Objectives where value_id=?'), (int(value_id),))
-            for objective in cursor.fetchall():
-                obj = Objective(objective)
-                cursor.execute(sql('select count(*) from ObjectiveIdeas where objective_id=?'), (int(obj.id),))
-                obj.set_ideas_count(cursor.fetchone()[0])
+            cursor.execute(sql('''
+                select objectives.id, objectives.value_id, objectives.state, objectives.name,
+                       objectives.description, objectives.date_created, objectives.date_finished,
+                       count(ideas.id) as ideas_count
+                from Objectives objectives
+                left join ObjectiveIdeas ideas on ideas.objective_id = objectives.id
+                where objectives.value_id=?
+                group by objectives.id, objectives.value_id, objectives.state, objectives.name,
+                         objectives.description, objectives.date_created, objectives.date_finished
+            '''), (int(value_id),))
+            for row in cursor.fetchall():
+                obj = Objective(row[:7])
+                obj.set_ideas_count(row[7])
                 objectives.append(obj)
         return objectives
 
     def select_key_results_for_objective(self, objective_id: str) -> list:
         key_results = list()
         with self.cursor() as cursor:
-            cursor.execute(sql('select * from KeyResults where objective_id=?'), (int(objective_id),))
-            for db_key_result in cursor.fetchall():
-                key_result = KeyResult(db_key_result, True)
-
-                cursor.execute(sql('select count(*) from Tasks where kr_id=?'), (int(key_result.id),))
-                all_tasks_count = cursor.fetchone()[0]
-                cursor.execute(sql('select count(*) from Tasks where kr_id=? and not state=?'), (int(key_result.id), TaskState.ACTIVE.value))
-                resolved_tasks_count = cursor.fetchone()[0]
-                key_result.set_tasks_count(all_tasks_count, resolved_tasks_count)
+            cursor.execute(sql('''
+                select key_results.id, key_results.objective_id, key_results.state, key_results.name,
+                       key_results.description, key_results.s, key_results.m, key_results.a,
+                       key_results.r, key_results.t, key_results.date_created, key_results.date_reviewed,
+                       count(tasks.id) as all_tasks_count,
+                       sum(case when tasks.state <> ? then 1 else 0 end) as resolved_tasks_count
+                from KeyResults key_results
+                left join Tasks tasks on tasks.kr_id = key_results.id
+                where key_results.objective_id=?
+                group by key_results.id, key_results.objective_id, key_results.state, key_results.name,
+                         key_results.description, key_results.s, key_results.m, key_results.a,
+                         key_results.r, key_results.t, key_results.date_created, key_results.date_reviewed
+            '''), (TaskState.ACTIVE.value, int(objective_id)))
+            for row in cursor.fetchall():
+                key_result = KeyResult(row[:12], True)
+                key_result.set_tasks_count(row[12], row[13])
 
                 key_results.append(key_result)
         return key_results

@@ -92,6 +92,10 @@ class Value:
             if objective.state == ObjectiveState.ACTIVE.value:
                 self.active_count += 1
 
+    def set_counts(self, active_count, achievements_count):
+        self.active_count = active_count
+        self.achievements_count = achievements_count
+
     def set_objectives(self, objectives: list[Objective]):
         self.objectives: list[Objective] = objectives
         self.set_objective_counts(objectives)
@@ -108,7 +112,6 @@ class ObjectiveIdea:
     id: str
     objective_id: str
     value: str
-
 
 
 

@@ -10,10 +10,7 @@ from states import KeyResultState, ObjectiveState
 class Service:
 
     def get_all_values(self):
-        values = DatabaseManager().select_all_values()
-        for value in values:
-            value.set_objective_counts(DatabaseManager().select_objectives_for_value(value.id))
-        return values
+        return DatabaseManager().select_all_values()
 
     def get_single_value(self, id: str) -> Value:
         value = DatabaseManager().select_value(id)
