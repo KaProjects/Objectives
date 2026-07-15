@@ -32,7 +32,10 @@ def delete_request(path):
 
 def parse_content(response):
     if response.headers.get('content-type').casefold() == "application/json":
-        return response.json()
+        body = response.json()
+        if response.status_code >= 400 and isinstance(body, dict) and "error" in body:
+            return body["error"]["message"]
+        return body
     else:
         return response.content.decode("utf-8")
 

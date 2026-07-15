@@ -1,12 +1,13 @@
 import json
 
-from flask import Blueprint, Response
+from flask import Blueprint, Response, current_app
 from flask_restx import Api, Resource, fields
 
 from classes import JsonEncoder
 from decorators import authenticated
 from service import Service
 from states import KEY_RESULT_STATES, OBJECTIVE_STATES, TASK_STATES, KeyResultState, ObjectiveState, TaskState
+from errors import ApiError, ConflictError, NotFoundError, UnprocessableEntityError, ValidationError, error_body, translate_exception
 
 
 rest = Blueprint('rest', __name__)
@@ -22,6 +23,15 @@ objective = api.namespace('objective', description='Objectives operations')
 
 
 def create_response(response, status):
+    if status >= 400:
+        error_class = {
+            400: ValidationError,
+            404: NotFoundError,
+            409: ConflictError,
+            422: UnprocessableEntityError,
+        }.get(status, ApiError)
+        error = error_class(str(response))
+        return Response(response=json.dumps(error_body(error)), status=status, mimetype="application/json")
     if response is None:
         return Response(status=status)
     elif type(response) is str:
@@ -32,7 +42,10 @@ def create_response(response, status):
 
 
 def create_exception_response(exception):
-    return create_response(type(exception).__name__ + ": " + str(exception), 500)
+    error = translate_exception(exception)
+    if error.status_code == 500:
+        current_app.logger.exception('Unhandled API exception')
+    raise error
 
 
 @value.route('s')
@@ -360,7 +373,7 @@ class Objective(Resource):
                 return create_response("objective with id '" + str(id) + "' not found", 404)
 
             if Service().check_objective_has_kr(id):
-                return create_response("unable to delete objective with key results present", 403)
+                return create_response("unable to delete objective with key results present", 409)
 
             Service().delete_objective(id)
             return create_response(None, 204)
