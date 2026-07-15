@@ -1,10 +1,18 @@
 from dataclasses import dataclass
+from datetime import datetime
 from json import JSONEncoder
 
 
 class JsonEncoder(JSONEncoder):
     def default(self, o):
         return o.__dict__
+
+
+def normalize_date(value: str) -> str:
+    """Expose dates as ISO 8601 while supporting records saved in the old format."""
+    if not value or "-" in value:
+        return value
+    return datetime.strptime(value, "%d/%m/%Y").date().isoformat()
 
 
 @dataclass(frozen=True)
@@ -21,9 +29,9 @@ class KeyResult:
         self.objective_id: str = attributes[1]
         self.state: str = attributes[2]
         self.name: str = attributes[3]
-        self.date_reviewed: str = attributes[11]
+        self.date_reviewed: str = normalize_date(attributes[11])
         if not lightweight:
-            self.date_created: str = attributes[10]
+            self.date_created: str = normalize_date(attributes[10])
             self.description: str = attributes[4]
             self.s: str = attributes[5]
             self.m: str = attributes[6]
@@ -59,8 +67,8 @@ class Objective:
         self.state: str = attributes[2]
         self.name: str = attributes[3]
         self.description: str = attributes[4]
-        self.date_created: str = attributes[5]
-        self.date_finished: str = attributes[6]
+        self.date_created: str = normalize_date(attributes[5])
+        self.date_finished: str = normalize_date(attributes[6])
 
     def set_key_results(self, key_results: list[KeyResult]):
         self.key_results: list[KeyResult] = key_results
@@ -99,7 +107,6 @@ class ObjectiveIdea:
     id: str
     objective_id: str
     value: str
-
 
 
 

@@ -1,7 +1,7 @@
 <script setup>
 import {onMounted, ref} from 'vue'
 import Value from '@/view/Value.vue'
-import {appState, selectValue, setError, setToken} from '@/state/appState'
+import {appState, clearError, selectValue, setError, setToken} from '@/state/appState'
 import Login from '@/components/Login.vue'
 import {api} from '@/services/apiClient'
 
@@ -30,11 +30,11 @@ onMounted(() => {
 
 <template>
 
-  <v-alert v-if="appState.error" title="Backend Error" type="error">
+  <v-alert v-if="appState.error" title="Backend Error" type="error" closable @click:close="clearError">
     {{appState.error}}
   </v-alert>
 
-  <div v-else>
+  <div>
     <Login v-if="appState.token == null" @logged-in="loadData"/>
 
     <div v-else>

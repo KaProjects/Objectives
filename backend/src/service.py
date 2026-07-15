@@ -33,7 +33,7 @@ class Service:
         firebase_manager.delete_idea(value_id, idea_id)
 
     def create_key_result(self, name, description, objective_id):
-        today = date.today().strftime("%d/%m/%Y")
+        today = date.today().isoformat()
         return DatabaseManager().insert_key_result(name, description, "active", objective_id, "", "", "", "", "", today), today
 
     def get_single_key_result(self, id):
@@ -43,7 +43,7 @@ class Service:
         return kr
 
     def review_key_result(self, id):
-        today = date.today().strftime("%d/%m/%Y")
+        today = date.today().isoformat()
         DatabaseManager().review_key_result(id, today)
         return today
 
@@ -53,7 +53,7 @@ class Service:
         return state
 
     def update_key_result(self, id, data):
-        today = date.today().strftime("%d/%m/%Y")
+        today = date.today().isoformat()
         DatabaseManager().update_key_result(id, data["name"], data["description"], data["s"], data["m"], data["a"], data["r"], data["t"], today)
         return today
 
@@ -93,7 +93,7 @@ class Service:
         return task_count == 1
 
     def create_objective(self, name, description, value_id):
-        today = date.today().strftime("%d/%m/%Y")
+        today = date.today().isoformat()
         return DatabaseManager().insert_objective(name, description, "active", value_id, today), today
 
     def update_objective(self, id, name, description):
@@ -109,7 +109,7 @@ class Service:
     def update_objective_state(self, id, state):
         today = ""
         if state != "active":
-            today = date.today().strftime("%d/%m/%Y")
+            today = date.today().isoformat()
         DatabaseManager().update_objective_state(id, state, today)
         return state, today
 
