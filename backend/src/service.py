@@ -59,16 +59,15 @@ class Service:
         return today
 
     def delete_key_result(self, id):
-        DatabaseManager().delete_tasks(id)
         DatabaseManager().delete_key_result(id)
 
     def create_task(self, value, kr_id):
-        new_id = DatabaseManager().insert_task(value, kr_id)
-        self.review_key_result(kr_id)
-        return new_id
+        today = date.today().isoformat()
+        return DatabaseManager().create_task_and_review_key_result(value, kr_id, today)
 
-    def update_task(self, id, value, state):
-        DatabaseManager().update_task(id, value, state)
+    def update_task(self, id, value, state, kr_id):
+        today = date.today().isoformat()
+        DatabaseManager().update_task_and_review_key_result(id, value, state, kr_id, today)
 
     def delete_task(self, task_id):
         DatabaseManager().delete_task(task_id)
@@ -104,7 +103,6 @@ class Service:
         return 0 < len(DatabaseManager().select_key_results_for_objective(id))
 
     def delete_objective(self, id):
-        DatabaseManager().delete_objective_ideas(id)
         DatabaseManager().delete_objective(id)
 
     def update_objective_state(self, id, state):

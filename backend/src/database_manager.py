@@ -41,8 +41,10 @@ class DatabaseManager:
                 )
         elif datasource == DataSource.DEVEL:
             self.conn: Connection = sqlite3.connect("devel.db")
+            self.conn.execute('PRAGMA foreign_keys = ON')
         elif datasource == DataSource.TEST:
             self.conn: Connection = sqlite3.connect("test.db")
+            self.conn.execute('PRAGMA foreign_keys = ON')
 
     def __del__(self):
         self.conn.close()
@@ -135,6 +137,21 @@ class DatabaseManager:
     def delete_key_result(self, id):
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('delete from KeyResults where id=?'), (int(id),))
+
+    def create_task_and_review_key_result(self, value, kr_id, date_reviewed) -> int:
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql("insert into Tasks(kr_id, state, value) values (?,?,?)"),
+                           (kr_id, TaskState.ACTIVE.value, value))
+            task_id = cursor.lastrowid
+            cursor.execute(sql('update KeyResults set date_reviewed=? where id=?'),
+                           (date_reviewed, int(kr_id)))
+            return task_id
+
+    def update_task_and_review_key_result(self, task_id, value, state, kr_id, date_reviewed):
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql('update Tasks set value=?,state=? where id=?'), (value, state, int(task_id)))
+            cursor.execute(sql('update KeyResults set date_reviewed=? where id=?'),
+                           (date_reviewed, int(kr_id)))
 
     def review_key_result(self, kr_id, date_reviewed):
         with self.cursor(commit=True) as cursor:

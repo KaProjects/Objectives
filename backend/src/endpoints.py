@@ -292,8 +292,7 @@ class Task(Resource):
             if state not in TASK_STATES:
                 return create_response("'" + str(state) + "' is invalid task state", 422)
 
-            Service().update_task(id, value, state)
-            Service().review_key_result(kr_id)
+            Service().update_task(id, value, state, kr_id)
             return create_response(data, 200)
         except Exception as e:
             return create_exception_response(e)
