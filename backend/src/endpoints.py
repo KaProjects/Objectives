@@ -13,7 +13,7 @@ from errors import ApiError, ConflictError, NotFoundError, UnprocessableEntityEr
 rest = Blueprint('rest', __name__)
 authorizations = {"Bearer": {"type": "apiKey", "in": "header", "name": "Authorization"}}
 
-api = Api(rest, doc='/doc/', authorizations=authorizations)
+api = Api(rest, doc='/doc/', authorizations=authorizations, validate=True)
 
 auth = api.namespace('authenticate', description='Auth operations')
 value = api.namespace('value', description='Values operations')
