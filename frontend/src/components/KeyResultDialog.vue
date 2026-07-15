@@ -4,6 +4,7 @@ import Editable from '@/components/Editable.vue'
 import {string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
+import {KEY_RESULT_STATE, OBJECTIVE_STATE, TASK_STATE} from '@/constants/states'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -26,7 +27,7 @@ const editingTaskId = ref(null)
 const editingValue = ref('')
 const selectedTaskId = ref(null)
 const taskPendingDeletionId = ref(null)
-const confirmStateDialogs = ref([false, false, false])
+const statePendingConfirmation = ref(null)
 const showSmart = ref(false)
 const confirmDeleteKrDialog = ref(false)
 
@@ -41,9 +42,9 @@ watch(() => props.kr, (value) => {
 }, {immediate: true})
 
 function stopEditing() { editingField.value = null; isAddingTask.value = false; editingTaskId.value = null }
-function canEdit() { return kr.value.state === 'active' && kr_parent.value.obj_state === 'active' }
+function canEdit() { return kr.value.state === KEY_RESULT_STATE.ACTIVE && kr_parent.value.obj_state === OBJECTIVE_STATE.ACTIVE }
 function validateSmart(value) { return value !== null && value !== undefined && value.length > 0 && !value.startsWith('[!!!]') }
-function compareTasks(a, b) { if (a.state === 'active' && b.state !== 'active') return -1; if (a.state !== 'active' && b.state === 'active') return 1; return a.id - b.id }
+function compareTasks(a, b) { if (a.state === TASK_STATE.ACTIVE && b.state !== TASK_STATE.ACTIVE) return -1; if (a.state !== TASK_STATE.ACTIVE && b.state === TASK_STATE.ACTIVE) return 1; return a.id - b.id }
 async function updateKeyResult() {
   try {
     const updated = {
@@ -69,9 +70,9 @@ async function retrieveKeyResultReviewDate() { try { const body = await api.get(
 async function updateTaskValue(task) { try { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: editingValue.value, state: task.state}); task.value = body.value; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}); stopEditing() } catch (error) { setError(error) } }
 function closeDialog() { stopEditing(); showSmart.value = false; isOpen.value = false; emit('close') }
 async function addTask() { try { const body = await api.post('/task', {kr_id: kr.value.id, value: editingValue.value}); kr.value.tasks.push(body); kr_parent.value.all_tasks_count += 1; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}); isAddingTask.value = false } catch (error) { setError(error) } }
-async function updateTaskState(task, state) { try { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: task.value, state}); if (task.state === 'active' && body.state !== 'active') kr_parent.value.resolved_tasks_count += 1; if (task.state !== 'active' && body.state === 'active') kr_parent.value.resolved_tasks_count -= 1; task.state = body.state; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}) } catch (error) { setError(error) } }
-async function deleteTask(task) { try { await api.delete('/task/' + task.id); taskPendingDeletionId.value = null; kr.value.tasks.splice(kr.value.tasks.indexOf(task), 1); kr_parent.value.all_tasks_count -= 1; if (task.state !== 'active') kr_parent.value.resolved_tasks_count -= 1; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}) } catch (error) { setError(error) } }
-async function updateKeyResultState(index) { try { const body = await api.put('/key_result/' + kr.value.id + '/state', {state: ['failed', 'completed', 'active'][index]}); kr.value.state = body; kr_parent.value.state = body; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}); confirmStateDialogs.value[index] = false } catch (error) { setError(error) } }
+async function updateTaskState(task, state) { try { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: task.value, state}); if (task.state === TASK_STATE.ACTIVE && body.state !== TASK_STATE.ACTIVE) kr_parent.value.resolved_tasks_count += 1; if (task.state !== TASK_STATE.ACTIVE && body.state === TASK_STATE.ACTIVE) kr_parent.value.resolved_tasks_count -= 1; task.state = body.state; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}) } catch (error) { setError(error) } }
+async function deleteTask(task) { try { await api.delete('/task/' + task.id); taskPendingDeletionId.value = null; kr.value.tasks.splice(kr.value.tasks.indexOf(task), 1); kr_parent.value.all_tasks_count -= 1; if (task.state !== TASK_STATE.ACTIVE) kr_parent.value.resolved_tasks_count -= 1; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}) } catch (error) { setError(error) } }
+async function updateKeyResultState(state) { try { const body = await api.put('/key_result/' + kr.value.id + '/state', {state}); kr.value.state = body; kr_parent.value.state = body; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}); statePendingConfirmation.value = null } catch (error) { setError(error) } }
 function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDialog.value = false; closeDialog() }
 </script>
 
@@ -90,9 +91,9 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
           {{kr.name}}
         </v-card-title>
         <div class="datesInfoChild" style="top: 0;">created: {{kr.date_created}}</div>
-        <div class="datesInfoChild" style="top: 15px;" v-if="kr.state==='active'">reviewed: {{kr.date_reviewed}}</div>
-        <div class="datesInfoChild" style="top: 15px;" v-if="kr.state==='failed'">failed: {{kr.date_reviewed}}</div>
-        <div class="datesInfoChild" style="top: 15px;" v-if="kr.state==='completed'">completed: {{kr.date_reviewed}}</div>
+        <div class="datesInfoChild" style="top: 15px;" v-if="kr.state === KEY_RESULT_STATE.ACTIVE">reviewed: {{kr.date_reviewed}}</div>
+        <div class="datesInfoChild" style="top: 15px;" v-if="kr.state === KEY_RESULT_STATE.FAILED">failed: {{kr.date_reviewed}}</div>
+        <div class="datesInfoChild" style="top: 15px;" v-if="kr.state === KEY_RESULT_STATE.COMPLETED">completed: {{kr.date_reviewed}}</div>
       </div>
 
       <Editable v-if="editingField === 'description'" :cancel="stopEditing" :submit="update" index="description">
@@ -121,7 +122,7 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
 
       <v-divider></v-divider>
 
-      <div v-if="kr.state === 'active' && kr_parent.obj_state === 'active' && kr.is_smart && !showSmart"
+      <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && kr.is_smart && !showSmart"
            class="smartMark"
            @click="showSmart = true">
         <v-icon style="vertical-align: top;" icon="mdi-check-bold" />
@@ -135,7 +136,7 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
                       hint="The goal should have a clear, highly-specific endpoint. If your goal is too vague, it won’t be SMART."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active' && (!kr.is_smart || showSmart)"
+      <div v-else v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
            @click="startEditing('specific')"
            class="smart" :class="validateSmart(kr.s).toString()">
         <div class="smartLabel">Specific:</div>
@@ -149,7 +150,7 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
                       hint="You need to be able to accurately track your progress, so you can judge when a goal will be met."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active' && (!kr.is_smart || showSmart)"
+      <div v-else v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
            @click="startEditing('measurable')"
            class="smart" :class="validateSmart(kr.m).toString()">
         <div class="smartLabel">Measurable:</div>
@@ -163,7 +164,7 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
                       hint="Of course, setting a goal that’s too ambitious will see you struggle to achieve it. This will sap at your motivation, both now and in the future."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active' && (!kr.is_smart || showSmart)"
+      <div v-else v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
            @click="startEditing('attainable')"
            class="smart" :class="validateSmart(kr.a).toString()">
         <div class="smartLabel">Attainable:</div>
@@ -177,7 +178,7 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
                       hint="The goal you pick should be pertinent to your chosen field, or should benefit you directly."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active' && (!kr.is_smart || showSmart)"
+      <div v-else v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
            @click="startEditing('relevant')"
            class="smart" :class="validateSmart(kr.r).toString()">
         <div class="smartLabel">Relevant:</div>
@@ -191,7 +192,7 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
                       hint="Finally, setting a timeframe for your goal helps quantify it further, and helps keep your focus on track."
         ></v-text-field>
       </Editable>
-      <div v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active' && (!kr.is_smart || showSmart)"
+      <div v-else v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
            @click="startEditing('timeBound')"
            class="smart" :class="validateSmart(kr.t).toString()">
         <div class="smartLabel">Time-Bound:</div>
@@ -211,21 +212,21 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
              @mouseover="selectedTaskId = task.id"
              @mouseleave="selectedTaskId = null">
           <div :class="task.state">
-            <v-icon icon="mdi-close-box-outline" large v-if="task.state === 'failed'"/>
-            <v-icon icon="mdi-checkbox-marked-outline" large v-if="task.state === 'finished'"/>
-            <v-icon icon="mdi-checkbox-blank-outline" large v-if="task.state === 'active'"/>
+            <v-icon icon="mdi-close-box-outline" large v-if="task.state === TASK_STATE.FAILED"/>
+            <v-icon icon="mdi-checkbox-marked-outline" large v-if="task.state === TASK_STATE.FINISHED"/>
+            <v-icon icon="mdi-checkbox-blank-outline" large v-if="task.state === TASK_STATE.ACTIVE"/>
           </div>
           <div v-html="string_to_html(task.value)" @click="startEditingTask(task)" :class="task.state" style="display: inline; padding-left: 3px; flex: 25;"/>
 
           <v-icon style="flex: 1;" icon="mdi-checkbox-blank-outline" large
-                  v-if="selectedTaskId === task.id && task.state !== 'active' && kr.state === 'active' && kr_parent.obj_state === 'active'"
-                  @click="updateTaskState(task, 'active')"/>
+                  v-if="selectedTaskId === task.id && task.state !== TASK_STATE.ACTIVE && kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+                  @click="updateTaskState(task, TASK_STATE.ACTIVE)"/>
           <v-icon style="flex: 1;" icon="mdi-checkbox-marked-outline" large
-                  v-if="selectedTaskId === task.id && task.state !== 'finished' && kr.state === 'active' && kr_parent.obj_state === 'active'"
-                  @click="updateTaskState(task, 'finished')"/>
+                  v-if="selectedTaskId === task.id && task.state !== TASK_STATE.FINISHED && kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+                  @click="updateTaskState(task, TASK_STATE.FINISHED)"/>
           <v-icon style="flex: 1;" icon="mdi-close-box-outline" large
-                  v-if="selectedTaskId === task.id && task.state !== 'failed' && kr.state === 'active' && kr_parent.obj_state === 'active'"
-                  @click="updateTaskState(task, 'failed')"/>
+                  v-if="selectedTaskId === task.id && task.state !== TASK_STATE.FAILED && kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+                  @click="updateTaskState(task, TASK_STATE.FAILED)"/>
 
           <v-dialog
               :model-value="taskPendingDeletionId === task.id"
@@ -233,7 +234,7 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
               width="300"
           >
             <template v-slot:activator="{ props }">
-              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedTaskId === task.id && kr.state === 'active' && kr_parent.obj_state === 'active'"/>
+              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedTaskId === task.id && kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"/>
             </template>
 
             <v-card>
@@ -257,14 +258,14 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
                       label="Add Task"
         ></v-text-field>
       </Editable>
-      <v-btn v-else v-if="kr.state === 'active' && kr_parent.obj_state === 'active'" color="secondary" @click="startAddingTask">
+      <v-btn v-else v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE" color="secondary" @click="startAddingTask">
         Add Task
       </v-btn>
 
     </v-card>
 
     <div>
-      <v-dialog v-model="confirmStateDialogs[0]" width="300" v-if="kr.state === 'active' && kr_parent.obj_state === 'active'">
+      <v-dialog :model-value="statePendingConfirmation === KEY_RESULT_STATE.FAILED" @update:model-value="statePendingConfirmation = $event ? KEY_RESULT_STATE.FAILED : null" width="300" v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
           <v-btn style="width: 50%;" color="red" v-bind="props">fail</v-btn>
         </template>
@@ -273,11 +274,11 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
             Fail?
           </v-card-title>
           <v-card-actions>
-            <v-btn block @click="updateKeyResultState(0)">Confirm</v-btn>
+            <v-btn block @click="updateKeyResultState(KEY_RESULT_STATE.FAILED)">Confirm</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-dialog v-model="confirmStateDialogs[1]" width="300" v-if="kr.state === 'active' && kr_parent.obj_state === 'active'">
+      <v-dialog :model-value="statePendingConfirmation === KEY_RESULT_STATE.COMPLETED" @update:model-value="statePendingConfirmation = $event ? KEY_RESULT_STATE.COMPLETED : null" width="300" v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
           <v-btn style="width: 50%;" color="green" v-bind="props">complete</v-btn>
         </template>
@@ -286,11 +287,11 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
             Complete?
           </v-card-title>
           <v-card-actions>
-            <v-btn block @click="updateKeyResultState(1)">Confirm</v-btn>
+            <v-btn block @click="updateKeyResultState(KEY_RESULT_STATE.COMPLETED)">Confirm</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-dialog v-model="confirmStateDialogs[2]" width="300" v-if="kr.state !== 'active' && kr_parent.obj_state === 'active'">
+      <v-dialog :model-value="statePendingConfirmation === KEY_RESULT_STATE.ACTIVE" @update:model-value="statePendingConfirmation = $event ? KEY_RESULT_STATE.ACTIVE : null" width="300" v-if="kr.state !== KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
           <v-btn style="width: 100%;" color="blue" v-bind="props">activate</v-btn>
         </template>
@@ -299,7 +300,7 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
             Activate?
           </v-card-title>
           <v-card-actions>
-            <v-btn block @click="updateKeyResultState(2)">Confirm</v-btn>
+            <v-btn block @click="updateKeyResultState(KEY_RESULT_STATE.ACTIVE)">Confirm</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>

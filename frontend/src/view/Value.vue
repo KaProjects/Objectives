@@ -5,9 +5,10 @@ import Objective from '@/components/Objective.vue'
 import {compare_dates} from '@/utils'
 import {api} from '@/services/apiClient'
 import Ideas from '@/components/Ideas.vue'
+import {OBJECTIVE_STATE, OBJECTIVE_TAB} from '@/constants/states'
 
 const value = ref({objectives: []})
-const tab = ref('active')
+const tab = ref(OBJECTIVE_TAB.ACTIVE)
 const openAddObjDialog = ref(false)
 const newObj = ref({name: '', description: ''})
 const showIdeas = ref(false)
@@ -26,7 +27,7 @@ async function loadData() {
 
 function compareObjectives(a, b) {
       let comparison
-      if (a.state !== "active" &&  b.state !== "active") {
+      if (a.state !== OBJECTIVE_STATE.ACTIVE && b.state !== OBJECTIVE_STATE.ACTIVE) {
         comparison = - compare_dates(a.date_finished, b.date_finished)
       } else {
     comparison = - compare_dates(a.date_created, b.date_created)
@@ -36,7 +37,7 @@ function compareObjectives(a, b) {
 
 function filterObjectives(objectives, isActive) {
   if (objectives === undefined) return objectives
-  return objectives.filter((objective) => isActive ? objective.state === 'active' : objective.state !== 'active')
+  return objectives.filter((objective) => isActive ? objective.state === OBJECTIVE_STATE.ACTIVE : objective.state !== OBJECTIVE_STATE.ACTIVE)
     .slice().sort(compareObjectives)
 }
 
@@ -46,14 +47,14 @@ async function addObjective() {
     const body = await api.post('/objective', objective)
     value.value.objectives.push(body)
     openAddObjDialog.value = false
-    tab.value = 'active'
+    tab.value = OBJECTIVE_TAB.ACTIVE
   } catch (error) {
     setError(error)
   }
 }
 
 function selectTab(state) {
-  tab.value = state === 'active' ? 'active' : 'inactive'
+  tab.value = state === OBJECTIVE_STATE.ACTIVE ? OBJECTIVE_TAB.ACTIVE : OBJECTIVE_TAB.INACTIVE
 }
 
 function updateObjective(updatedObjective) {
@@ -99,8 +100,8 @@ onMounted(loadData)
       <h1 class="title">{{value.name}}</h1>
 
       <v-tabs v-model="tab" bg-color="primary">
-        <v-tab value="active">Active</v-tab>
-        <v-tab value="inactive">Done</v-tab>
+        <v-tab :value="OBJECTIVE_TAB.ACTIVE">Active</v-tab>
+        <v-tab :value="OBJECTIVE_TAB.INACTIVE">Done</v-tab>
       </v-tabs>
 
       <v-btn class="button" icon="mdi-lightbulb" @click.stop="showIdeas = false" v-if="showIdeas"/>
@@ -122,7 +123,7 @@ onMounted(loadData)
 
     <div style="display: flex; overflow-x:scroll;">
       <Ideas class="obj" :valueId="appState.selectedValue.id" v-if="showIdeas"/>
-      <Objective v-for="objective in filterObjectives(value.objectives, tab === 'active')"
+      <Objective v-for="objective in filterObjectives(value.objectives, tab === OBJECTIVE_TAB.ACTIVE)"
                  :key="objective.id"
                  :objective="objective"
                  @deleted="deleteObjective"

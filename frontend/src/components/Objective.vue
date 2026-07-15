@@ -5,6 +5,7 @@ import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
 import KeyResultDialog from '@/components/KeyResultDialog.vue'
 import ObjectiveDialog from '@/components/ObjectiveDialog.vue'
+import {KEY_RESULT_STATE, OBJECTIVE_STATE} from '@/constants/states'
 
 const props = defineProps({
   objective: {type: Object, required: true},
@@ -27,14 +28,14 @@ watch(openAddKrDialog, (isOpen) => {
 
 function compareKeyResults(a, b) {
       let comparison
-      if (a.state === "active") {
-        if (b.state === "completed" || b.state === "failed"){
+      if (a.state === KEY_RESULT_STATE.ACTIVE) {
+        if (b.state === KEY_RESULT_STATE.COMPLETED || b.state === KEY_RESULT_STATE.FAILED){
           comparison = -1
         } else { // both active
           comparison = compare_dates(a.date_reviewed, b.date_reviewed)
         }
       } else {
-        if (b.state === "active") {
+        if (b.state === KEY_RESULT_STATE.ACTIVE) {
           comparison = 1
         } else { // both inactive
           comparison = -1 * compare_dates(a.date_reviewed, b.date_reviewed)
@@ -105,10 +106,10 @@ async function deleteKeyResult(keyResult) {
         <v-list-item-content>
 
           <v-list-item-title class="inLine">{{key_result.name}}</v-list-item-title>
-          <v-icon style="vertical-align: top;" icon="mdi-check-bold" v-if="key_result.state === 'completed'" />
-          <v-icon style="vertical-align: top;" icon="mdi-close-thick" v-if="key_result.state === 'failed'"/>
+          <v-icon style="vertical-align: top;" icon="mdi-check-bold" v-if="key_result.state === KEY_RESULT_STATE.COMPLETED" />
+          <v-icon style="vertical-align: top;" icon="mdi-close-thick" v-if="key_result.state === KEY_RESULT_STATE.FAILED"/>
 
-          <div class="krInfo" v-if="key_result.state === 'active'">
+          <div class="krInfo" v-if="key_result.state === KEY_RESULT_STATE.ACTIVE">
             <div class="krInfoChild" style="right: 0;">{{key_result.date_reviewed}}</div>
             <div class="krInfoChild" style="right: 50%; color: #ff0000; font-weight: bold;" v-if="!key_result.is_smart">
               !SMART
@@ -120,7 +121,7 @@ async function deleteKeyResult(keyResult) {
       </v-list-item>
     </div>
 
-    <v-card-actions v-if="objective.state === 'active'">
+    <v-card-actions v-if="objective.state === OBJECTIVE_STATE.ACTIVE">
       <v-dialog v-model="openAddKrDialog" width="300">
         <template v-slot:activator="{ props }">
           <v-btn color="primary" v-bind="props">
