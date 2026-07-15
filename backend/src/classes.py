@@ -1,20 +1,13 @@
 from dataclasses import dataclass
-from datetime import datetime
 from json import JSONEncoder
 
+from dates import normalize_date
 from states import ObjectiveState
 
 
 class JsonEncoder(JSONEncoder):
     def default(self, o):
         return o.__dict__
-
-
-def normalize_date(value: str) -> str:
-    """Expose dates as ISO 8601 while supporting records saved in the old format."""
-    if not value or "-" in value:
-        return value
-    return datetime.strptime(value, "%d/%m/%Y").date().isoformat()
 
 
 @dataclass(frozen=True)
@@ -112,6 +105,5 @@ class ObjectiveIdea:
     id: str
     objective_id: str
     value: str
-
 
 

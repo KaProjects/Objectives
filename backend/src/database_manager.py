@@ -7,6 +7,7 @@ from sqlite3 import Connection
 import mysql.connector
 
 from classes import Value, Objective, KeyResult, Task, ObjectiveIdea
+from dates import normalize_date, validate_iso_date
 from states import TaskState
 
 
@@ -67,6 +68,25 @@ class DatabaseManager:
         with self.cursor() as cursor:
             for script in scripts:
                 cursor.executescript(open(script, "r").read())
+
+    def migrate_legacy_dates(self) -> int:
+        date_columns = (
+            ('Objectives', 'date_created', False),
+            ('Objectives', 'date_finished', True),
+            ('KeyResults', 'date_created', False),
+            ('KeyResults', 'date_reviewed', False),
+        )
+        updated = 0
+        with self.cursor(commit=True) as cursor:
+            for table, column, allow_empty in date_columns:
+                cursor.execute(sql(f'select id, {column} from {table}'))
+                for record_id, value in cursor.fetchall():
+                    normalized = normalize_date(value, allow_empty=allow_empty)
+                    if normalized != value:
+                        cursor.execute(sql(f'update {table} set {column}=? where id=?'),
+                                       (normalized, record_id))
+                        updated += 1
+        return updated
 
     def select_all_values(self) -> list:
         values = list()
@@ -140,6 +160,7 @@ class DatabaseManager:
         return key_results
 
     def insert_key_result(self, name, description, state, objective_id, s, m, a, r, t, date_created) -> int:
+        validate_iso_date(date_created)
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql("insert into KeyResults(objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (?,?,?,?,?,?,?,?,?,?,?)"),
                 (objective_id, state, name, description, s, m, a, r, t, date_created, date_created))
@@ -154,6 +175,7 @@ class DatabaseManager:
                 return KeyResult(kr, False)
 
     def update_key_result(self, id, name, description, s, m, a, r, t, date_reviewed):
+        validate_iso_date(date_reviewed)
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update KeyResults set name=?,description=?,s=?,m=?,a=?,r=?,t=?,date_reviewed=? where id=?'),
                               (name, description, s, m, a, r, t, date_reviewed, int(id)))
@@ -178,6 +200,7 @@ class DatabaseManager:
                            (date_reviewed, int(kr_id)))
 
     def review_key_result(self, kr_id, date_reviewed):
+        validate_iso_date(date_reviewed)
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update KeyResults set date_reviewed=? where id=?'), (date_reviewed, int(kr_id)))
 
@@ -217,6 +240,7 @@ class DatabaseManager:
             return cursor.fetchone()[0];
 
     def insert_objective(self, name, description, state, value_id, date_created) -> int:
+        validate_iso_date(date_created)
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql("insert into Objectives(name, description, state, value_id, date_created, date_finished) values (?,?,?,?,?,?)"),
                            (name, description, state, value_id, date_created, ""))
@@ -232,6 +256,7 @@ class DatabaseManager:
             cursor.execute(sql('update Objectives set name=?,description=? where id=?'), (name, description, int(id)))
 
     def update_objective_state(self, id, state, date):
+        validate_iso_date(date, allow_empty=True)
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update Objectives set state=?,date_finished=? where id=?'), (state, date, int(id)))
 
