@@ -1,5 +1,5 @@
 import json
-import sys
+import os
 import time
 import uuid
 
@@ -30,7 +30,7 @@ token_store = Token()
 
 
 def authenticate(user, password) -> Union[None, str]:
-    if sys.argv[1] == 'test':
+    if os.getenv('APP_ENV') == 'test':
         return token_store.generate()
     with open("envs_user.json") as envs_file:
         envs = json.load(envs_file)
