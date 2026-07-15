@@ -33,8 +33,7 @@ class TestKeyResultsApi(unittest.TestCase):
 
     def test_get_key_result_invalid_id(self):
         status, error, message = get_request("/key_result/x")
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_get_key_result_no_id(self):
         status, error, message = get_request("/key_result")
@@ -93,19 +92,17 @@ class TestKeyResultsApi(unittest.TestCase):
 
     def test_create_key_result_null(self):
         status, error, message = post_request("/key_result", None)
-        self.assertEqual(status, 500, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_create_key_result_null_name(self):
         payload = json.dumps({"name": None, "description": "a desc", "objective_id": 4})
         status, error, message = post_request("/key_result", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_create_key_result_null_description(self):
         payload = json.dumps({"name": "a name", "description": None, "objective_id": 4})
         status, error, message = post_request("/key_result", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_create_key_result_none_objective(self):
         payload = json.dumps({"name": "a name", "description": "a desc", "objective_id": 44})
@@ -144,57 +141,49 @@ class TestKeyResultsApi(unittest.TestCase):
     def test_update_key_result_missing_value(self):
         payload = json.dumps({"name": "new name", "description": "new desc"})
         status, error, message = put_request("/key_result/7", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("KeyError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_key_result_null(self):
         status, error, message = put_request("/key_result/7", None)
-        self.assertEqual(status, 500, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_key_result_null_name(self):
         payload = json.dumps(
             {"name": None, "description": "new desc", "s": "s", "m": "m", "a": "a", "r": "r", "t": "t"})
         status, error, message = put_request("/key_result/7", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_key_result_null_description(self):
         payload = json.dumps(
             {"name": "new name", "description": None, "s": "s", "m": "m", "a": "a", "r": "r", "t": "t"})
         status, error, message = put_request("/key_result/7", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_key_result_null_smart(self):
         payload = json.dumps(
             {"name": "new name", "description": "new desc", "s": None, "m": "m", "a": "a", "r": "r", "t": "t"})
         status, error, message = put_request("/key_result/7", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
         payload = json.dumps(
             {"name": "new name", "description": "new desc", "s": "s", "m": None, "a": "a", "r": "r", "t": "t"})
         status, error, message = put_request("/key_result/7", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
         payload = json.dumps(
             {"name": "new name", "description": "new desc", "s": "s", "m": "m", "a": None, "r": "r", "t": "t"})
         status, error, message = put_request("/key_result/7", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
         payload = json.dumps(
             {"name": "new name", "description": "new desc", "s": "s", "m": "m", "a": "a", "r": None, "t": "t"})
         status, error, message = put_request("/key_result/7", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
         payload = json.dumps(
             {"name": "new name", "description": "new desc", "s": "s", "m": "m", "a": "a", "r": "r", "t": None})
         status, error, message = put_request("/key_result/7", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_key_result_nonexistent(self):
         payload = json.dumps(
@@ -207,15 +196,14 @@ class TestKeyResultsApi(unittest.TestCase):
         payload = json.dumps(
             {"name": "new name", "description": "new desc", "s": "s", "m": "m", "a": "a", "r": "r", "t": "t"})
         status, error, message = put_request("/key_result/x", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_key_result_no_id(self):
         payload = json.dumps(
             {"name": "new name", "description": "new desc", "s": "s", "m": "m", "a": "a", "r": "r", "t": "t"})
         status, error, message = post_request("/key_result", payload)
         # 500 because it's same url as create kr, just invalid payload
-        self.assertEqual(status, 500, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_review_key_result(self):
         before_status, before_key_result, before_message = get_request("/key_result/13")
@@ -249,8 +237,7 @@ class TestKeyResultsApi(unittest.TestCase):
 
     def test_review_key_result_invalid_id(self):
         status, error, message = put_request("/key_result/x/review", None)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_key_result_state(self):
         before_status, before_key_result, before_message = get_request("/key_result/14")
@@ -310,8 +297,7 @@ class TestKeyResultsApi(unittest.TestCase):
 
     def test_update_key_result_state_null(self):
         status, error, message = put_request("/key_result/14/state", None)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("Bad Request" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_key_result_state_null_state(self):
         status, error, message = put_request("/key_result/14/state", json.dumps({"state": None}))
@@ -324,8 +310,7 @@ class TestKeyResultsApi(unittest.TestCase):
 
     def test_update_key_result_state_invalid_id(self):
         status, error, message = put_request("/key_result/x/state", json.dumps({"state": "failed"}))
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_key_result_state_invalid_state(self):
         status, error, message = put_request("/key_result/14/state", json.dumps({"state": "achieved"}))
@@ -394,8 +379,7 @@ class TestKeyResultsApi(unittest.TestCase):
 
     def test_delete_key_result_invalid_id(self):
         status, error, message = delete_request("/key_result/x")
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_delete_key_result_no_id(self):
         status, error, message = delete_request("/key_result")

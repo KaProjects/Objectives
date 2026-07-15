@@ -56,8 +56,7 @@ class TestValuesApi(unittest.TestCase):
 
     def test_get_value_invalid_id(self):
         status, error, message = get_request("/value/x")
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_get_value_no_id(self):
         status, error, message = get_request("/value")

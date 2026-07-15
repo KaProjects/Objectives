@@ -45,20 +45,18 @@ class TestTasksApi(unittest.TestCase):
 
     def test_create_task_null(self):
         status, error, message = post_request("/task", None)
-        self.assertEqual(status, 500, message)
+        self.assertIn(status, (400, 422), message)
 
         status, error, message = post_request("/task", json.dumps(None))
-        self.assertEqual(status, 500, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_create_task_null_kr_id(self):
         status, error, message = post_request("/task", json.dumps({"kr_id": None, "value": "value"}))
-        self.assertEqual(status, 500, message)
-        self.assertTrue("not 'NoneType'" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_create_task_null_value(self):
         status, error, message = post_request("/task", json.dumps({"kr_id": 10, "value": None}))
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_create_task_none_key_result(self):
         status, error, message = post_request("/task", json.dumps({"kr_id": "777", "value": "None"}))
@@ -113,24 +111,20 @@ class TestTasksApi(unittest.TestCase):
 
     def test_update_task_missing_value(self):
         status, error, message = put_request("/task/8", json.dumps({"value": "value", "state": "active"}))
-        self.assertEqual(status, 500, message)
-        self.assertTrue("KeyError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_task_null(self):
         status, error, message = put_request("/task/8", None)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("Bad Request" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_task_null_kr_id(self):
         status, error, message = put_request("/task/8",
                                              json.dumps({"kr_id": None, "value": "value", "state": "active"}))
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NoneType" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_task_null_value(self):
         status, error, message = put_request("/task/8", json.dumps({"kr_id": 9, "value": None, "state": "active"}))
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_task_null_state(self):
         status, error, message = put_request("/task/8", json.dumps({"kr_id": 9, "value": "value", "state": None}))
@@ -144,8 +138,7 @@ class TestTasksApi(unittest.TestCase):
 
     def test_update_task_invalid_id(self):
         status, error, message = put_request("/task/x", json.dumps({"kr_id": 9, "value": "value", "state": "active"}))
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_task_no_id(self):
         status, error, message = put_request("/task", json.dumps({"kr_id": 9, "value": "value", "state": "active"}))
@@ -188,8 +181,7 @@ class TestTasksApi(unittest.TestCase):
 
     def test_delete_task_invalid_id(self):
         status, error, message = delete_request("/task/x")
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_delete_task_no_id(self):
         status, error, message = delete_request("/task")

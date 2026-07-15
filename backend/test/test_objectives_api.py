@@ -40,19 +40,17 @@ class TestObjectivesApi(unittest.TestCase):
 
     def test_create_objective_null(self):
         status, error, message = post_request("/objective", None)
-        self.assertEqual(status, 500, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_create_objective_null_name(self):
         payload = json.dumps({"name": None, "description": "a desc", "value_id": 4})
         status, error, message = post_request("/objective", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_create_objective_null_description(self):
         payload = json.dumps({"name": "a name", "description": None, "value_id": 4})
         status, error, message = post_request("/objective", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_create_objective_none_value(self):
         payload = json.dumps({"name": "a name", "description": "a desc", "value_id": 44})
@@ -90,24 +88,21 @@ class TestObjectivesApi(unittest.TestCase):
     def test_update_objective_missing_value(self):
         payload = json.dumps({"name": "new name"})
         status, error, message = put_request("/objective/8", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("KeyError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_objective_null(self):
         status, error, message = put_request("/objective/8", None)
-        self.assertEqual(status, 500, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_objective_null_name(self):
         payload = json.dumps({"name": None, "description": "new desc"})
         status, error, message = put_request("/objective/8", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_objective_null_description(self):
         payload = json.dumps({"name": "new name", "description": None})
         status, error, message = put_request("/objective/8", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_objective_nonexistent(self):
         payload = json.dumps({"name": "new name", "description": "new desc"})
@@ -118,8 +113,7 @@ class TestObjectivesApi(unittest.TestCase):
     def test_update_objective_invalid_id(self):
         payload = json.dumps({"name": "new name", "description": "new desc"})
         status, error, message = put_request("/objective/x", payload)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_objective_no_id(self):
         payload = json.dumps({"name": "new name", "description": "new desc"})
@@ -184,8 +178,7 @@ class TestObjectivesApi(unittest.TestCase):
 
     def test_update_objective_state_null(self):
         status, error, message = put_request("/objective/8/state", None)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("Bad Request" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_objective_state_null_state(self):
         status, error, message = put_request("/objective/8/state", json.dumps({"state": None}))
@@ -199,8 +192,7 @@ class TestObjectivesApi(unittest.TestCase):
 
     def test_update_objective_state_invalid_id(self):
         status, error, message = put_request("/objective/x/state", json.dumps({"state": "failed"}))
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_update_objective_state_invalid_state(self):
         status, error, message = put_request("/objective/8/state", json.dumps({"state": "completed"}))
@@ -235,7 +227,7 @@ class TestObjectivesApi(unittest.TestCase):
 
     def test_delete_objective_with_key_results(self):
         del_status, nothing, del_message = delete_request("/objective/14")
-        self.assertEqual(del_status, 403, del_message)
+        self.assertEqual(del_status, 409, del_message)
 
     def test_delete_objective_nonexistent(self):
         status, error, message = delete_request("/objective/333")
@@ -244,8 +236,7 @@ class TestObjectivesApi(unittest.TestCase):
 
     def test_delete_objective_invalid_id(self):
         status, error, message = delete_request("/objective/x")
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_delete_objective_no_id(self):
         status, error, message = delete_request("/objective")
@@ -274,13 +265,11 @@ class TestObjectivesApi(unittest.TestCase):
 
     def test_objective_idea_update_null(self):
         status, error, message = put_request("/objective/10/idea/2", None)
-        self.assertEqual(status, 500, message)
-        self.assertTrue("Bad Request" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_objective_idea_update_null_value(self):
         status, error, message = put_request("/objective/10/idea/2", json.dumps({"value": None}))
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_objective_idea_update_nonexistent(self):
         status, error, message = put_request("/objective/10/idea/33", json.dumps({"value": "new_value"}))
@@ -294,12 +283,10 @@ class TestObjectivesApi(unittest.TestCase):
 
     def test_objective_idea_update_invalid_id(self):
         status, error, message = put_request("/objective/x/idea/2", json.dumps({"value": "new_value"}))
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
         status, error, message = put_request("/objective/10/idea/x", json.dumps({"value": "new_value"}))
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_objective_idea_create(self):
         status, value, before_value_message = get_request("/value/4")
@@ -328,12 +315,11 @@ class TestObjectivesApi(unittest.TestCase):
 
     def test_objective_idea_create_null(self):
         status, error, message = post_request("/objective/11/idea", None)
-        self.assertEqual(status, 500, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_objective_idea_create_null_value(self):
         status, error, message = post_request("/objective/11/idea", json.dumps({"value": None}))
-        self.assertEqual(status, 500, message)
-        self.assertTrue("NOT NULL constraint" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_objective_idea_create_none_objective(self):
         status, error, message = post_request("/objective/44/idea", json.dumps({"value": "value"}))
@@ -377,12 +363,10 @@ class TestObjectivesApi(unittest.TestCase):
 
     def test_objective_idea_delete_invalid_id(self):
         status, error, message = delete_request("/objective/12/idea/x")
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
         status, error, message = delete_request("/objective/x/idea/1")
-        self.assertEqual(status, 500, message)
-        self.assertTrue("ValueError" in error, message)
+        self.assertIn(status, (400, 422), message)
 
     def test_objective_idea_delete_no_id(self):
         status, error, message = delete_request("/objective/12/idea")
