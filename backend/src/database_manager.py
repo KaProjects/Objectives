@@ -47,8 +47,16 @@ class DatabaseManager:
             self.conn: Connection = sqlite3.connect("test.db")
             self.conn.execute('PRAGMA foreign_keys = ON')
 
-    def __del__(self):
-        self.conn.close()
+    def close(self):
+        if getattr(self, 'conn', None) is not None:
+            self.conn.close()
+            self.conn = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
     @contextmanager
     def cursor(self, commit: bool = False):
