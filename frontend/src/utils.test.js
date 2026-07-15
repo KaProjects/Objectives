@@ -1,10 +1,11 @@
 import {describe, expect, it} from 'vitest'
-import {compare_dates, string_to_html} from './utils'
+import {compareDates, formatDate, string_to_html} from './utils'
 
 describe('utility helpers', () => {
   it('sorts dates from oldest to newest', () => {
-    expect(compare_dates('31/12/2025', '01/01/2026')).toBeLessThan(0)
-    expect(compare_dates('01/01/2026', '01/01/2026')).toBe(0)
+    expect(compareDates('2025-12-31', '2026-01-01')).toBeLessThan(0)
+    expect(compareDates('2026-01-01', '2026-01-01')).toBe(0)
+    expect(formatDate('2026-01-01')).toBe('01/01/2026')
   })
 
   it('formats links, line breaks, bold text, and strikethrough text', () => {

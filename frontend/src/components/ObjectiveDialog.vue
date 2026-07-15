@@ -1,7 +1,7 @@
 <script setup>
 import {computed, ref, watch} from 'vue'
 import Editable from '@/components/Editable.vue'
-import {string_to_html} from '@/utils'
+import {formatDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
 import {OBJECTIVE_STATE} from '@/constants/states'
@@ -25,6 +25,7 @@ const selectedIdeaId = ref(null)
 const ideas = ref([])
 const ideaPendingDeletionId = ref(null)
 const confirmDeleteObjDialog = ref(false)
+const isSubmitting = ref(false)
 
 watch(() => props.obj, async (value) => {
   obj.value = value ? {...value, key_results: [...value.key_results]} : null
@@ -38,60 +39,81 @@ watch(() => props.obj, async (value) => {
 }, {immediate: true})
 
 function stopEditing() { editingField.value = null; editingIdeaId.value = null }
+async function withSubmissionLock(action) {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
+  try {
+    await action()
+  } finally {
+    isSubmitting.value = false
+  }
+}
 function startEditing(field) {
   if (obj.value.state !== OBJECTIVE_STATE.ACTIVE) return
   stopEditing(); editingValue.value = draftObjective.value[field]; editingField.value = field
 }
 async function updateObjective(field) {
-  try {
-    draftObjective.value[field] = editingValue.value; editingField.value = null
-    await api.put('/objective/' + obj.value.id, draftObjective.value)
-    Object.assign(obj.value, draftObjective.value)
-    emit('updated', {id: obj.value.id, name: obj.value.name, description: obj.value.description})
-  } catch (error) {
-    setError(error)
-  }
+  await withSubmissionLock(async () => {
+    const nextObjective = {...draftObjective.value, [field]: editingValue.value}
+    try {
+      await api.put('/objective/' + obj.value.id, nextObjective)
+      draftObjective.value = nextObjective
+      Object.assign(obj.value, nextObjective)
+      editingField.value = null
+      emit('updated', {id: obj.value.id, name: obj.value.name, description: obj.value.description})
+    } catch (error) {
+      setError(error)
+    }
+  })
 }
 function closeDialog() { stopEditing(); isOpen.value = false; emit('close') }
 async function updateObjectiveState(state) {
-  try {
-    const body = await api.put('/objective/' + obj.value.id + '/state', {state})
-    Object.assign(obj.value, {state: body.state, date_finished: body.date})
-    emit('updated', {id: obj.value.id, state: body.state, date_finished: body.date})
-    statePendingConfirmation.value = null; closeDialog(); emit('state-changed', body.state)
-  } catch (error) {
-    setError(error)
-  }
+  await withSubmissionLock(async () => {
+    try {
+      const body = await api.put('/objective/' + obj.value.id + '/state', {state})
+      Object.assign(obj.value, {state: body.state, date_finished: body.date})
+      emit('updated', {id: obj.value.id, state: body.state, date_finished: body.date})
+      statePendingConfirmation.value = null; closeDialog(); emit('state-changed', body.state)
+    } catch (error) {
+      setError(error)
+    }
+  })
 }
 function startEditingIdea(idea) {
   if (obj.value.state !== OBJECTIVE_STATE.ACTIVE) return
   stopEditing(); editingValue.value = idea.value; editingIdeaId.value = idea.id
 }
 async function updateIdeaValue(idea) {
-  try {
-    const body = await api.put('/objective/' + obj.value.id + '/idea/' + idea.id, {value: editingValue.value})
-    idea.value = body.value; stopEditing()
-  } catch (error) {
-    setError(error)
-  }
+  await withSubmissionLock(async () => {
+    try {
+      const body = await api.put('/objective/' + obj.value.id + '/idea/' + idea.id, {value: editingValue.value})
+      idea.value = body.value; stopEditing()
+    } catch (error) {
+      setError(error)
+    }
+  })
 }
 async function addIdea() {
-  try {
-    const body = await api.post('/objective/' + obj.value.id + '/idea', {value: editingValue.value})
-    ideas.value.push(body); obj.value.ideas_count += 1; editingField.value = null
-    emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
-  } catch (error) {
-    setError(error)
-  }
+  await withSubmissionLock(async () => {
+    try {
+      const body = await api.post('/objective/' + obj.value.id + '/idea', {value: editingValue.value})
+      ideas.value.push(body); obj.value.ideas_count += 1; editingField.value = null
+      emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
+    } catch (error) {
+      setError(error)
+    }
+  })
 }
 async function deleteIdea(idea) {
-  try {
-    await api.delete('/objective/' + obj.value.id + '/idea/' + idea.id)
-    ideas.value.splice(ideas.value.indexOf(idea), 1); obj.value.ideas_count -= 1; ideaPendingDeletionId.value = null
-    emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
-  } catch (error) {
-    setError(error)
-  }
+  await withSubmissionLock(async () => {
+    try {
+      await api.delete('/objective/' + obj.value.id + '/idea/' + idea.id)
+      ideas.value.splice(ideas.value.indexOf(idea), 1); obj.value.ideas_count -= 1; ideaPendingDeletionId.value = null
+      emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
+    } catch (error) {
+      setError(error)
+    }
+  })
 }
 function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.value = false; closeDialog() }
 </script>
@@ -109,9 +131,9 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
         <v-card-title @click="startEditing('name')" class="text-h5 grey lighten-2">
           {{obj.name}}
         </v-card-title>
-        <div class="datesInfoChild" style="top: 0;">created: {{obj.date_created}}</div>
-        <div class="datesInfoChild" style="top: 15px;" v-if="obj.state === OBJECTIVE_STATE.ACHIEVED">achieved: {{obj.date_finished}}</div>
-        <div class="datesInfoChild" style="top: 15px;" v-if="obj.state === OBJECTIVE_STATE.FAILED">failed: {{obj.date_finished}}</div>
+        <div class="datesInfoChild" style="top: 0;">created: {{formatDate(obj.date_created)}}</div>
+        <div class="datesInfoChild" style="top: 15px;" v-if="obj.state === OBJECTIVE_STATE.ACHIEVED">achieved: {{formatDate(obj.date_finished)}}</div>
+        <div class="datesInfoChild" style="top: 15px;" v-if="obj.state === OBJECTIVE_STATE.FAILED">failed: {{formatDate(obj.date_finished)}}</div>
       </div>
 
       <Editable v-if="editingField === 'description'" :cancel="stopEditing" :submit="updateObjective" index="description">
@@ -173,7 +195,7 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
                 {{ idea.value }}
               </v-card-text>
               <v-card-actions>
-                <v-btn block @click="deleteIdea(idea)">Confirm</v-btn>
+                <v-btn block :disabled="isSubmitting" @click="deleteIdea(idea)">Confirm</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
@@ -202,7 +224,7 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
             Fail?
           </v-card-title>
           <v-card-actions>
-            <v-btn block @click="updateObjectiveState(OBJECTIVE_STATE.FAILED)">Confirm</v-btn>
+            <v-btn block :disabled="isSubmitting" @click="updateObjectiveState(OBJECTIVE_STATE.FAILED)">Confirm</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -215,7 +237,7 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
             Achieve?
           </v-card-title>
           <v-card-actions>
-            <v-btn block @click="updateObjectiveState(OBJECTIVE_STATE.ACHIEVED)">Confirm</v-btn>
+            <v-btn block :disabled="isSubmitting" @click="updateObjectiveState(OBJECTIVE_STATE.ACHIEVED)">Confirm</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -228,7 +250,7 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
             Activate?
           </v-card-title>
           <v-card-actions>
-            <v-btn block @click="updateObjectiveState(OBJECTIVE_STATE.ACTIVE)">Confirm</v-btn>
+            <v-btn block :disabled="isSubmitting" @click="updateObjectiveState(OBJECTIVE_STATE.ACTIVE)">Confirm</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>

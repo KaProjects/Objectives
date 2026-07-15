@@ -7,8 +7,11 @@ const emit = defineEmits(['logged-in'])
 
 const username = ref('')
 const password = ref('')
+const isSubmitting = ref(false)
 
 async function login() {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
   try {
     const token = await api.login(username.value, password.value)
     setToken(token)
@@ -16,6 +19,8 @@ async function login() {
     emit('logged-in', token)
   } catch (error) {
     setError(error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
@@ -44,7 +49,7 @@ async function login() {
                   required
               ></v-text-field>
 
-              <v-btn type="submit" class="mt-4" color="primary" value="log in">Login</v-btn>
+              <v-btn type="submit" :disabled="isSubmitting" class="mt-4" color="primary" value="log in">Login</v-btn>
             </form>
           </v-card-text>
         </v-card>

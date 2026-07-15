@@ -13,6 +13,7 @@ const newIdeaDialog = ref(false)
 const newIdea = ref('')
 const selectedIdeaId = ref(null)
 const ideaPendingDeletionId = ref(null)
+const isSubmitting = ref(false)
 
 async function loadData() {
   try {
@@ -25,6 +26,8 @@ async function loadData() {
 }
 
 async function addIdea() {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
   try {
     const body = await api.post('/value/' + props.valueId + '/idea', {idea: newIdea.value})
     ideas.value.push({id: body.new_id, value: body.idea})
@@ -32,16 +35,22 @@ async function addIdea() {
     newIdea.value = ''
   } catch (error) {
     setError(error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 async function deleteIdea(idea) {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
   try {
     await api.delete('/value/' + props.valueId + '/idea/' + idea.id)
     ideas.value.splice(ideas.value.indexOf(idea), 1)
     ideaPendingDeletionId.value = null
   } catch (error) {
     setError(error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -76,7 +85,7 @@ onMounted(loadData)
                   {{ idea.value }}
                 </v-card-text>
                 <v-card-actions>
-                  <v-btn block @click="deleteIdea(idea)">Confirm</v-btn>
+                  <v-btn block :disabled="isSubmitting" @click="deleteIdea(idea)">Confirm</v-btn>
                 </v-card-actions>
               </v-card>
             </v-dialog>
@@ -102,7 +111,7 @@ onMounted(loadData)
                 required
             ></v-text-field>
             <v-card-actions>
-              <v-btn block @click="addIdea">Add</v-btn>
+              <v-btn block :disabled="isSubmitting || !newIdea" @click="addIdea">Add</v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>

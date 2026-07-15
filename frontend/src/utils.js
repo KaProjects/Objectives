@@ -41,20 +41,15 @@ export function string_to_html(string = ''){
         ALLOWED_ATTR: ['href', 'rel', 'target'],
     })
 }
-export function compare_dates(a, b){
-    let dateA = a.split("/")
-    let dateB = b.split("/")
-    if (dateA[2] !== dateB[2]){
-        return parseInt(dateA[2]) - parseInt(dateB[2])
-    } else {
-        if (dateA[1] !== dateB[1]) {
-            return parseInt(dateA[1]) - parseInt(dateB[1])
-        } else {
-            if (dateA[0] !== dateB[0]) {
-                return parseInt(dateA[0]) - parseInt(dateB[0])
-            } else {
-                return 0
-            }
-        }
-    }
+export function compareDates(a, b) {
+    return a.localeCompare(b)
+}
+
+export function formatDate(date) {
+    if (!date) return ''
+    const parsedDate = new Date(`${date}T00:00:00Z`)
+    if (Number.isNaN(parsedDate.getTime())) return date
+    return new Intl.DateTimeFormat('en-GB', {
+        day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC',
+    }).format(parsedDate)
 }

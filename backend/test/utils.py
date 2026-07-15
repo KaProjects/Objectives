@@ -48,4 +48,4 @@ def assert_method_not_allowed(self, status, error, message):
 
 
 def today():
-    return date.today().strftime("%d/%m/%Y")
+    return date.today().isoformat()

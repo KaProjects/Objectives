@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {flushPromises, mount, shallowMount} from '@vue/test-utils'
 
 const {api} = vi.hoisted(() => ({
@@ -21,7 +21,7 @@ const objective = {
   name: 'Exercise',
   description: 'Move more',
   state: 'active',
-  date_created: '01/01/2026',
+  date_created: '2026-01-01',
   ideas_count: 0,
   key_results: [],
 }
@@ -31,8 +31,8 @@ const keyResult = {
   name: 'Walk',
   description: 'Walk daily',
   state: 'active',
-  date_created: '01/01/2026',
-  date_reviewed: '01/01/2026',
+  date_created: '2026-01-01',
+  date_reviewed: '2026-01-01',
   tasks: [],
   s: 'Specific', m: 'Measurable', a: 'Attainable', r: 'Relevant', t: 'Timed',
 }
@@ -40,7 +40,12 @@ const keyResult = {
 describe('frontend components', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     api.get.mockResolvedValue([])
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('Editable invokes cancel and submit callbacks', async () => {
@@ -118,6 +123,21 @@ describe('frontend components', () => {
     expect(inputObjective.name).toBe('Exercise')
   })
 
+  it('ObjectiveDialog keeps the draft and editor intact when saving fails', async () => {
+    api.put.mockRejectedValueOnce(new Error('Network unavailable'))
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective}},
+    })
+    wrapper.vm.editingField = 'name'
+    wrapper.vm.editingValue = 'Updated exercise'
+    await wrapper.vm.updateObjective('name')
+
+    expect(wrapper.vm.draftObjective.name).toBe('Exercise')
+    expect(wrapper.vm.obj.name).toBe('Exercise')
+    expect(wrapper.vm.editingField).toBe('name')
+    expect(wrapper.emitted('updated')).toBeUndefined()
+  })
+
   it('KeyResultDialog closes by emitting an event', () => {
     const wrapper = shallowMount(KeyResultDialog, {
       props: {
@@ -156,5 +176,21 @@ describe('frontend components', () => {
       id: 2,
       a: 'Reachable daily walk',
     })])
+  })
+
+  it('KeyResultDialog does not emit stale updates when refreshing its review date fails', async () => {
+    api.put.mockResolvedValue({value: 'Updated task'})
+    api.get.mockRejectedValueOnce(new Error('Refresh failed'))
+    const wrapper = shallowMount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult, tasks: [{id: 4, value: 'Task', state: 'active'}]},
+        kr_parent: {...keyResult, obj_state: 'active'},
+      },
+    })
+    wrapper.vm.editingValue = 'Updated task'
+    await wrapper.vm.updateTaskValue(wrapper.vm.kr.tasks[0])
+
+    expect(wrapper.emitted('updated')).toBeUndefined()
   })
 })

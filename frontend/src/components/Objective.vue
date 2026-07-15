@@ -1,6 +1,6 @@
 <script setup>
 import {ref, watch} from 'vue'
-import {compare_dates, string_to_html} from '@/utils'
+import {compareDates, formatDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
 import KeyResultDialog from '@/components/KeyResultDialog.vue'
@@ -21,6 +21,7 @@ const selectedKr = ref(null)
 const selectedKr_parent = ref(null)
 const selectedObj = ref(null)
 const openKrDialog = ref(false)
+const isSubmitting = ref(false)
 
 watch(openAddKrDialog, (isOpen) => {
   if (isOpen) newKr.value = {name: '', description: ''}
@@ -32,13 +33,13 @@ function compareKeyResults(a, b) {
         if (b.state === KEY_RESULT_STATE.COMPLETED || b.state === KEY_RESULT_STATE.FAILED){
           comparison = -1
         } else { // both active
-          comparison = compare_dates(a.date_reviewed, b.date_reviewed)
+          comparison = compareDates(a.date_reviewed, b.date_reviewed)
         }
       } else {
         if (b.state === KEY_RESULT_STATE.ACTIVE) {
           comparison = 1
         } else { // both inactive
-          comparison = -1 * compare_dates(a.date_reviewed, b.date_reviewed)
+          comparison = -compareDates(a.date_reviewed, b.date_reviewed)
         }
       }
   return comparison !== 0 ? comparison : b.id - a.id
@@ -60,6 +61,8 @@ function openObjective() {
 }
 
 async function addKeyResult() {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
   try {
     const keyResult = {...newKr.value, objective_id: objective.id}
     const body = await api.post('/key_result', keyResult)
@@ -67,15 +70,21 @@ async function addKeyResult() {
     openAddKrDialog.value = false
   } catch (error) {
     setError(error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 async function deleteKeyResult(keyResult) {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
   try {
     await api.delete('/key_result/' + keyResult.id)
     emit('key-result-deleted', {objectiveId: objective.id, keyResultId: keyResult.id})
   } catch (error) {
     setError(error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
@@ -110,7 +119,7 @@ async function deleteKeyResult(keyResult) {
           <v-icon style="vertical-align: top;" icon="mdi-close-thick" v-if="key_result.state === KEY_RESULT_STATE.FAILED"/>
 
           <div class="krInfo" v-if="key_result.state === KEY_RESULT_STATE.ACTIVE">
-            <div class="krInfoChild" style="right: 0;">{{key_result.date_reviewed}}</div>
+            <div class="krInfoChild" style="right: 0;">{{formatDate(key_result.date_reviewed)}}</div>
             <div class="krInfoChild" style="right: 50%; color: #ff0000; font-weight: bold;" v-if="!key_result.is_smart">
               !SMART
             </div>
@@ -132,7 +141,7 @@ async function deleteKeyResult(keyResult) {
           <v-text-field label="Name" v-model="newKr.name"/>
           <v-text-field label="Description" v-model="newKr.description"/>
           <v-card-actions>
-            <v-btn block @click="addKeyResult" :disabled="!newKr.name">Add</v-btn>
+            <v-btn block @click="addKeyResult" :disabled="isSubmitting || !newKr.name">Add</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>

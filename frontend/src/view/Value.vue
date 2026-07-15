@@ -2,7 +2,7 @@
 import {onMounted, ref, watch} from 'vue'
 import {appState, setError, unselectValue} from '@/state/appState'
 import Objective from '@/components/Objective.vue'
-import {compare_dates} from '@/utils'
+import {compareDates} from '@/utils'
 import {api} from '@/services/apiClient'
 import Ideas from '@/components/Ideas.vue'
 import {OBJECTIVE_STATE, OBJECTIVE_TAB} from '@/constants/states'
@@ -12,6 +12,7 @@ const tab = ref(OBJECTIVE_TAB.ACTIVE)
 const openAddObjDialog = ref(false)
 const newObj = ref({name: '', description: ''})
 const showIdeas = ref(false)
+const isSubmitting = ref(false)
 
 watch(openAddObjDialog, (isOpen) => {
   if (isOpen) newObj.value = {name: '', description: ''}
@@ -28,9 +29,9 @@ async function loadData() {
 function compareObjectives(a, b) {
       let comparison
       if (a.state !== OBJECTIVE_STATE.ACTIVE && b.state !== OBJECTIVE_STATE.ACTIVE) {
-        comparison = - compare_dates(a.date_finished, b.date_finished)
+        comparison = -compareDates(a.date_finished, b.date_finished)
       } else {
-    comparison = - compare_dates(a.date_created, b.date_created)
+    comparison = -compareDates(a.date_created, b.date_created)
   }
   return comparison !== 0 ? comparison : b.id - a.id
 }
@@ -42,6 +43,8 @@ function filterObjectives(objectives, isActive) {
 }
 
 async function addObjective() {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
   try {
     const objective = {...newObj.value, value_id: value.value.id}
     const body = await api.post('/objective', objective)
@@ -50,6 +53,8 @@ async function addObjective() {
     tab.value = OBJECTIVE_TAB.ACTIVE
   } catch (error) {
     setError(error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -80,12 +85,16 @@ function removeKeyResult({objectiveId, keyResultId}) {
 }
 
 async function deleteObjective(objective) {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
   try {
     await api.delete('/objective/' + objective.id)
     const index = value.value.objectives.findIndex((item) => item.id === objective.id)
     if (index !== -1) value.value.objectives.splice(index, 1)
   } catch (error) {
     setError(error)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -115,7 +124,7 @@ onMounted(loadData)
           <v-text-field label="Name" v-model="newObj.name"/>
           <v-text-field label="Description" v-model="newObj.description"/>
           <v-card-actions>
-            <v-btn block @click="addObjective" :disabled="!newObj.name">Add</v-btn>
+            <v-btn block @click="addObjective" :disabled="isSubmitting || !newObj.name">Add</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
