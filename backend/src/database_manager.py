@@ -199,6 +199,12 @@ class DatabaseManager:
             cursor.execute(sql('update KeyResults set date_reviewed=? where id=?'),
                            (date_reviewed, int(kr_id)))
 
+    def select_task_key_result_id(self, task_id):
+        with self.cursor() as cursor:
+            cursor.execute(sql('select kr_id from Tasks where id=?'), (int(task_id),))
+            row = cursor.fetchone()
+            return row[0] if row else None
+
     def review_key_result(self, kr_id, date_reviewed):
         validate_iso_date(date_reviewed)
         with self.cursor(commit=True) as cursor:

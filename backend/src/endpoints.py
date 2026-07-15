@@ -256,7 +256,6 @@ class Tasks(Resource):
     def post(self):
         try:
             data: dict = api.payload
-            kr_id = data["kr_id"]
             value = data["value"]
             if not Service().check_key_result_exist(kr_id):
                 return create_response("key result with id '" + kr_id + "' not found", 404)
@@ -292,7 +291,7 @@ class Task(Resource):
             if state not in TASK_STATES:
                 return create_response("'" + str(state) + "' is invalid task state", 422)
 
-            Service().update_task(id, value, state, kr_id)
+            data["kr_id"] = Service().update_task(id, value, state)
             return create_response(data, 200)
         except Exception as e:
             return create_exception_response(e)

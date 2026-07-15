@@ -62,9 +62,12 @@ class Service:
         today = date.today().isoformat()
         return DatabaseManager().create_task_and_review_key_result(value, kr_id, today)
 
-    def update_task(self, id, value, state, kr_id):
+    def update_task(self, id, value, state):
         today = date.today().isoformat()
-        DatabaseManager().update_task_and_review_key_result(id, value, state, kr_id, today)
+        database = DatabaseManager()
+        kr_id = database.select_task_key_result_id(id)
+        database.update_task_and_review_key_result(id, value, state, kr_id, today)
+        return kr_id
 
     def delete_task(self, task_id):
         DatabaseManager().delete_task(task_id)
