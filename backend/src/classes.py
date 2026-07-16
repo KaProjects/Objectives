@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from decimal import Decimal
 from json import JSONEncoder
 
 from dates import normalize_date
@@ -7,7 +8,11 @@ from states import ObjectiveState
 
 class JsonEncoder(JSONEncoder):
     def default(self, o):
-        return o.__dict__
+        if isinstance(o, Decimal):
+            return int(o) if o == o.to_integral_value() else float(o)
+        if hasattr(o, '__dict__'):
+            return o.__dict__
+        return super().default(o)
 
 
 @dataclass(frozen=True)
@@ -105,5 +110,4 @@ class ObjectiveIdea:
     id: str
     objective_id: str
     value: str
-
 

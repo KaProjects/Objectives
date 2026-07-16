@@ -13,10 +13,9 @@ RUN addgroup --system app && adduser --system --ingroup app app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ./src/ ./src/
+COPY ./src/ ./
 RUN chown -R app:app /app
 
-WORKDIR /app/src
 USER app
 
 EXPOSE 7777
