@@ -10,7 +10,8 @@ def main():
     args = parser.parse_args()
 
     database_manager.datasource = DataSource(args.environment)
-    updated = DatabaseManager().migrate_legacy_dates()
+    with DatabaseManager() as database:
+        updated = database.migrate_legacy_dates()
     print(f'Migrated {updated} date value(s).')
 
 

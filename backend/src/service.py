@@ -10,14 +10,16 @@ from states import KeyResultState, ObjectiveState
 class Service:
 
     def get_all_values(self):
-        return DatabaseManager().select_all_values()
+        with DatabaseManager() as database:
+            return database.select_all_values()
 
     def get_single_value(self, id: str) -> Value:
-        value = DatabaseManager().select_value(id)
-        if value is not None:
-            value.set_objectives(DatabaseManager().select_objectives_for_value(value.id))
-            for objective in value.objectives:
-                objective.set_key_results(DatabaseManager().select_key_results_for_objective(objective.id))
+        with DatabaseManager() as database:
+            value = database.select_value(id)
+            if value is not None:
+                value.set_objectives(database.select_objectives_for_value(value.id))
+                for objective in value.objectives:
+                    objective.set_key_results(database.select_key_results_for_objective(objective.id))
 
         return value
 
@@ -32,102 +34,127 @@ class Service:
 
     def create_key_result(self, name, description, objective_id):
         today = date.today().isoformat()
-        return DatabaseManager().insert_key_result(name, description, KeyResultState.ACTIVE.value, objective_id, "", "", "", "", "", today), today
+        with DatabaseManager() as database:
+            key_result_id = database.insert_key_result(name, description, KeyResultState.ACTIVE.value, objective_id, "", "", "", "", "", today)
+        return key_result_id, today
 
     def get_single_key_result(self, id):
-        kr = DatabaseManager().select_key_result(id)
-        if kr is not None:
-            kr.set_tasks(DatabaseManager().select_tasks_for_key_result(kr.id))
+        with DatabaseManager() as database:
+            kr = database.select_key_result(id)
+            if kr is not None:
+                kr.set_tasks(database.select_tasks_for_key_result(kr.id))
         return kr
 
     def review_key_result(self, id):
         today = date.today().isoformat()
-        DatabaseManager().review_key_result(id, today)
+        with DatabaseManager() as database:
+            database.review_key_result(id, today)
         return today
 
     def update_key_result_state(self, id, state):
-        DatabaseManager().update_key_result_state(id, state)
-        self.review_key_result(id)
+        today = date.today().isoformat()
+        with DatabaseManager() as database:
+            database.update_key_result_state(id, state)
+            database.review_key_result(id, today)
         return state
 
     def update_key_result(self, id, data):
         today = date.today().isoformat()
-        DatabaseManager().update_key_result(id, data["name"], data["description"], data["s"], data["m"], data["a"], data["r"], data["t"], today)
+        with DatabaseManager() as database:
+            database.update_key_result(id, data["name"], data["description"], data["s"], data["m"], data["a"], data["r"], data["t"], today)
         return today
 
     def delete_key_result(self, id):
-        DatabaseManager().delete_key_result(id)
+        with DatabaseManager() as database:
+            database.delete_key_result(id)
 
     def create_task(self, value, kr_id):
         today = date.today().isoformat()
-        return DatabaseManager().create_task_and_review_key_result(value, kr_id, today)
+        with DatabaseManager() as database:
+            return database.create_task_and_review_key_result(value, kr_id, today)
 
     def update_task(self, id, value, state):
         today = date.today().isoformat()
-        database = DatabaseManager()
-        kr_id = database.select_task_key_result_id(id)
-        database.update_task_and_review_key_result(id, value, state, kr_id, today)
+        with DatabaseManager() as database:
+            kr_id = database.select_task_key_result_id(id)
+            database.update_task_and_review_key_result(id, value, state, kr_id, today)
         return kr_id
 
     def delete_task(self, task_id):
-        DatabaseManager().delete_task(task_id)
+        with DatabaseManager() as database:
+            database.delete_task(task_id)
 
     def check_value_exist(self, value_id) -> bool:
-        value_count = DatabaseManager().count_records("PValues", value_id)
+        with DatabaseManager() as database:
+            value_count = database.count_records("PValues", value_id)
         if value_count > 1: raise Exception("found " + str(value_count) + " values with id='" + str(value_id) + "'")
         return value_count == 1
 
     def check_objective_exist(self, objective_id) -> bool:
-        objective_count = DatabaseManager().count_records("Objectives", objective_id)
+        with DatabaseManager() as database:
+            objective_count = database.count_records("Objectives", objective_id)
         if objective_count > 1: raise Exception("found " + str(objective_count) + " objectives with id='" + str(objective_id) + "'")
         return objective_count == 1
 
     def check_key_result_exist(self, key_result_id) -> bool:
-        kr_count = DatabaseManager().count_records("KeyResults", key_result_id)
+        with DatabaseManager() as database:
+            kr_count = database.count_records("KeyResults", key_result_id)
         if kr_count > 1: raise Exception("found " + str(kr_count) + " key results with id='" + str(key_result_id) + "'")
         return kr_count == 1
 
     def check_task_exist(self, task_id) -> bool:
-        task_count = DatabaseManager().count_records("Tasks", task_id)
+        with DatabaseManager() as database:
+            task_count = database.count_records("Tasks", task_id)
         if task_count > 1: raise Exception("found " + str(task_count) + " tasks with id='" + str(task_id) + "'")
         return task_count == 1
 
     def create_objective(self, name, description, value_id):
         today = date.today().isoformat()
-        return DatabaseManager().insert_objective(name, description, ObjectiveState.ACTIVE.value, value_id, today), today
+        with DatabaseManager() as database:
+            objective_id = database.insert_objective(name, description, ObjectiveState.ACTIVE.value, value_id, today)
+        return objective_id, today
 
     def update_objective(self, id, name, description):
-        DatabaseManager().update_objective(id, name, description)
+        with DatabaseManager() as database:
+            database.update_objective(id, name, description)
 
     def check_objective_has_kr(self, id):
-        return 0 < len(DatabaseManager().select_key_results_for_objective(id))
+        with DatabaseManager() as database:
+            return 0 < len(database.select_key_results_for_objective(id))
 
     def delete_objective(self, id):
-        DatabaseManager().delete_objective(id)
+        with DatabaseManager() as database:
+            database.delete_objective(id)
 
     def update_objective_state(self, id, state):
         today = ""
         if state != ObjectiveState.ACTIVE.value:
             today = date.today().isoformat()
-        DatabaseManager().update_objective_state(id, state, today)
+        with DatabaseManager() as database:
+            database.update_objective_state(id, state, today)
         return state, today
 
     def get_objective_ideas(self, objective_id):
-        return DatabaseManager().select_ideas_for_objective(objective_id)
+        with DatabaseManager() as database:
+            return database.select_ideas_for_objective(objective_id)
 
     def update_objective_idea(self, idea_id, value):
-        DatabaseManager().update_objective_idea(idea_id, value)
+        with DatabaseManager() as database:
+            database.update_objective_idea(idea_id, value)
 
     def check_objective_idea_exist(self, idea_id) -> bool:
-        idea_count = DatabaseManager().count_records("ObjectiveIdeas", idea_id)
+        with DatabaseManager() as database:
+            idea_count = database.count_records("ObjectiveIdeas", idea_id)
         if idea_count > 1: raise Exception("found " + str(idea_count) + " objective ideas with id='" + str(idea_id) + "'")
         return idea_count == 1
 
     def create_objective_idea(self, objective_id, value):
-        return DatabaseManager().insert_objective_idea(objective_id, value)
+        with DatabaseManager() as database:
+            return database.insert_objective_idea(objective_id, value)
 
     def delete_objective_idea(self, idea_id):
-        DatabaseManager().delete_objective_idea(idea_id)
+        with DatabaseManager() as database:
+            database.delete_objective_idea(idea_id)
 
     def authenticate(self, user, password) -> str:
         return authenticate(user, password)

@@ -19,14 +19,14 @@ def configure_runtime(mode):
         origins = os.getenv('FRONTEND_ORIGIN')
     elif mode == 'dev':
         database_manager.datasource = database_manager.DataSource.DEVEL
-        database_manager.DatabaseManager()\
-            .execute_scripts(["sql/drop_tables.sql", "sql/create_tables.sql", "sql/data_dev.sql"])
+        with database_manager.DatabaseManager() as database:
+            database.execute_scripts(["sql/drop_tables.sql", "sql/create_tables.sql", "sql/data_dev.sql"])
         port, debug = 7702, True
         origins = "http://localhost:5173"
     elif mode == 'test':
         database_manager.datasource = database_manager.DataSource.TEST
-        database_manager.DatabaseManager()\
-            .execute_scripts(["sql/drop_tables.sql", "sql/create_tables.sql", "sql/data_test.sql"])
+        with database_manager.DatabaseManager() as database:
+            database.execute_scripts(["sql/drop_tables.sql", "sql/create_tables.sql", "sql/data_test.sql"])
         port, debug = 7890, True
         origins = "http://*:*"
     else:
