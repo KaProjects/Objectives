@@ -50,16 +50,14 @@ defineExpose({addCreatedIdea})
 </script>
 <template>
   <v-card width="300" elevation="3" shaped max-height="calc(100vh - 70px)" style="overflow-y:scroll;">
-    <v-card-title>Ideas</v-card-title>
-    <v-progress-circular v-if="loading" style="margin: 0 0 10px 30px" indeterminate
-                         color="primary"></v-progress-circular>
+    <v-progress-circular v-if="loading" style="margin: 0 0 10px 30px" indeterminate color="primary"></v-progress-circular>
     <div v-else>
-      <v-list-item>
-        <v-list-item-content v-for="idea in ideas" :key="idea.id"
-                             @mouseover="selectedIdeaId = idea.id"
-                             @mouseleave="selectedIdeaId = null">
+      <v-list-item v-for="idea in ideas" :key="idea.id" class="ideaItem"
+                   @mouseover="selectedIdeaId = idea.id"
+                   @mouseleave="selectedIdeaId = null">
+        <v-list-item-content>
           <div class="idea">
-            <v-list-item>{{ idea.value }}</v-list-item>
+            {{ idea.value }}
 
             <v-dialog
                 :model-value="ideaPendingDeletionId === idea.id"
@@ -67,7 +65,7 @@ defineExpose({addCreatedIdea})
                 width="300"
             >
               <template v-slot:activator="{ props }">
-                <v-icon icon="mdi-delete" large v-bind="props" v-if="selectedIdeaId === idea.id"/>
+                <v-icon class="deleteIdea" icon="mdi-delete" large v-bind="props" v-if="selectedIdeaId === idea.id"/>
               </template>
 
               <DialogCard :error="submissionError">
@@ -93,13 +91,16 @@ defineExpose({addCreatedIdea})
 <style scoped>
 .idea {
   border: 1px #d9e0e1 solid;
+  padding: 1px 5px;
 }
 
-.idea:hover {
-  border: 2px #d9e0e1 solid;
+.ideaItem {
+  min-height: 0 !important;
+  padding-top: 5px !important;
+  padding-bottom: 0 !important;
 }
 
-.idea > .v-icon {
+.deleteIdea {
   position: absolute;
   right: 0px;
 }
