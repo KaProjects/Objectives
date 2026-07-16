@@ -29,12 +29,7 @@ async function loadData() {
 }
 
 function compareObjectives(a, b) {
-  let comparison
-  if (a.state !== OBJECTIVE_STATE.ACTIVE && b.state !== OBJECTIVE_STATE.ACTIVE) {
-    comparison = -compareDates(a.date_finished, b.date_finished)
-  } else {
-    comparison = -compareDates(a.date_created, b.date_created)
-  }
+  const comparison = -compareDates(a.date_created, b.date_created)
   return comparison !== 0 ? comparison : b.id - a.id
 }
 

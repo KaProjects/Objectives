@@ -138,6 +138,19 @@ describe('frontend components', () => {
     expect(wrapper.vm.openKrDialog).toBe(true)
   })
 
+  it('sorts active key results before newer inactive ones', () => {
+    const wrapper = shallowMount(Objective, {props: {objective: {...objective}}})
+    const keyResults = [
+      {id: 1, state: 'failed', date_created: '2026-01-05', date_reviewed: '2026-01-06'},
+      {id: 2, state: 'active', date_created: '2026-01-01', date_reviewed: '2026-01-03'},
+      {id: 3, state: 'active', date_created: '2026-01-02', date_reviewed: '2026-01-03'},
+      {id: 4, state: 'completed', date_created: '2026-01-01', date_reviewed: '2026-01-04'},
+    ]
+
+    expect(keyResults.sort(wrapper.vm.compareKeyResults).map((keyResult) => keyResult.id))
+        .toEqual([3, 2, 1, 4])
+  })
+
   it('ObjectiveDialog loads ideas for its objective and emits close', async () => {
     api.get.mockResolvedValue([{id: 3, value: 'Idea'}])
     const wrapper = shallowMount(ObjectiveDialog, {

@@ -25,21 +25,14 @@ const isSubmitting = ref(false)
 const submissionError = ref(null)
 
 function compareKeyResults(a, b) {
-  let comparison
-  if (a.state === KEY_RESULT_STATE.ACTIVE) {
-    if (b.state === KEY_RESULT_STATE.COMPLETED || b.state === KEY_RESULT_STATE.FAILED) {
-      comparison = -1
-    } else { // both active
-      comparison = compareDates(a.date_reviewed, b.date_reviewed)
-    }
-  } else {
-    if (b.state === KEY_RESULT_STATE.ACTIVE) {
-      comparison = 1
-    } else { // both inactive
-      comparison = -compareDates(a.date_reviewed, b.date_reviewed)
-    }
-  }
-  return comparison !== 0 ? comparison : b.id - a.id
+  const activeComparison = Number(b.state === KEY_RESULT_STATE.ACTIVE) - Number(a.state === KEY_RESULT_STATE.ACTIVE)
+  if (activeComparison !== 0) return activeComparison
+
+  const reviewedComparison = -compareDates(a.date_reviewed || '', b.date_reviewed || '')
+  if (reviewedComparison !== 0) return reviewedComparison
+
+  const createdComparison = -compareDates(a.date_created || '', b.date_created || '')
+  return createdComparison !== 0 ? createdComparison : b.id - a.id
 }
 
 async function openKeyResult(keyResult, objectiveState) {
