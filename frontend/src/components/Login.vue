@@ -47,7 +47,7 @@ async function login() {
               required
           ></v-text-field>
 
-          <v-btn type="submit" :disabled="isSubmitting" class="mt-4" color="primary" value="log in">
+          <v-btn type="submit" :disabled="isSubmitting" class="mt-4 loginSubmit" color="primary" size="large" value="log in">
             Login
           </v-btn>
         </form>
@@ -65,5 +65,10 @@ async function login() {
 
 .loginCard {
   width: min(100%, 400px);
+}
+
+.loginSubmit {
+  display: flex;
+  margin-inline: auto;
 }
 </style>
