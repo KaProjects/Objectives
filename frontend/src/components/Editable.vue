@@ -51,8 +51,10 @@ function setValue(value) {
 }
 
 async function save({deferClose = false} = {}) {
-  const saved = await props.submit(draftValue.value)
-  if (saved === false) return false
+  if (draftValue.value !== props.value) {
+    const saved = await props.submit(draftValue.value)
+    if (saved === false) return false
+  }
 
   if (deferClose && pointerClickPending.value) {
     closeAfterClick = true

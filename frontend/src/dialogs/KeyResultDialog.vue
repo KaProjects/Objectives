@@ -221,8 +221,7 @@ function deleteKeyResult() {
         <span class="detailsSpacer"/>
         <v-dialog v-model="confirmDeleteKrDialog" width="300">
           <template v-slot:activator="{ props }">
-            <v-btn variant="plain"
-                   icon="mdi-trash-can" v-bind="props"/>
+            <v-btn variant="plain" rounded="lg" icon="mdi-trash-can" size="small" v-bind="props"/>
           </template>
           <v-card>
             <v-card-title class="text-h5 grey lighten-2">
@@ -462,6 +461,7 @@ function deleteKeyResult() {
 
 .smartLabel {
   min-width: 95px;
+  margin-left: 5px;
 }
 
 .smartValue {
@@ -482,7 +482,7 @@ function deleteKeyResult() {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 12px 8px;
+  padding: 0 12px;
   font-size: 12px;
 }
 

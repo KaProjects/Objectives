@@ -160,7 +160,7 @@ function deleteObjective() {
         <v-dialog v-model="confirmDeleteObjDialog" width="300">
           <template v-slot:activator="{ props }">
             <v-btn :disabled="obj.key_results.length > 0"
-                   variant="plain" icon="mdi-trash-can" v-bind="props"
+                   variant="plain" rounded="lg" icon="mdi-trash-can" size="small" v-bind="props"
             />
           </template>
           <v-card>
@@ -298,7 +298,7 @@ function deleteObjective() {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 12px 8px;
+  padding: 0 12px;
   font-size: 12px;
 }
 
