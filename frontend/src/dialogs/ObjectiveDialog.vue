@@ -251,7 +251,7 @@ function deleteObjective() {
                       label="Add Idea"
         ></v-text-field>
       </Editable>
-      <v-btn v-else v-if="obj.state === OBJECTIVE_STATE.ACTIVE" color="secondary"
+      <v-btn v-else v-if="obj.state === OBJECTIVE_STATE.ACTIVE" class="dialogAdd" color="secondary"
              @click="editingField = 'newIdea'; editingValue = ''">
         Add Idea
       </v-btn>
@@ -263,7 +263,7 @@ function deleteObjective() {
                 @update:model-value="statePendingConfirmation = $event ? OBJECTIVE_STATE.FAILED : null"
                 width="300" v-if="obj.state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
-          <v-btn style="width: 50%;" color="red" v-bind="props">fail</v-btn>
+          <v-btn class="dialogFail" style="width: 50%;" color="red" v-bind="props">fail</v-btn>
         </template>
         <v-card>
           <v-card-title class="text-h5 grey lighten-2">
@@ -280,7 +280,7 @@ function deleteObjective() {
                 @update:model-value="statePendingConfirmation = $event ? OBJECTIVE_STATE.ACHIEVED : null"
                 width="300" v-if="obj.state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
-          <v-btn style="width: 50%;" color="green" v-bind="props">achieve</v-btn>
+          <v-btn class="dialogSuccess" style="width: 50%;" color="green" v-bind="props">achieve</v-btn>
         </template>
         <v-card>
           <v-card-title class="text-h5 grey lighten-2">
@@ -297,7 +297,7 @@ function deleteObjective() {
                 @update:model-value="statePendingConfirmation = $event ? OBJECTIVE_STATE.ACTIVE : null"
                 width="300" v-if="obj.state !== OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
-          <v-btn style="width: 100%;" color="blue" v-bind="props">activate</v-btn>
+          <v-btn class="dialogActivate" style="width: 100%;" color="blue" v-bind="props">activate</v-btn>
         </template>
         <v-card>
           <v-card-title class="text-h5 grey lighten-2">
@@ -312,7 +312,7 @@ function deleteObjective() {
       </v-dialog>
     </div>
 
-    <v-btn color="primary" @click="closeDialog">Close</v-btn>
+    <v-btn class="dialogClose" color="primary" @click="closeDialog">Close</v-btn>
 
   </v-dialog>
 </template>
@@ -320,11 +320,12 @@ function deleteObjective() {
 <style scoped>
 .idea {
   display: flex;
-  background: white;
+  background-color: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-on-surface));
 }
 
 .idea:hover {
-  background: #f5f5f5;
+  background-color: rgb(var(--v-theme-surface-variant));
 }
 
 .datesInfo {

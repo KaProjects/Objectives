@@ -422,6 +422,7 @@ function deleteKeyResult() {
         ></v-text-field>
       </Editable>
       <v-btn v-else v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+             class="dialogAdd"
              color="secondary" @click="startAddingTask">
         Add Task
       </v-btn>
@@ -434,7 +435,7 @@ function deleteKeyResult() {
                 width="300"
                 v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
-          <v-btn style="width: 50%;" color="red" v-bind="props">fail</v-btn>
+          <v-btn class="dialogFail" style="width: 50%;" color="red" v-bind="props">fail</v-btn>
         </template>
         <v-card>
           <v-card-title class="text-h5 grey lighten-2">
@@ -450,7 +451,7 @@ function deleteKeyResult() {
                 width="300"
                 v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
-          <v-btn style="width: 50%;" color="green" v-bind="props">complete</v-btn>
+          <v-btn class="dialogSuccess" style="width: 50%;" color="green" v-bind="props">complete</v-btn>
         </template>
         <v-card>
           <v-card-title class="text-h5 grey lighten-2">
@@ -466,7 +467,7 @@ function deleteKeyResult() {
                 width="300"
                 v-if="kr.state !== KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
-          <v-btn style="width: 100%;" color="blue" v-bind="props">activate</v-btn>
+          <v-btn class="dialogActivate" style="width: 100%;" color="blue" v-bind="props">activate</v-btn>
         </template>
         <v-card>
           <v-card-title class="text-h5 grey lighten-2">
@@ -479,7 +480,7 @@ function deleteKeyResult() {
       </v-dialog>
     </div>
 
-    <v-btn color="primary" @click="closeDialog">Close</v-btn>
+    <v-btn class="dialogClose" color="primary" @click="closeDialog">Close</v-btn>
 
   </v-dialog>
 </template>
@@ -487,11 +488,12 @@ function deleteKeyResult() {
 <style scoped>
 .task {
   display: flex;
-  background: white;
+  background-color: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-on-surface));
 }
 
 .task:hover {
-  background: #f5f5f5;
+  background-color: rgb(var(--v-theme-surface-variant));
 }
 
 .task > div.failed {
