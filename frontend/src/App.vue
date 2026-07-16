@@ -1,11 +1,14 @@
 <script setup>
-import {onMounted, ref} from 'vue'
-import Value from '@/view/Value.vue'
-import {appState, selectValue, setError, setToken} from '@/state/appState'
+import {computed, onMounted, ref} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {appState, setError, setToken} from '@/state/appState'
 import Login from '@/components/Login.vue'
 import {api} from '@/services/apiClient'
 
 const values = ref([])
+const route = useRoute()
+const router = useRouter()
+const isValuesList = computed(() => route.name === 'values')
 
 async function loadData() {
   try {
@@ -17,6 +20,10 @@ async function loadData() {
 
 function addValue() {
   alert('add value')
+}
+
+function openValue(value) {
+  router.push({name: 'value', params: {valueId: value.id}})
 }
 
 onMounted(() => {
@@ -38,14 +45,14 @@ onMounted(() => {
     <Login v-if="appState.token == null" @logged-in="loadData"/>
 
     <div v-else>
-      <div class="values0" v-if="appState.selectedValue == null">
+      <div class="values0" v-if="isValuesList">
         <div class="values">
 
           <v-card class="value" elevation="20" outlined shaped
 
                   v-for="value in values"
                   :key="value.id"
-                  @click.stop="selectValue(value)">
+                  @click.stop="openValue(value)">
             <v-card-text>
               <div style="display: flex; justify-content: space-around">
                 <div class="text-h4 text--primary">
@@ -70,7 +77,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <Value v-else></Value>
+      <RouterView v-else/>
 
     </div>
   </div>

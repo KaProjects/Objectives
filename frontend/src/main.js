@@ -1,5 +1,6 @@
 import {createApp} from 'vue'
 import App from './App.vue'
+import router from './router'
 
 
 import './assets/main.css'
@@ -30,4 +31,4 @@ systemTheme.addEventListener('change', (event) => {
   vuetify.theme.global.name.value = event.matches ? 'dark' : 'light'
 })
 
-createApp(App).use(vuetify).mount('#app')
+createApp(App).use(vuetify).use(router).mount('#app')

@@ -1,6 +1,7 @@
 <script setup>
-import {onMounted, ref} from 'vue'
-import {appState, setError, unselectValue} from '@/state/appState'
+import {computed, ref, watch} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {appState, setError} from '@/state/appState'
 import Objective from '@/components/Objective.vue'
 import {compareDates} from '@/utils'
 import {api} from '@/services/apiClient'
@@ -10,6 +11,9 @@ import AddObjectiveDialog from '@/dialogs/AddObjectiveDialog.vue'
 import AddIdeaDialog from '@/dialogs/AddIdeaDialog.vue'
 
 const value = ref({objectives: []})
+const route = useRoute()
+const router = useRouter()
+const valueId = computed(() => route.params.valueId)
 const tab = ref(OBJECTIVE_TAB.ACTIVE)
 const openAddObjDialog = ref(false)
 const openAddIdeaDialog = ref(false)
@@ -18,7 +22,7 @@ const isSubmitting = ref(false)
 
 async function loadData() {
   try {
-    value.value = await api.get('/value/' + appState.selectedValue.id)
+    value.value = await api.get('/value/' + valueId.value)
   } catch (error) {
     setError(error)
   }
@@ -47,6 +51,10 @@ function addObjective(objective) {
 
 function addIdea(idea) {
   ideas.value?.addCreatedIdea(idea)
+}
+
+function returnToValues() {
+  router.push({name: 'values'})
 }
 
 function selectTab(state) {
@@ -89,14 +97,14 @@ async function deleteObjective(objective) {
   }
 }
 
-onMounted(loadData)
+watch(valueId, loadData, {immediate: true})
 </script>
 
 <template>
   <div>
 
     <div class="appbar">
-      <v-btn class="button backButton" variant="tonal" rounded="lg" @click="unselectValue()">
+      <v-btn class="button backButton" variant="tonal" rounded="lg" @click="returnToValues()">
         <v-icon icon="mdi-arrow-left"/>
       </v-btn>
       <h1 class="title">{{ value.name }}</h1>
@@ -126,7 +134,7 @@ onMounted(loadData)
     </div>
 
     <div style="display: flex; overflow-x:scroll;">
-      <Ideas ref="ideas" class="obj" :valueId="appState.selectedValue.id" v-if="tab === OBJECTIVE_TAB.IDEAS"/>
+      <Ideas ref="ideas" class="obj" :valueId="valueId" v-if="tab === OBJECTIVE_TAB.IDEAS"/>
       <Objective v-for="objective in filterObjectives(value.objectives, tab === OBJECTIVE_TAB.ACTIVE)"
                  v-if="tab !== OBJECTIVE_TAB.IDEAS"
                  :key="objective.id"

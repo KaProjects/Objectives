@@ -5,12 +5,12 @@ const {api} = vi.hoisted(() => ({api: {get: vi.fn()}}))
 vi.mock('@/services/apiClient', () => ({api}))
 
 import App from '@/App.vue'
-import {appState, clearError, setError, setToken, unselectValue} from '@/state/appState'
+import router from '@/router'
+import {appState, clearError, setError, setToken} from '@/state/appState'
 
 describe('App', () => {
   beforeEach(() => {
     setToken(null)
-    unselectValue()
     clearError()
     sessionStorage.clear()
     vi.clearAllMocks()
@@ -24,7 +24,8 @@ describe('App', () => {
   it('loads values after a remembered token is restored', async () => {
     sessionStorage.setItem('token', 'remembered-token')
     api.get.mockResolvedValue([{id: 1, name: 'Health'}])
-    const wrapper = shallowMount(App)
+    await router.push('/')
+    const wrapper = shallowMount(App, {global: {plugins: [router]}})
     await flushPromises()
 
     expect(appState.token).toBe('remembered-token')
@@ -32,10 +33,12 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Health')
   })
 
-  it('hides application content while a blocking error is set', () => {
+  it('hides application content while a blocking error is set', async () => {
     setError('Backend unavailable')
+    await router.push('/')
     const wrapper = shallowMount(App, {
       global: {
+        plugins: [router],
         stubs: {
           'v-alert': {template: '<div><slot /></div>'},
         },
