@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {compareDates, formatDate, string_to_html} from './utils'
+import {compareDates, formatDate, string_to_html} from '@/utils'
 
 describe('utility helpers', () => {
   it('sorts dates from oldest to newest', () => {

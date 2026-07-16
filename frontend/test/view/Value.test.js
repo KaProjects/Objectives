@@ -6,7 +6,7 @@ const {api} = vi.hoisted(() => ({
 }))
 vi.mock('@/services/apiClient', () => ({api}))
 
-import Value from './Value.vue'
+import Value from '@/view/Value.vue'
 import {selectValue, unselectValue} from '@/state/appState'
 
 describe('Value view', () => {

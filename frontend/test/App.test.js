@@ -4,7 +4,7 @@ import {flushPromises, shallowMount} from '@vue/test-utils'
 const {api} = vi.hoisted(() => ({api: {get: vi.fn()}}))
 vi.mock('@/services/apiClient', () => ({api}))
 
-import App from './App.vue'
+import App from '@/App.vue'
 import {appState, clearError, setError, setToken, unselectValue} from '@/state/appState'
 
 describe('App', () => {

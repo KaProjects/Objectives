@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import {appState, clearError, selectValue, setError, setToken, unselectValue} from './appState'
+import {appState, clearError, selectValue, setError, setToken, unselectValue} from '@/state/appState'
 
 describe('appState', () => {
   beforeEach(() => {

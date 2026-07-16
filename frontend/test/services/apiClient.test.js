@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {setToken} from '@/state/appState'
-import {ApiError, api} from './apiClient'
+import {ApiError, api} from '@/services/apiClient'
 
 function mockResponse({ok = true, status = 200, contentType = '', body = ''} = {}) {
   return {

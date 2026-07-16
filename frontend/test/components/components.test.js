@@ -9,12 +9,12 @@ const {api} = vi.hoisted(() => ({
 
 vi.mock('@/services/apiClient', () => ({api}))
 
-import Editable from './Editable.vue'
-import Ideas from './Ideas.vue'
-import KeyResultDialog from './KeyResultDialog.vue'
-import Login from './Login.vue'
-import Objective from './Objective.vue'
-import ObjectiveDialog from './ObjectiveDialog.vue'
+import Editable from '@/components/Editable.vue'
+import Ideas from '@/components/Ideas.vue'
+import KeyResultDialog from '@/components/KeyResultDialog.vue'
+import Login from '@/components/Login.vue'
+import Objective from '@/components/Objective.vue'
+import ObjectiveDialog from '@/components/ObjectiveDialog.vue'
 
 const objective = {
   id: 1,
