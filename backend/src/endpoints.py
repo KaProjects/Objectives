@@ -127,7 +127,7 @@ class KeyResults(Resource):
     @authenticated
     @key_result.expect(api.model('KeyResultCreate', {'name': fields.String(required=True, example='name'),
                                                      'description': fields.String(required=True, example='description'),
-                                                     'objective_id': fields.String(required=True, example='id')}))
+                                                     'objective_id': fields.Integer(required=True, example=1)}))
     @key_result.response(404, 'Objective with ID not found')
     @key_result.response(201, 'Created')
     def post(self):
@@ -250,7 +250,7 @@ class Tasks(Resource):
     @value.doc(security="Bearer")
     @authenticated
     @task.expect(api.model('TaskCreate', {'value': fields.String(required=True, example='value'),
-                                          'kr_id': fields.String(required=True, example='id')}))
+                                          'kr_id': fields.Integer(required=True, example=1)}))
     @task.response(404, 'Key Result with ID not found')
     @task.response(201, 'Created')
     def post(self):
@@ -274,7 +274,7 @@ class Task(Resource):
     @value.doc(security="Bearer")
     @authenticated
     @task.expect(api.model('TaskUpdate', {'value': fields.String(required=True, example='value'),
-                                          'kr_id': fields.String(required=True, example='id'),
+                                          'kr_id': fields.Integer(required=True, example=1),
                                           'state': fields.String(required=True, example=TaskState.ACTIVE.value)}))
     @task.response(200, 'Success')
     @task.response(422, 'Invalid Key Result State')
@@ -316,7 +316,7 @@ class Objectives(Resource):
     @authenticated
     @objective.expect(api.model('ObjectiveCreate', {'name': fields.String(required=True, example='name'),
                                                     'description': fields.String(required=True, example='description'),
-                                                    'value_id': fields.String(required=True, example='id')}))
+                                                    'value_id': fields.Integer(required=True, example=1)}))
     @objective.response(404, 'Value with ID not found')
     @objective.response(201, 'Created')
     def post(self):
