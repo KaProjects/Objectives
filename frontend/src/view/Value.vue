@@ -96,7 +96,9 @@ onMounted(loadData)
   <div>
 
     <div class="appbar">
-      <v-btn class="button" icon="mdi-arrow-left" @click="unselectValue()"/>
+      <v-btn class="button" variant="tonal" rounded="lg" @click="unselectValue()">
+        <v-icon icon="mdi-arrow-left"/>
+      </v-btn>
       <h1 class="title">{{ value.name }}</h1>
 
       <v-tabs v-model="tab" bg-color="primary">
@@ -138,6 +140,7 @@ onMounted(loadData)
 <style scoped>
 .appbar {
   display: inline-flex;
+  align-items: center;
 }
 
 .title {
@@ -147,11 +150,5 @@ onMounted(loadData)
 .button {
   margin-left: 10px;
   margin-right: 10px;
-  background: #181818;
-  color: darkgrey
-}
-
-.button:hover {
-  background: #2f2f2f;
 }
 </style>

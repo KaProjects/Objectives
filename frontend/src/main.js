@@ -10,9 +10,13 @@ import {aliases, mdi} from 'vuetify/iconsets/mdi'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 
+const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
 const vuetify = createVuetify({
   components,
   directives,
+  theme: {
+    defaultTheme: systemTheme.matches ? 'dark' : 'light',
+  },
   icons: {
     defaultSet: 'mdi',
     aliases,
@@ -22,5 +26,8 @@ const vuetify = createVuetify({
   },
 })
 
+systemTheme.addEventListener('change', (event) => {
+  vuetify.theme.global.name.value = event.matches ? 'dark' : 'light'
+})
 
 createApp(App).use(vuetify).mount('#app')
