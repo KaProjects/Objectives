@@ -44,7 +44,7 @@ async function addKeyResult() {
   <v-dialog v-model="isOpen" width="300">
     <template v-slot:activator="{ props }">
       <v-btn color="primary" v-bind="props">
-        <v-icon icon="mdi-plus" large/>
+        <v-icon icon="mdi-plus" large style="color: #000000"/>
       </v-btn>
     </template>
     <DialogCard :error="submissionError">

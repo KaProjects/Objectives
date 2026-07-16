@@ -93,6 +93,10 @@ onMounted(() => {
   background-color: #b2d5f3;
 }
 
+.value {
+  color: #000000;
+}
+
 .value:hover {
   background-color: #96c6ef;
 }

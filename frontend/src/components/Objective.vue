@@ -164,6 +164,7 @@ async function deleteKeyResult(keyResult) {
   vertical-align: top;
   margin-bottom: auto;
   margin-left: 1px;
+  color: #000000;
 }
 
 .obj.active {
