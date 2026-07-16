@@ -257,6 +257,7 @@ class Tasks(Resource):
         try:
             data: dict = api.payload
             value = data["value"]
+            kr_id = data["kr_id"]
             if not Service().check_key_result_exist(kr_id):
                 return create_response("key result with id '" + kr_id + "' not found", 404)
             new_id = Service().create_task(value, kr_id)
