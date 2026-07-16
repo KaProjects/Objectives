@@ -25,41 +25,45 @@ async function login() {
 }
 </script>
 <template>
-  <v-container fluid fill-height>
-    <v-layout align-center justify-center>
-      <v-flex xs12 sm8 md4>
-        <v-card class="elevation-12" min-width="300px">
-          <v-card-text>
-            <form ref="form" @submit.prevent="login()">
-              <v-text-field
-                  v-model="username"
-                  name="username"
-                  label="Username"
-                  type="text"
-                  placeholder="username"
-                  required
-              ></v-text-field>
+  <div class="loginPage">
+    <v-card class="loginCard elevation-12">
+      <v-card-text>
+        <form ref="form" @submit.prevent="login()">
+          <v-text-field
+              v-model="username"
+              name="username"
+              label="Username"
+              type="text"
+              placeholder="username"
+              required
+          ></v-text-field>
 
-              <v-text-field
-                  v-model="password"
-                  name="password"
-                  label="Password"
-                  type="password"
-                  placeholder="password"
-                  required
-              ></v-text-field>
+          <v-text-field
+              v-model="password"
+              name="password"
+              label="Password"
+              type="password"
+              placeholder="password"
+              required
+          ></v-text-field>
 
-              <v-btn type="submit" :disabled="isSubmitting" class="mt-4" color="primary" value="log in">
-                Login
-              </v-btn>
-            </form>
-          </v-card-text>
-        </v-card>
-
-      </v-flex>
-    </v-layout>
-  </v-container>
+          <v-btn type="submit" :disabled="isSubmitting" class="mt-4" color="primary" value="log in">
+            Login
+          </v-btn>
+        </form>
+      </v-card-text>
+    </v-card>
+  </div>
 </template>
 <style scoped>
+.loginPage {
+  display: grid;
+  place-items: center;
+  min-height: 50vh;
+  padding: 16px;
+}
 
+.loginCard {
+  width: min(100%, 400px);
+}
 </style>
