@@ -11,6 +11,7 @@ vi.mock('@/services/apiClient', () => ({api}))
 
 import Editable from '@/components/Editable.vue'
 import Ideas from '@/components/Ideas.vue'
+import AddIdeaDialog from '@/dialogs/AddIdeaDialog.vue'
 import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
 import Login from '@/components/Login.vue'
 import Objective from '@/components/Objective.vue'
@@ -72,18 +73,26 @@ describe('frontend components', () => {
     expect(wrapper.emitted('logged-in')).toEqual([['token']])
   })
 
-  it('Ideas loads ideas and adds a newly created idea', async () => {
+  it('Ideas loads ideas and adds a created idea', async () => {
     api.get.mockResolvedValue([{id: 1, value: 'First'}])
-    api.post.mockResolvedValue({new_id: 2, idea: 'Second'})
     const wrapper = mount(Ideas, {props: {valueId: 7}})
     await flushPromises()
     expect(wrapper.text()).toContain('First')
 
-    const input = wrapper.find('input')
-    await input.setValue('Second')
-    await wrapper.vm.addIdea()
+    wrapper.vm.addCreatedIdea({id: 2, value: 'Second'})
+    await wrapper.vm.$nextTick()
     expect(wrapper.text()).toContain('Second')
+  })
+
+  it('AddIdeaDialog creates an idea and notifies its parent', async () => {
+    api.post.mockResolvedValue({new_id: 2, idea: 'Second'})
+    const wrapper = mount(AddIdeaDialog, {props: {modelValue: true, valueId: 7}})
+
+    await wrapper.find('input').setValue('Second')
+    await wrapper.vm.addIdea()
+
     expect(api.post).toHaveBeenCalledWith('/value/7/idea', {idea: 'Second'})
+    expect(wrapper.emitted('created')).toEqual([[{id: 2, value: 'Second'}]])
   })
 
   it('Objective loads a key result before opening its dialog', async () => {

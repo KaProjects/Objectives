@@ -7,10 +7,13 @@ import {api} from '@/services/apiClient'
 import Ideas from '@/components/Ideas.vue'
 import {OBJECTIVE_STATE, OBJECTIVE_TAB} from '@/constants/states'
 import AddObjectiveDialog from '@/dialogs/AddObjectiveDialog.vue'
+import AddIdeaDialog from '@/dialogs/AddIdeaDialog.vue'
 
 const value = ref({objectives: []})
 const tab = ref(OBJECTIVE_TAB.ACTIVE)
 const openAddObjDialog = ref(false)
+const openAddIdeaDialog = ref(false)
+const ideas = ref(null)
 const isSubmitting = ref(false)
 
 async function loadData() {
@@ -40,6 +43,10 @@ function filterObjectives(objectives, isActive) {
 function addObjective(objective) {
   value.value.objectives.push(objective)
   tab.value = OBJECTIVE_TAB.ACTIVE
+}
+
+function addIdea(idea) {
+  ideas.value?.addCreatedIdea(idea)
 }
 
 function selectTab(state) {
@@ -104,10 +111,16 @@ onMounted(loadData)
           :value-id="value.id"
           @created="addObjective"
       />
+      <AddIdeaDialog
+          v-if="tab === OBJECTIVE_TAB.IDEAS"
+          v-model="openAddIdeaDialog"
+          :value-id="value.id"
+          @created="addIdea"
+      />
     </div>
 
     <div style="display: flex; overflow-x:scroll;">
-      <Ideas class="obj" :valueId="appState.selectedValue.id" v-if="tab === OBJECTIVE_TAB.IDEAS"/>
+      <Ideas ref="ideas" class="obj" :valueId="appState.selectedValue.id" v-if="tab === OBJECTIVE_TAB.IDEAS"/>
       <Objective v-for="objective in filterObjectives(value.objectives, tab === OBJECTIVE_TAB.ACTIVE)"
                  v-if="tab !== OBJECTIVE_TAB.IDEAS"
                  :key="objective.id"

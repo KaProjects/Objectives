@@ -10,8 +10,6 @@ const props = defineProps({
 
 const ideas = ref([])
 const loading = ref(true)
-const newIdeaDialog = ref(false)
-const newIdea = ref('')
 const selectedIdeaId = ref(null)
 const ideaPendingDeletionId = ref(null)
 const isSubmitting = ref(false)
@@ -27,20 +25,8 @@ async function loadData() {
   }
 }
 
-async function addIdea() {
-  if (isSubmitting.value) return
-  isSubmitting.value = true
-  submissionError.value = null
-  try {
-    const body = await api.post('/value/' + props.valueId + '/idea', {idea: newIdea.value})
-    ideas.value.push({id: body.new_id, value: body.idea})
-    newIdeaDialog.value = false
-    newIdea.value = ''
-  } catch (error) {
-    submissionError.value = error.message
-  } finally {
-    isSubmitting.value = false
-  }
+function addCreatedIdea(idea) {
+  ideas.value.push(idea)
 }
 
 async function deleteIdea(idea) {
@@ -59,6 +45,8 @@ async function deleteIdea(idea) {
 }
 
 onMounted(loadData)
+
+defineExpose({addCreatedIdea})
 </script>
 <template>
   <v-card width="300" elevation="3" shaped max-height="calc(100vh - 70px)" style="overflow-y:scroll;">
@@ -98,29 +86,6 @@ onMounted(loadData)
           </div>
         </v-list-item-content>
       </v-list-item>
-      <v-card-actions>
-        <v-dialog
-            v-model="newIdeaDialog"
-            width="300"
-        >
-          <template v-slot:activator="{ props }">
-            <v-btn color="primary" v-bind="props">
-              <v-icon icon="mdi-plus" large/>
-            </v-btn>
-          </template>
-
-          <DialogCard :error="submissionError">
-            <v-text-field
-                label="Idea"
-                v-model="newIdea"
-                required
-            ></v-text-field>
-            <v-card-actions>
-              <v-btn block :disabled="isSubmitting || !newIdea" @click="addIdea">Add</v-btn>
-            </v-card-actions>
-          </DialogCard>
-        </v-dialog>
-      </v-card-actions>
     </div>
   </v-card>
 </template>
