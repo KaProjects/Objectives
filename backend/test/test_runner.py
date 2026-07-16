@@ -7,6 +7,7 @@ import test_values_api
 import test_error_contract_api
 import test_dates
 import test_json_encoder
+import test_auth_manager
 
 rest_tests = unittest.TextTestRunner(verbosity=1)
 
@@ -23,3 +24,5 @@ rest_tests.run(unittest.TestLoader().loadTestsFromModule(test_error_contract_api
 rest_tests.run(unittest.TestLoader().loadTestsFromModule(test_dates))
 
 rest_tests.run(unittest.TestLoader().loadTestsFromModule(test_json_encoder))
+
+rest_tests.run(unittest.TestLoader().loadTestsFromModule(test_auth_manager))

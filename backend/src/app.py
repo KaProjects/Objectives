@@ -39,6 +39,8 @@ def create_app(mode=None):
     """Create an application for Flask tooling and production WSGI servers."""
     mode = mode or os.getenv('APP_ENV', 'prod')
     os.environ['APP_ENV'] = mode
+    if mode == 'prod' and not os.getenv('AUTH_TOKEN_SECRET'):
+        raise RuntimeError('AUTH_TOKEN_SECRET must be set in production')
     port, debug, origins = configure_runtime(mode)
 
     firebase_manager.init_firebase()
