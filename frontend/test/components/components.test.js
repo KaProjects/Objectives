@@ -49,15 +49,32 @@ describe('frontend components', () => {
     vi.restoreAllMocks()
   })
 
-  it('Editable invokes cancel and submit callbacks', async () => {
-    const cancel = vi.fn()
-    const submit = vi.fn()
-    const wrapper = mount(Editable, {props: {cancel, submit, index: 3}})
+  it('Editable renders the supplied editor content', () => {
+    const wrapper = mount(Editable, {
+      props: {value: 'Name', label: 'Name', submit: vi.fn()},
+      slots: {display: '<input aria-label="Name">'},
+    })
 
-    await wrapper.findAll('button')[0].trigger('click')
-    await wrapper.findAll('button')[1].trigger('click')
-    expect(cancel).toHaveBeenCalledOnce()
-    expect(submit).toHaveBeenCalledWith(3)
+    expect(wrapper.find('input[aria-label="Name"]').exists()).toBe(true)
+  })
+
+  it('Editable delays closing after an unfocus save', async () => {
+    const submit = vi.fn().mockResolvedValue(true)
+    const wrapper = mount(Editable, {
+      props: {value: 'Name', label: 'Name', submit},
+      slots: {display: '<span>Name</span>'},
+    })
+
+    await wrapper.vm.startEditing()
+    window.dispatchEvent(new Event('pointerdown'))
+    await wrapper.find('input').trigger('focusout')
+    await flushPromises()
+
+    expect(submit).toHaveBeenCalledWith('Name')
+    expect(wrapper.vm.isEditing).toBe(true)
+    window.dispatchEvent(new MouseEvent('click', {bubbles: true}))
+    expect(wrapper.vm.isEditing).toBe(false)
+    wrapper.unmount()
   })
 
   it('Login authenticates, stores the token, and notifies its parent', async () => {
@@ -123,8 +140,7 @@ describe('frontend components', () => {
     const wrapper = shallowMount(ObjectiveDialog, {
       props: {modelValue: true, obj: inputObjective},
     })
-    wrapper.vm.editingValue = 'Updated exercise'
-    await wrapper.vm.updateObjective('name')
+    await wrapper.vm.updateObjective('name', 'Updated exercise')
 
     expect(wrapper.emitted('updated')).toContainEqual([{
       id: 1, name: 'Updated exercise', description: 'Move more',
@@ -137,13 +153,10 @@ describe('frontend components', () => {
     const wrapper = shallowMount(ObjectiveDialog, {
       props: {modelValue: true, obj: {...objective}},
     })
-    wrapper.vm.editingField = 'name'
-    wrapper.vm.editingValue = 'Updated exercise'
-    await wrapper.vm.updateObjective('name')
+    await wrapper.vm.updateObjective('name', 'Updated exercise')
 
     expect(wrapper.vm.draftObjective.name).toBe('Exercise')
     expect(wrapper.vm.obj.name).toBe('Exercise')
-    expect(wrapper.vm.editingField).toBe('name')
     expect(wrapper.vm.submissionError).toBe('Network unavailable')
     expect(wrapper.emitted('updated')).toBeUndefined()
   })
@@ -198,8 +211,7 @@ describe('frontend components', () => {
         kr_parent: {...keyResult, obj_state: 'active'},
       },
     })
-    wrapper.vm.editingValue = 'Updated task'
-    await wrapper.vm.updateTaskValue(wrapper.vm.kr.tasks[0])
+    await wrapper.vm.updateTaskValue(wrapper.vm.kr.tasks[0], 'Updated task')
 
     expect(wrapper.emitted('updated')).toBeUndefined()
   })

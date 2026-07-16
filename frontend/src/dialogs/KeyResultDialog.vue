@@ -22,10 +22,6 @@ const kr_parent = ref(null)
 const draftKeyResult = ref({
   name: '', description: '', specific: '', measurable: '', attainable: '', relevant: '', timeBound: '',
 })
-const editingField = ref(null)
-const isAddingTask = ref(false)
-const editingTaskId = ref(null)
-const editingValue = ref('')
 const selectedTaskId = ref(null)
 const taskPendingDeletionId = ref(null)
 const statePendingConfirmation = ref(null)
@@ -43,12 +39,6 @@ watch(() => props.kr, (value) => {
     attainable: value.a, relevant: value.r, timeBound: value.t,
   }
 }, {immediate: true})
-
-function stopEditing() {
-  editingField.value = null;
-  isAddingTask.value = false;
-  editingTaskId.value = null
-}
 
 async function withSubmissionLock(action) {
   if (isSubmitting.value) return false
@@ -97,31 +87,12 @@ async function updateKeyResult() {
   })
 }
 
-function startEditing(field) {
-  if (!canEdit()) return;
-  stopEditing();
-  editingValue.value = draftKeyResult.value[field];
-  editingField.value = field
-}
-
-async function update(field) {
+async function update(field, value) {
   const previousValue = draftKeyResult.value[field];
-  draftKeyResult.value[field] = editingValue.value;
-  if (await updateKeyResult()) editingField.value = null; else draftKeyResult.value[field] = previousValue
-}
-
-function startAddingTask() {
-  if (!canEdit()) return;
-  stopEditing();
-  editingValue.value = '';
-  isAddingTask.value = true
-}
-
-function startEditingTask(task) {
-  if (!canEdit()) return;
-  stopEditing();
-  editingValue.value = task.value;
-  editingTaskId.value = task.id
+  draftKeyResult.value[field] = value;
+  if (await updateKeyResult()) return true
+  draftKeyResult.value[field] = previousValue
+  return false
 }
 
 async function retrieveKeyResultReviewDate() {
@@ -130,42 +101,43 @@ async function retrieveKeyResultReviewDate() {
   kr_parent.value.date_reviewed = body.date_reviewed
 }
 
-async function updateTaskValue(task) {
+async function updateTaskValue(task, value) {
   return withSubmissionLock(async () => {
     try {
       const body = await api.put('/task/' + task.id, {
         kr_id: kr.value.id,
-        value: editingValue.value,
+        value,
         state: task.state
       });
       task.value = body.value;
       await retrieveKeyResultReviewDate();
       emit('updated', {...kr_parent.value});
-      stopEditing()
+      return true
     } catch (error) {
       submissionError.value = error.message
+      return false
     }
   })
 }
 
 function closeDialog() {
-  stopEditing();
   showSmart.value = false;
   isOpen.value = false;
   emit('close')
 }
 
-async function addTask() {
+async function addTask(value) {
   return withSubmissionLock(async () => {
     try {
-      const body = await api.post('/task', {kr_id: kr.value.id, value: editingValue.value});
+      const body = await api.post('/task', {kr_id: kr.value.id, value});
       kr.value.tasks.push(body);
       kr_parent.value.all_tasks_count += 1;
       await retrieveKeyResultReviewDate();
       emit('updated', {...kr_parent.value});
-      isAddingTask.value = false
+      return true
     } catch (error) {
       submissionError.value = error.message
+      return false
     }
   })
 }
@@ -227,39 +199,29 @@ function deleteKeyResult() {
   <v-dialog v-model="isOpen" persistent width="600">
     <DialogCard :error="submissionError">
 
-      <Editable v-if="editingField === 'name'" :cancel="stopEditing" :submit="update" index="name">
-        <v-text-field @keydown.enter="update('name')" @keydown.esc="stopEditing"
-                      v-model="editingValue"
-                      label="Name"
-        ></v-text-field>
+      <Editable :value="draftKeyResult.name" :editable="canEdit()" :submit="(value) => update('name', value)" label="Name">
+        <template #display="{startEditing}">
+          <v-card-title @click="startEditing" class="text-h5 grey lighten-2">
+            {{ kr.name }}
+          </v-card-title>
+        </template>
       </Editable>
-      <div v-else class="datesInfo">
-        <v-card-title @click="startEditing('name')" class="text-h5 grey lighten-2">
-          {{ kr.name }}
-        </v-card-title>
-        <div class="datesInfoChild" style="top: 0;">created: {{ formatDate(kr.date_created) }}</div>
-        <div class="datesInfoChild" style="top: 15px;" v-if="kr.state === KEY_RESULT_STATE.ACTIVE">reviewed:
-          {{ formatDate(kr.date_reviewed) }}
-        </div>
-        <div class="datesInfoChild" style="top: 15px;" v-if="kr.state === KEY_RESULT_STATE.FAILED">failed:
-          {{ formatDate(kr.date_reviewed) }}
-        </div>
-        <div class="datesInfoChild" style="top: 15px;" v-if="kr.state === KEY_RESULT_STATE.COMPLETED">completed:
-          {{ formatDate(kr.date_reviewed) }}
-        </div>
-      </div>
 
-      <Editable v-if="editingField === 'description'" :cancel="stopEditing" :submit="update" index="description">
-        <v-textarea @keydown.esc="stopEditing"
-                    v-model="editingValue"
-                    label="Description"
-        ></v-textarea>
+      <Editable :value="draftKeyResult.description" :editable="canEdit()" textarea
+                :submit="(value) => update('description', value)" label="Description">
+        <template #display="{startEditing}">
+          <v-card-text v-html="string_to_html(kr.description)" @click="startEditing"/>
+        </template>
       </Editable>
-      <div v-else>
-        <v-card-text v-html="string_to_html(kr.description)" @click="startEditing('description')"/>
+      <div class="keyResultDetails">
+        <span>created: {{ formatDate(kr.date_created) }}</span>
+        <span v-if="kr.state === KEY_RESULT_STATE.ACTIVE">reviewed: {{ formatDate(kr.date_reviewed) }}</span>
+        <span v-if="kr.state === KEY_RESULT_STATE.FAILED">failed: {{ formatDate(kr.date_reviewed) }}</span>
+        <span v-if="kr.state === KEY_RESULT_STATE.COMPLETED">completed: {{ formatDate(kr.date_reviewed) }}</span>
+        <span class="detailsSpacer"/>
         <v-dialog v-model="confirmDeleteKrDialog" width="300">
           <template v-slot:activator="{ props }">
-            <v-btn style="bottom: -10px; right: -10px; position: absolute;" variant="plain"
+            <v-btn variant="plain"
                    icon="mdi-trash-can" v-bind="props"/>
           </template>
           <v-card>
@@ -284,92 +246,72 @@ function deleteKeyResult() {
         SMART
       </div>
 
-      <Editable v-if="editingField === 'specific'" :cancel="stopEditing" :submit="update" index="specific">
-        <v-text-field @keydown.enter="update('specific')" @keydown.esc="stopEditing"
-                      v-model="editingValue"
-                      label="Specific"
-                      hint="The goal should have a clear, highly-specific endpoint. If your goal is too vague, it won’t be SMART."
-        ></v-text-field>
-      </Editable>
-      <div v-else
-           v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
-           @click="startEditing('specific')"
+      <Editable :value="draftKeyResult.specific" :editable="canEdit()" :submit="(value) => update('specific', value)"
+                label="Specific" :input-props="{hint: 'The goal should have a clear, highly-specific endpoint. If your goal is too vague, it won’t be SMART.'}">
+        <template #display="{startEditing}">
+          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
+           @click="startEditing"
            class="smart" :class="validateSmart(kr.s).toString()">
         <div class="smartLabel">Specific:</div>
         <div class="smartValue">{{ kr.s }}</div>
       </div>
-
-      <Editable v-if="editingField === 'measurable'" :cancel="stopEditing" :submit="update" index="measurable">
-        <v-text-field @keydown.enter="update('measurable')" @keydown.esc="stopEditing"
-                      v-model="editingValue"
-                      label="Measurable"
-                      hint="You need to be able to accurately track your progress, so you can judge when a goal will be met."
-        ></v-text-field>
+        </template>
       </Editable>
-      <div v-else
-           v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
-           @click="startEditing('measurable')"
+
+      <Editable :value="draftKeyResult.measurable" :editable="canEdit()" :submit="(value) => update('measurable', value)"
+                label="Measurable" :input-props="{hint: 'You need to be able to accurately track your progress, so you can judge when a goal will be met.'}">
+        <template #display="{startEditing}">
+          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
+           @click="startEditing"
            class="smart" :class="validateSmart(kr.m).toString()">
         <div class="smartLabel">Measurable:</div>
         <div class="smartValue">{{ kr.m }}</div>
       </div>
-
-      <Editable v-if="editingField === 'attainable'" :cancel="stopEditing" :submit="update" index="attainable">
-        <v-text-field @keydown.enter="update('attainable')" @keydown.esc="stopEditing"
-                      v-model="editingValue"
-                      label="Attainable"
-                      hint="Of course, setting a goal that’s too ambitious will see you struggle to achieve it. This will sap at your motivation, both now and in the future."
-        ></v-text-field>
+        </template>
       </Editable>
-      <div v-else
-           v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
-           @click="startEditing('attainable')"
+
+      <Editable :value="draftKeyResult.attainable" :editable="canEdit()" :submit="(value) => update('attainable', value)"
+                label="Attainable" :input-props="{hint: 'Of course, setting a goal that’s too ambitious will see you struggle to achieve it. This will sap at your motivation, both now and in the future.'}">
+        <template #display="{startEditing}">
+          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
+           @click="startEditing"
            class="smart" :class="validateSmart(kr.a).toString()">
         <div class="smartLabel">Attainable:</div>
         <div class="smartValue">{{ kr.a }}</div>
       </div>
-
-      <Editable v-if="editingField === 'relevant'" :cancel="stopEditing" :submit="update" index="relevant">
-        <v-text-field @keydown.enter="update('relevant')" @keydown.esc="stopEditing"
-                      v-model="editingValue"
-                      label="Relevant"
-                      hint="The goal you pick should be pertinent to your chosen field, or should benefit you directly."
-        ></v-text-field>
+        </template>
       </Editable>
-      <div v-else
-           v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
-           @click="startEditing('relevant')"
+
+      <Editable :value="draftKeyResult.relevant" :editable="canEdit()" :submit="(value) => update('relevant', value)"
+                label="Relevant" :input-props="{hint: 'The goal you pick should be pertinent to your chosen field, or should benefit you directly.'}">
+        <template #display="{startEditing}">
+          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
+           @click="startEditing"
            class="smart" :class="validateSmart(kr.r).toString()">
         <div class="smartLabel">Relevant:</div>
         <div class="smartValue">{{ kr.r }}</div>
       </div>
-
-      <Editable v-if="editingField === 'timeBound'" :cancel="stopEditing" :submit="update" index="timeBound">
-        <v-text-field @keydown.enter="update('timeBound')" @keydown.esc="stopEditing"
-                      v-model="editingValue"
-                      label="Time-Bound"
-                      hint="Finally, setting a timeframe for your goal helps quantify it further, and helps keep your focus on track."
-        ></v-text-field>
+        </template>
       </Editable>
-      <div v-else
-           v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
-           @click="startEditing('timeBound')"
+
+      <Editable :value="draftKeyResult.timeBound" :editable="canEdit()" :submit="(value) => update('timeBound', value)"
+                label="Time-Bound" :input-props="{hint: 'Finally, setting a timeframe for your goal helps quantify it further, and helps keep your focus on track.'}">
+        <template #display="{startEditing}">
+          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
+           @click="startEditing"
            class="smart" :class="validateSmart(kr.t).toString()">
         <div class="smartLabel">Time-Bound:</div>
         <div class="smartValue">{{ kr.t }}</div>
       </div>
+        </template>
+      </Editable>
 
       <v-divider></v-divider>
 
       <div v-for="task in kr.tasks.slice().sort(compareTasks)" :key="task.id">
-        <Editable v-if="editingTaskId === task.id" :cancel="stopEditing" :submit="updateTaskValue"
-                  :index="task">
-          <v-text-field @keydown.enter="updateTaskValue(task)" @keydown.esc="stopEditing"
-                        v-model="editingValue"
-                        label="Task"
-          ></v-text-field>
-        </Editable>
-        <div v-else class="task"
+        <Editable :value="task.value" :editable="canEdit()" :submit="(value) => updateTaskValue(task, value)" label="Task">
+          <template #display="{startEditing}">
+            <div class="task"
              @mouseover="selectedTaskId = task.id"
              @mouseleave="selectedTaskId = null">
           <div :class="task.state">
@@ -377,7 +319,7 @@ function deleteKeyResult() {
             <v-icon icon="mdi-checkbox-marked-outline" large v-if="task.state === TASK_STATE.FINISHED"/>
             <v-icon icon="mdi-checkbox-blank-outline" large v-if="task.state === TASK_STATE.ACTIVE"/>
           </div>
-          <div v-html="string_to_html(task.value)" @click="startEditingTask(task)" :class="task.state"
+          <div v-html="string_to_html(task.value)" @click="startEditing" :class="task.state"
                style="display: inline; padding-left: 3px; flex: 25;"/>
 
           <v-icon style="flex: 1;" icon="mdi-checkbox-blank-outline" large
@@ -412,20 +354,19 @@ function deleteKeyResult() {
               </v-card-actions>
             </v-card>
           </v-dialog>
-        </div>
+            </div>
+          </template>
+        </Editable>
       </div>
 
-      <Editable v-if="isAddingTask" :cancel="stopEditing" :submit="addTask">
-        <v-text-field @keydown.enter="addTask" @keydown.esc="stopEditing"
-                      v-model="editingValue"
-                      label="Add Task"
-        ></v-text-field>
+      <Editable value="" :submit="addTask" label="Add Task">
+        <template #display="{startEditing}">
+          <v-btn v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+               block class="dialogAdd" color="secondary" @click="startEditing">
+            Add Task
+          </v-btn>
+        </template>
       </Editable>
-      <v-btn v-else v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
-             class="dialogAdd"
-             color="secondary" @click="startAddingTask">
-        Add Task
-      </v-btn>
 
     </DialogCard>
 
@@ -537,13 +478,15 @@ function deleteKeyResult() {
   font-weight: bold;
 }
 
-.datesInfo {
-  position: relative;
+.keyResultDetails {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px 8px;
+  font-size: 12px;
 }
 
-.datesInfoChild {
-  font-size: 12px;
-  position: absolute;
-  right: 5px;
+.detailsSpacer {
+  flex: 1;
 }
 </style>

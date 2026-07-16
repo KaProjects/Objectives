@@ -1,19 +1,89 @@
 <script setup>
-defineProps({
-  cancel: Function,
-  submit: Function,
-  index: [String, Number, Object, null],
+import {nextTick, onBeforeUnmount, onMounted, ref} from 'vue'
+
+const props = defineProps({
+  value: {type: String, default: ''},
+  submit: {type: Function, required: true},
+  editable: {type: Boolean, default: true},
+  label: {type: String, required: true},
+  textarea: {type: Boolean, default: false},
+  inputProps: {type: Object, default: () => ({})},
 })
+
+const isEditing = ref(false)
+const draftValue = ref('')
+const editor = ref(null)
+const pointerClickPending = ref(false)
+let closeAfterClick = false
+
+function handlePointerDown() {
+  pointerClickPending.value = true
+}
+
+function handleWindowClick() {
+  pointerClickPending.value = false
+  if (closeAfterClick) {
+    closeAfterClick = false
+    isEditing.value = false
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('pointerdown', handlePointerDown, true)
+  window.addEventListener('click', handleWindowClick)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('pointerdown', handlePointerDown, true)
+  window.removeEventListener('click', handleWindowClick)
+})
+
+async function startEditing() {
+  if (!props.editable) return
+  draftValue.value = props.value
+  isEditing.value = true
+  await nextTick()
+  editor.value?.querySelector('input, textarea')?.focus()
+}
+
+function setValue(value) {
+  draftValue.value = value
+}
+
+async function save({deferClose = false} = {}) {
+  const saved = await props.submit(draftValue.value)
+  if (saved === false) return false
+
+  if (deferClose && pointerClickPending.value) {
+    closeAfterClick = true
+  } else {
+    isEditing.value = false
+  }
+
+  return true
+}
+
+function cancel() {
+  isEditing.value = false
+}
+
+function handleFocusOut(event) {
+  if (isEditing.value && !event.currentTarget.contains(event.relatedTarget)) {
+    save({deferClose: true})
+  }
+}
 </script>
 
 <template>
-  <div class="edit">
+  <div ref="editor" class="edit" @focusout="handleFocusOut">
     <div class="text">
-      <slot/>
+      <v-textarea v-if="isEditing && textarea" :model-value="draftValue" @update:model-value="setValue"
+                  @keydown.ctrl.enter.prevent="save" @keydown.meta.enter.prevent="save" @keydown.esc="cancel"
+                  :label="label" v-bind="inputProps"/>
+      <v-text-field v-else-if="isEditing" :model-value="draftValue" @update:model-value="setValue"
+                    @keydown.enter="save" @keydown.esc="cancel" :label="label" v-bind="inputProps"/>
+      <slot v-else name="display" :start-editing="startEditing"/>
     </div>
-    <v-btn class="btn1" :rounded="0" color="error" icon="mdi-close-octagon" @click="cancel"/>
-    <v-btn class="btn2" :rounded="0" color="success" icon="mdi-content-save-edit"
-           @click="index === null ? submit : submit(index)"/>
   </div>
 </template>
 
@@ -26,11 +96,4 @@ defineProps({
   flex: 15;
 }
 
-.btn1 {
-  flex: 1;
-}
-
-.btn2 {
-  flex: 1;
-}
 </style>

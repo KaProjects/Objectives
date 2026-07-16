@@ -18,9 +18,6 @@ const isOpen = computed({
 })
 const obj = ref(null)
 const draftObjective = ref({name: '', description: ''})
-const editingField = ref(null)
-const editingValue = ref('')
-const editingIdeaId = ref(null)
 const statePendingConfirmation = ref(null)
 const selectedIdeaId = ref(null)
 const ideas = ref([])
@@ -40,46 +37,34 @@ watch(() => props.obj, async (value) => {
   }
 }, {immediate: true})
 
-function stopEditing() {
-  editingField.value = null;
-  editingIdeaId.value = null
-}
-
 async function withSubmissionLock(action) {
   if (isSubmitting.value) return
   isSubmitting.value = true
   submissionError.value = null
   try {
-    await action()
+    return await action()
   } finally {
     isSubmitting.value = false
   }
 }
 
-function startEditing(field) {
-  if (obj.value.state !== OBJECTIVE_STATE.ACTIVE) return
-  stopEditing();
-  editingValue.value = draftObjective.value[field];
-  editingField.value = field
-}
-
-async function updateObjective(field) {
-  await withSubmissionLock(async () => {
-    const nextObjective = {...draftObjective.value, [field]: editingValue.value}
+async function updateObjective(field, value) {
+  return withSubmissionLock(async () => {
+    const nextObjective = {...draftObjective.value, [field]: value}
     try {
       await api.put('/objective/' + obj.value.id, nextObjective)
       draftObjective.value = nextObjective
       Object.assign(obj.value, nextObjective)
-      editingField.value = null
       emit('updated', {id: obj.value.id, name: obj.value.name, description: obj.value.description})
+      return true
     } catch (error) {
       submissionError.value = error.message
+      return false
     }
   })
 }
 
 function closeDialog() {
-  stopEditing();
   isOpen.value = false;
   emit('close')
 }
@@ -99,35 +84,30 @@ async function updateObjectiveState(state) {
   })
 }
 
-function startEditingIdea(idea) {
-  if (obj.value.state !== OBJECTIVE_STATE.ACTIVE) return
-  stopEditing();
-  editingValue.value = idea.value;
-  editingIdeaId.value = idea.id
-}
-
-async function updateIdeaValue(idea) {
-  await withSubmissionLock(async () => {
+async function updateIdeaValue(idea, value) {
+  return withSubmissionLock(async () => {
     try {
-      const body = await api.put('/objective/' + obj.value.id + '/idea/' + idea.id, {value: editingValue.value})
+      const body = await api.put('/objective/' + obj.value.id + '/idea/' + idea.id, {value})
       idea.value = body.value;
-      stopEditing()
+      return true
     } catch (error) {
       submissionError.value = error.message
+      return false
     }
   })
 }
 
-async function addIdea() {
-  await withSubmissionLock(async () => {
+async function addIdea(value) {
+  return withSubmissionLock(async () => {
     try {
-      const body = await api.post('/objective/' + obj.value.id + '/idea', {value: editingValue.value})
+      const body = await api.post('/objective/' + obj.value.id + '/idea', {value})
       ideas.value.push(body);
       obj.value.ideas_count += 1;
-      editingField.value = null
       emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
+      return true
     } catch (error) {
       submissionError.value = error.message
+      return false
     }
   })
 }
@@ -156,39 +136,30 @@ function deleteObjective() {
 <template>
   <v-dialog v-model="isOpen" persistent width="600">
     <DialogCard :error="submissionError">
-      <Editable v-if="editingField === 'name'" :cancel="stopEditing" :submit="updateObjective" index="name">
-        <v-text-field @keydown.enter="updateObjective('name')" @keydown.esc="stopEditing"
-                      v-model="editingValue"
-                      label="Name"
-        ></v-text-field>
+      <Editable :value="draftObjective.name" :editable="obj.state === OBJECTIVE_STATE.ACTIVE"
+                :submit="(value) => updateObjective('name', value)" label="Name">
+        <template #display="{startEditing}">
+          <v-card-title @click="startEditing" class="text-h5 grey lighten-2">
+            {{ obj.name }}
+          </v-card-title>
+        </template>
       </Editable>
-      <div v-else class="datesInfo">
-        <v-card-title @click="startEditing('name')" class="text-h5 grey lighten-2">
-          {{ obj.name }}
-        </v-card-title>
-        <div class="datesInfoChild" style="top: 0;">created: {{ formatDate(obj.date_created) }}</div>
-        <div class="datesInfoChild" style="top: 15px;" v-if="obj.state === OBJECTIVE_STATE.ACHIEVED">achieved:
-          {{ formatDate(obj.date_finished) }}
-        </div>
-        <div class="datesInfoChild" style="top: 15px;" v-if="obj.state === OBJECTIVE_STATE.FAILED">failed:
-          {{ formatDate(obj.date_finished) }}
-        </div>
-      </div>
 
-      <Editable v-if="editingField === 'description'" :cancel="stopEditing" :submit="updateObjective"
-                index="description">
-        <v-textarea @keydown.enter="updateObjective('description')" @keydown.esc="stopEditing"
-                    v-model="editingValue"
-                    label="Description"
-        ></v-textarea>
+      <Editable :value="draftObjective.description" :editable="obj.state === OBJECTIVE_STATE.ACTIVE" textarea
+                :submit="(value) => updateObjective('description', value)" label="Description">
+        <template #display="{startEditing}">
+          <v-card-text v-html="string_to_html(obj.description)" @click="startEditing"/>
+        </template>
       </Editable>
-      <div v-else>
-        <v-card-text v-html="string_to_html(obj.description)" @click="startEditing('description')"/>
 
-        <v-dialog v-model="confirmDeleteObjDialog" width="300"> TODO only if no KR
+      <div class="objectiveDetails">
+        <span>created: {{ formatDate(obj.date_created) }}</span>
+        <span v-if="obj.state === OBJECTIVE_STATE.ACHIEVED">achieved: {{ formatDate(obj.date_finished) }}</span>
+        <span v-if="obj.state === OBJECTIVE_STATE.FAILED">failed: {{ formatDate(obj.date_finished) }}</span>
+        <span class="detailsSpacer"/>
+        <v-dialog v-model="confirmDeleteObjDialog" width="300">
           <template v-slot:activator="{ props }">
             <v-btn :disabled="obj.key_results.length > 0"
-                   style="bottom: -10px; right: -10px; position: absolute;"
                    variant="plain" icon="mdi-trash-can" v-bind="props"
             />
           </template>
@@ -206,18 +177,14 @@ function deleteObjective() {
       <v-divider></v-divider>
 
       <div v-for="idea in ideas" :key="idea.id">
-        <Editable v-if="editingIdeaId === idea.id" :cancel="stopEditing" :submit="updateIdeaValue"
-                  :index="idea">
-          <v-text-field @keydown.enter="updateIdeaValue(idea)" @keydown.esc="stopEditing"
-                        v-model="editingValue"
-                        label="Idea"
-          ></v-text-field>
-        </Editable>
-        <div v-else class="idea"
+        <Editable :value="idea.value" :editable="obj.state === OBJECTIVE_STATE.ACTIVE"
+                  :submit="(value) => updateIdeaValue(idea, value)" label="Idea">
+          <template #display="{startEditing}">
+            <div class="idea"
              @mouseover="selectedIdeaId = idea.id"
              @mouseleave="selectedIdeaId = null">
           <v-icon icon="mdi-lightbulb-variant-outline" large/>
-          <div v-html="string_to_html(idea.value)" @click="startEditingIdea(idea)"
+          <div v-html="string_to_html(idea.value)" @click="startEditing"
                style="margin-left: 5px; flex: 25;"/>
 
           <v-dialog
@@ -242,19 +209,18 @@ function deleteObjective() {
               </v-card-actions>
             </v-card>
           </v-dialog>
-        </div>
+            </div>
+          </template>
+        </Editable>
       </div>
 
-      <Editable v-if="editingField === 'newIdea'" :cancel="stopEditing" :submit="addIdea">
-        <v-text-field @keydown.enter="addIdea" @keydown.esc="stopEditing"
-                      v-model="editingValue"
-                      label="Add Idea"
-        ></v-text-field>
+      <Editable value="" :submit="addIdea" label="Add Idea">
+        <template #display="{startEditing}">
+          <v-btn v-if="obj.state === OBJECTIVE_STATE.ACTIVE" block class="dialogAdd" color="secondary" @click="startEditing">
+            Add Idea
+          </v-btn>
+        </template>
       </Editable>
-      <v-btn v-else v-if="obj.state === OBJECTIVE_STATE.ACTIVE" class="dialogAdd" color="secondary"
-             @click="editingField = 'newIdea'; editingValue = ''">
-        Add Idea
-      </v-btn>
 
     </DialogCard>
 
@@ -328,13 +294,15 @@ function deleteObjective() {
   background-color: rgb(var(--v-theme-surface-variant));
 }
 
-.datesInfo {
-  position: relative;
+.objectiveDetails {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px 8px;
+  font-size: 12px;
 }
 
-.datesInfoChild {
-  font-size: 12px;
-  position: absolute;
-  right: 5px;
+.detailsSpacer {
+  flex: 1;
 }
 </style>
