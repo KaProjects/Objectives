@@ -5,7 +5,7 @@ import {formatDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
 import {OBJECTIVE_STATE} from '@/constants/states'
-import DialogCard from '@/components/DialogCard.vue'
+import DialogCard from '@/dialogs/DialogCard.vue'
 
 const props = defineProps({
   modelValue: Boolean,

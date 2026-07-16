@@ -3,10 +3,10 @@ import {ref} from 'vue'
 import {compareDates, formatDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
-import KeyResultDialog from '@/components/KeyResultDialog.vue'
-import ObjectiveDialog from '@/components/ObjectiveDialog.vue'
+import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
+import ObjectiveDialog from '@/dialogs/ObjectiveDialog.vue'
 import {KEY_RESULT_STATE, OBJECTIVE_STATE} from '@/constants/states'
-import AddKeyResultDialog from '@/components/AddKeyResultDialog.vue'
+import AddKeyResultDialog from '@/dialogs/AddKeyResultDialog.vue'
 
 const props = defineProps({
   objective: {type: Object, required: true},

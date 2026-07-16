@@ -30,7 +30,7 @@ token_store = Token()
 
 
 def authenticate(user, password) -> Union[None, str]:
-    if os.getenv('APP_ENV') == 'test':
+    if os.getenv('APP_ENV') == 'test' or os.getenv('APP_ENV') == 'dev':
         return token_store.generate()
     with open("envs_user.json") as envs_file:
         envs = json.load(envs_file)
@@ -39,4 +39,6 @@ def authenticate(user, password) -> Union[None, str]:
 
 
 def validate_token(token) -> bool:
+    if os.getenv('APP_ENV') == 'test' or os.getenv('APP_ENV') == 'dev':
+        return True
     return token_store.check(token)

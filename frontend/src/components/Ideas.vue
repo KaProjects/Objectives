@@ -2,7 +2,7 @@
 import {onMounted, ref} from 'vue'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
-import DialogCard from '@/components/DialogCard.vue'
+import DialogCard from '@/dialogs/DialogCard.vue'
 
 const props = defineProps({
   valueId: Number,

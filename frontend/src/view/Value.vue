@@ -6,7 +6,7 @@ import {compareDates} from '@/utils'
 import {api} from '@/services/apiClient'
 import Ideas from '@/components/Ideas.vue'
 import {OBJECTIVE_STATE, OBJECTIVE_TAB} from '@/constants/states'
-import AddObjectiveDialog from '@/components/AddObjectiveDialog.vue'
+import AddObjectiveDialog from '@/dialogs/AddObjectiveDialog.vue'
 
 const value = ref({objectives: []})
 const tab = ref(OBJECTIVE_TAB.ACTIVE)
