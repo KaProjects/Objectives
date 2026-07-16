@@ -41,7 +41,7 @@ onMounted(() => {
       <div class="values0" v-if="appState.selectedValue == null">
         <div class="values">
 
-          <v-card class="value" width="600" elevation="20" outlined shaped
+          <v-card class="value" elevation="20" outlined shaped
 
                   v-for="value in values"
                   :key="value.id"
@@ -61,7 +61,7 @@ onMounted(() => {
             </v-card-text>
           </v-card>
 
-          <v-card class="addValue" width="600" elevation="20" outlined shaped @click="addValue">
+          <v-card class="addValue" elevation="20" outlined shaped @click="addValue">
             <v-card-actions>
               <v-icon class="centerButton" icon="mdi-plus" large/>
             </v-card-actions>
@@ -78,28 +78,19 @@ onMounted(() => {
 <style scoped>
 
 .values {
-  max-width: 1280px;
+  max-width: 600px;
   margin: 0 auto;
   padding: 2rem;
   font-weight: normal;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
 }
 
-@media (min-width: 1024px) {
-  .values0 {
-    padding: 2rem;
-    display: flex;
-    place-items: center;
-  }
-  .values {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
-}
-
-.value {
+.value,
+.addValue {
+  width: 100%;
   background-color: #b2d5f3;
-  margin: 1px;
 }
 .value:hover {
   background-color: #96c6ef;
