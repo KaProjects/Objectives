@@ -22,6 +22,10 @@ task = api.namespace('task', description='Tasks operations')
 objective = api.namespace('objective', description='Objectives operations')
 
 
+def non_blank_string(example):
+    return fields.String(required=True, min_length=1, pattern=r'.*\S.*', example=example)
+
+
 def create_response(response, status):
     if status >= 400:
         error_class = {
@@ -94,7 +98,7 @@ class Ideas(Resource):
 
     @value.doc(security="Bearer")
     @authenticated
-    @value.expect(api.model('IdeaCreate', {'idea': fields.String(required=True, example='new idea')}))
+    @value.expect(api.model('IdeaCreate', {'idea': non_blank_string('new idea')}))
     @value.response(201, 'Created')
     def post(self, id):
         try:
@@ -125,7 +129,7 @@ class Idea(Resource):
 class KeyResults(Resource):
     @value.doc(security="Bearer")
     @authenticated
-    @key_result.expect(api.model('KeyResultCreate', {'name': fields.String(required=True, example='name'),
+    @key_result.expect(api.model('KeyResultCreate', {'name': non_blank_string('name'),
                                                      'description': fields.String(required=True, example='description'),
                                                      'objective_id': fields.Integer(required=True, example=1)}))
     @key_result.response(404, 'Objective with ID not found')
@@ -169,7 +173,7 @@ class KeyResult(Resource):
 
     @value.doc(security="Bearer")
     @authenticated
-    @key_result.expect(api.model('KeyResultUpdate', {'name': fields.String(required=True, example='name'),
+    @key_result.expect(api.model('KeyResultUpdate', {'name': non_blank_string('name'),
                                                      'description': fields.String(required=True, example='description'),
                                                      's': fields.String(required=True, example='s'),
                                                      'm': fields.String(required=True, example='m'),
@@ -249,7 +253,7 @@ class KeyResultStateResource(Resource):
 class Tasks(Resource):
     @value.doc(security="Bearer")
     @authenticated
-    @task.expect(api.model('TaskCreate', {'value': fields.String(required=True, example='value'),
+    @task.expect(api.model('TaskCreate', {'value': non_blank_string('value'),
                                           'kr_id': fields.Integer(required=True, example=1)}))
     @task.response(404, 'Key Result with ID not found')
     @task.response(201, 'Created')
@@ -274,7 +278,7 @@ class Tasks(Resource):
 class Task(Resource):
     @value.doc(security="Bearer")
     @authenticated
-    @task.expect(api.model('TaskUpdate', {'value': fields.String(required=True, example='value'),
+    @task.expect(api.model('TaskUpdate', {'value': non_blank_string('value'),
                                           'kr_id': fields.Integer(required=True, example=1),
                                           'state': fields.String(required=True, example=TaskState.ACTIVE.value)}))
     @task.response(200, 'Success')
@@ -315,7 +319,7 @@ class Task(Resource):
 class Objectives(Resource):
     @value.doc(security="Bearer")
     @authenticated
-    @objective.expect(api.model('ObjectiveCreate', {'name': fields.String(required=True, example='name'),
+    @objective.expect(api.model('ObjectiveCreate', {'name': non_blank_string('name'),
                                                     'description': fields.String(required=True, example='description'),
                                                     'value_id': fields.Integer(required=True, example=1)}))
     @objective.response(404, 'Value with ID not found')
@@ -347,7 +351,7 @@ class Objectives(Resource):
 class Objective(Resource):
     @value.doc(security="Bearer")
     @authenticated
-    @objective.expect(api.model('ObjectiveUpdate', {'name': fields.String(required=True, example='name'),
+    @objective.expect(api.model('ObjectiveUpdate', {'name': non_blank_string('name'),
                                                     'description': fields.String(required=True, example='description')}))
     @objective.response(200, 'Success')
     def put(self, id):
@@ -423,7 +427,7 @@ class ObjectiveIdeas(Resource):
 
     @value.doc(security="Bearer")
     @authenticated
-    @objective.expect(api.model('ObjectiveIdeaCreate', {'value': fields.String(required=True, example='name')}))
+    @objective.expect(api.model('ObjectiveIdeaCreate', {'value': non_blank_string('name')}))
     @objective.response(201, 'Created')
     def post(self, id):
         try:
@@ -447,7 +451,7 @@ class ObjectiveIdeas(Resource):
 class ObjectiveIdea(Resource):
     @value.doc(security="Bearer")
     @authenticated
-    @objective.expect(api.model('ObjectiveIdeaUpdate', {'value': fields.String(required=True, example='value')}))
+    @objective.expect(api.model('ObjectiveIdeaUpdate', {'value': non_blank_string('value')}))
     @objective.response(404, 'Idea not found')
     @objective.response(200, 'Success')
     def put(self, id, idea_id):
