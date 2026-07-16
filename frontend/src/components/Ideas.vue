@@ -63,14 +63,15 @@ onMounted(loadData)
 <template>
   <v-card width="300" elevation="3" shaped max-height="calc(100vh - 70px)" style="overflow-y:scroll;">
     <v-card-title>Ideas</v-card-title>
-    <v-progress-circular v-if="loading" style="margin: 0 0 10px 30px" indeterminate color="primary"></v-progress-circular>
+    <v-progress-circular v-if="loading" style="margin: 0 0 10px 30px" indeterminate
+                         color="primary"></v-progress-circular>
     <div v-else>
       <v-list-item>
         <v-list-item-content v-for="idea in ideas" :key="idea.id"
                              @mouseover="selectedIdeaId = idea.id"
                              @mouseleave="selectedIdeaId = null">
           <div class="idea">
-            <v-list-item>{{idea.value}}</v-list-item>
+            <v-list-item>{{ idea.value }}</v-list-item>
 
             <v-dialog
                 :model-value="ideaPendingDeletionId === idea.id"
@@ -128,9 +129,11 @@ onMounted(loadData)
 .idea {
   border: 1px #d9e0e1 solid;
 }
+
 .idea:hover {
   border: 2px #d9e0e1 solid;
 }
+
 .idea > .v-icon {
   position: absolute;
   right: 0px;

@@ -40,7 +40,11 @@ watch(() => props.obj, async (value) => {
   }
 }, {immediate: true})
 
-function stopEditing() { editingField.value = null; editingIdeaId.value = null }
+function stopEditing() {
+  editingField.value = null;
+  editingIdeaId.value = null
+}
+
 async function withSubmissionLock(action) {
   if (isSubmitting.value) return
   isSubmitting.value = true
@@ -51,10 +55,14 @@ async function withSubmissionLock(action) {
     isSubmitting.value = false
   }
 }
+
 function startEditing(field) {
   if (obj.value.state !== OBJECTIVE_STATE.ACTIVE) return
-  stopEditing(); editingValue.value = draftObjective.value[field]; editingField.value = field
+  stopEditing();
+  editingValue.value = draftObjective.value[field];
+  editingField.value = field
 }
+
 async function updateObjective(field) {
   await withSubmissionLock(async () => {
     const nextObjective = {...draftObjective.value, [field]: editingValue.value}
@@ -69,56 +77,80 @@ async function updateObjective(field) {
     }
   })
 }
-function closeDialog() { stopEditing(); isOpen.value = false; emit('close') }
+
+function closeDialog() {
+  stopEditing();
+  isOpen.value = false;
+  emit('close')
+}
+
 async function updateObjectiveState(state) {
   await withSubmissionLock(async () => {
     try {
       const body = await api.put('/objective/' + obj.value.id + '/state', {state})
       Object.assign(obj.value, {state: body.state, date_finished: body.date})
       emit('updated', {id: obj.value.id, state: body.state, date_finished: body.date})
-      statePendingConfirmation.value = null; closeDialog(); emit('state-changed', body.state)
+      statePendingConfirmation.value = null;
+      closeDialog();
+      emit('state-changed', body.state)
     } catch (error) {
       submissionError.value = error.message
     }
   })
 }
+
 function startEditingIdea(idea) {
   if (obj.value.state !== OBJECTIVE_STATE.ACTIVE) return
-  stopEditing(); editingValue.value = idea.value; editingIdeaId.value = idea.id
+  stopEditing();
+  editingValue.value = idea.value;
+  editingIdeaId.value = idea.id
 }
+
 async function updateIdeaValue(idea) {
   await withSubmissionLock(async () => {
     try {
       const body = await api.put('/objective/' + obj.value.id + '/idea/' + idea.id, {value: editingValue.value})
-      idea.value = body.value; stopEditing()
+      idea.value = body.value;
+      stopEditing()
     } catch (error) {
       submissionError.value = error.message
     }
   })
 }
+
 async function addIdea() {
   await withSubmissionLock(async () => {
     try {
       const body = await api.post('/objective/' + obj.value.id + '/idea', {value: editingValue.value})
-      ideas.value.push(body); obj.value.ideas_count += 1; editingField.value = null
+      ideas.value.push(body);
+      obj.value.ideas_count += 1;
+      editingField.value = null
       emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
     } catch (error) {
       submissionError.value = error.message
     }
   })
 }
+
 async function deleteIdea(idea) {
   await withSubmissionLock(async () => {
     try {
       await api.delete('/objective/' + obj.value.id + '/idea/' + idea.id)
-      ideas.value.splice(ideas.value.indexOf(idea), 1); obj.value.ideas_count -= 1; ideaPendingDeletionId.value = null
+      ideas.value.splice(ideas.value.indexOf(idea), 1);
+      obj.value.ideas_count -= 1;
+      ideaPendingDeletionId.value = null
       emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
     } catch (error) {
       submissionError.value = error.message
     }
   })
 }
-function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.value = false; closeDialog() }
+
+function deleteObjective() {
+  emit('deleted', obj.value);
+  confirmDeleteObjDialog.value = false;
+  closeDialog()
+}
 </script>
 
 <template>
@@ -132,14 +164,19 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
       </Editable>
       <div v-else class="datesInfo">
         <v-card-title @click="startEditing('name')" class="text-h5 grey lighten-2">
-          {{obj.name}}
+          {{ obj.name }}
         </v-card-title>
-        <div class="datesInfoChild" style="top: 0;">created: {{formatDate(obj.date_created)}}</div>
-        <div class="datesInfoChild" style="top: 15px;" v-if="obj.state === OBJECTIVE_STATE.ACHIEVED">achieved: {{formatDate(obj.date_finished)}}</div>
-        <div class="datesInfoChild" style="top: 15px;" v-if="obj.state === OBJECTIVE_STATE.FAILED">failed: {{formatDate(obj.date_finished)}}</div>
+        <div class="datesInfoChild" style="top: 0;">created: {{ formatDate(obj.date_created) }}</div>
+        <div class="datesInfoChild" style="top: 15px;" v-if="obj.state === OBJECTIVE_STATE.ACHIEVED">achieved:
+          {{ formatDate(obj.date_finished) }}
+        </div>
+        <div class="datesInfoChild" style="top: 15px;" v-if="obj.state === OBJECTIVE_STATE.FAILED">failed:
+          {{ formatDate(obj.date_finished) }}
+        </div>
       </div>
 
-      <Editable v-if="editingField === 'description'" :cancel="stopEditing" :submit="updateObjective" index="description">
+      <Editable v-if="editingField === 'description'" :cancel="stopEditing" :submit="updateObjective"
+                index="description">
         <v-textarea @keydown.enter="updateObjective('description')" @keydown.esc="stopEditing"
                     v-model="editingValue"
                     label="Description"
@@ -169,7 +206,8 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
       <v-divider></v-divider>
 
       <div v-for="idea in ideas" :key="idea.id">
-        <Editable v-if="editingIdeaId === idea.id" :cancel="stopEditing" :submit="updateIdeaValue" :index="idea">
+        <Editable v-if="editingIdeaId === idea.id" :cancel="stopEditing" :submit="updateIdeaValue"
+                  :index="idea">
           <v-text-field @keydown.enter="updateIdeaValue(idea)" @keydown.esc="stopEditing"
                         v-model="editingValue"
                         label="Idea"
@@ -179,7 +217,8 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
              @mouseover="selectedIdeaId = idea.id"
              @mouseleave="selectedIdeaId = null">
           <v-icon icon="mdi-lightbulb-variant-outline" large/>
-          <div v-html="string_to_html(idea.value)" @click="startEditingIdea(idea)" style="margin-left: 5px; flex: 25;"/>
+          <div v-html="string_to_html(idea.value)" @click="startEditingIdea(idea)"
+               style="margin-left: 5px; flex: 25;"/>
 
           <v-dialog
               :model-value="ideaPendingDeletionId === idea.id"
@@ -187,7 +226,8 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
               width="300"
           >
             <template v-slot:activator="{ props }">
-              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props" v-if="selectedIdeaId === idea.id && obj.state === OBJECTIVE_STATE.ACTIVE"/>
+              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props"
+                      v-if="selectedIdeaId === idea.id && obj.state === OBJECTIVE_STATE.ACTIVE"/>
             </template>
 
             <v-card>
@@ -211,14 +251,17 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
                       label="Add Idea"
         ></v-text-field>
       </Editable>
-      <v-btn v-else v-if="obj.state === OBJECTIVE_STATE.ACTIVE" color="secondary" @click="editingField = 'newIdea'; editingValue = ''">
+      <v-btn v-else v-if="obj.state === OBJECTIVE_STATE.ACTIVE" color="secondary"
+             @click="editingField = 'newIdea'; editingValue = ''">
         Add Idea
       </v-btn>
 
     </DialogCard>
 
     <div>
-      <v-dialog :model-value="statePendingConfirmation === OBJECTIVE_STATE.FAILED" @update:model-value="statePendingConfirmation = $event ? OBJECTIVE_STATE.FAILED : null" width="300" v-if="obj.state === OBJECTIVE_STATE.ACTIVE">
+      <v-dialog :model-value="statePendingConfirmation === OBJECTIVE_STATE.FAILED"
+                @update:model-value="statePendingConfirmation = $event ? OBJECTIVE_STATE.FAILED : null"
+                width="300" v-if="obj.state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
           <v-btn style="width: 50%;" color="red" v-bind="props">fail</v-btn>
         </template>
@@ -227,11 +270,15 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
             Fail?
           </v-card-title>
           <v-card-actions>
-            <v-btn block :disabled="isSubmitting" @click="updateObjectiveState(OBJECTIVE_STATE.FAILED)">Confirm</v-btn>
+            <v-btn block :disabled="isSubmitting" @click="updateObjectiveState(OBJECTIVE_STATE.FAILED)">
+              Confirm
+            </v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-dialog :model-value="statePendingConfirmation === OBJECTIVE_STATE.ACHIEVED" @update:model-value="statePendingConfirmation = $event ? OBJECTIVE_STATE.ACHIEVED : null" width="300" v-if="obj.state === OBJECTIVE_STATE.ACTIVE">
+      <v-dialog :model-value="statePendingConfirmation === OBJECTIVE_STATE.ACHIEVED"
+                @update:model-value="statePendingConfirmation = $event ? OBJECTIVE_STATE.ACHIEVED : null"
+                width="300" v-if="obj.state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
           <v-btn style="width: 50%;" color="green" v-bind="props">achieve</v-btn>
         </template>
@@ -240,11 +287,15 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
             Achieve?
           </v-card-title>
           <v-card-actions>
-            <v-btn block :disabled="isSubmitting" @click="updateObjectiveState(OBJECTIVE_STATE.ACHIEVED)">Confirm</v-btn>
+            <v-btn block :disabled="isSubmitting" @click="updateObjectiveState(OBJECTIVE_STATE.ACHIEVED)">
+              Confirm
+            </v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <v-dialog :model-value="statePendingConfirmation === OBJECTIVE_STATE.ACTIVE" @update:model-value="statePendingConfirmation = $event ? OBJECTIVE_STATE.ACTIVE : null" width="300" v-if="obj.state !== OBJECTIVE_STATE.ACTIVE">
+      <v-dialog :model-value="statePendingConfirmation === OBJECTIVE_STATE.ACTIVE"
+                @update:model-value="statePendingConfirmation = $event ? OBJECTIVE_STATE.ACTIVE : null"
+                width="300" v-if="obj.state !== OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
           <v-btn style="width: 100%;" color="blue" v-bind="props">activate</v-btn>
         </template>
@@ -253,7 +304,9 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
             Activate?
           </v-card-title>
           <v-card-actions>
-            <v-btn block :disabled="isSubmitting" @click="updateObjectiveState(OBJECTIVE_STATE.ACTIVE)">Confirm</v-btn>
+            <v-btn block :disabled="isSubmitting" @click="updateObjectiveState(OBJECTIVE_STATE.ACTIVE)">
+              Confirm
+            </v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -269,12 +322,15 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
   display: flex;
   background: white;
 }
+
 .idea:hover {
   background: #f5f5f5;
 }
+
 .datesInfo {
   position: relative;
 }
+
 .datesInfoChild {
   font-size: 12px;
   position: absolute;

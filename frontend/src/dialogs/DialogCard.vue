@@ -12,6 +12,6 @@ defineProps({
     <v-alert v-if="error" title="Request failed" type="error">
       {{ error }}
     </v-alert>
-    <slot />
+    <slot/>
   </v-card>
 </template>

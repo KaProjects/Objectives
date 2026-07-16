@@ -31,7 +31,7 @@ onMounted(() => {
 <template>
 
   <v-alert v-if="appState.error" title="Backend Error" type="error">
-    {{appState.error}}
+    {{ appState.error }}
   </v-alert>
 
   <div v-else>
@@ -49,14 +49,14 @@ onMounted(() => {
             <v-card-text>
               <div style="display: flex; justify-content: space-around">
                 <div class="text-h4 text--primary">
-                  {{value.name}}
+                  {{ value.name }}
                 </div>
-                <div style="display: flex; justify-content: flex-end" >
-                  Active: {{value.active_count}} Achievements: {{value.achievements_count}}
+                <div style="display: flex; justify-content: flex-end">
+                  Active: {{ value.active_count }} Achievements: {{ value.achievements_count }}
                 </div>
               </div>
               <div class="text--primary">
-                {{value.description}}
+                {{ value.description }}
               </div>
             </v-card-text>
           </v-card>
@@ -92,6 +92,7 @@ onMounted(() => {
   width: 100%;
   background-color: #b2d5f3;
 }
+
 .value:hover {
   background-color: #96c6ef;
 }
@@ -106,6 +107,7 @@ onMounted(() => {
   background-color: #181818;
   color: #96c6ef;
 }
+
 .addValue:hover {
   background-color: #96c6ef;
   color: #181818;

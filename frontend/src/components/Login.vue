@@ -49,7 +49,9 @@ async function login() {
                   required
               ></v-text-field>
 
-              <v-btn type="submit" :disabled="isSubmitting" class="mt-4" color="primary" value="log in">Login</v-btn>
+              <v-btn type="submit" :disabled="isSubmitting" class="mt-4" color="primary" value="log in">
+                Login
+              </v-btn>
             </form>
           </v-card-text>
         </v-card>

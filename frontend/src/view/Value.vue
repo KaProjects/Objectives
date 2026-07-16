@@ -11,7 +11,6 @@ import AddObjectiveDialog from '@/dialogs/AddObjectiveDialog.vue'
 const value = ref({objectives: []})
 const tab = ref(OBJECTIVE_TAB.ACTIVE)
 const openAddObjDialog = ref(false)
-const showIdeas = ref(false)
 const isSubmitting = ref(false)
 
 async function loadData() {
@@ -23,10 +22,10 @@ async function loadData() {
 }
 
 function compareObjectives(a, b) {
-      let comparison
-      if (a.state !== OBJECTIVE_STATE.ACTIVE && b.state !== OBJECTIVE_STATE.ACTIVE) {
-        comparison = -compareDates(a.date_finished, b.date_finished)
-      } else {
+  let comparison
+  if (a.state !== OBJECTIVE_STATE.ACTIVE && b.state !== OBJECTIVE_STATE.ACTIVE) {
+    comparison = -compareDates(a.date_finished, b.date_finished)
+  } else {
     comparison = -compareDates(a.date_created, b.date_created)
   }
   return comparison !== 0 ? comparison : b.id - a.id
@@ -35,7 +34,7 @@ function compareObjectives(a, b) {
 function filterObjectives(objectives, isActive) {
   if (objectives === undefined) return objectives
   return objectives.filter((objective) => isActive ? objective.state === OBJECTIVE_STATE.ACTIVE : objective.state !== OBJECTIVE_STATE.ACTIVE)
-    .slice().sort(compareObjectives)
+      .slice().sort(compareObjectives)
 }
 
 function addObjective(objective) {
@@ -91,26 +90,26 @@ onMounted(loadData)
 
     <div class="appbar">
       <v-btn class="button" icon="mdi-arrow-left" @click="unselectValue()"/>
-      <h1 class="title">{{value.name}}</h1>
+      <h1 class="title">{{ value.name }}</h1>
 
       <v-tabs v-model="tab" bg-color="primary">
         <v-tab :value="OBJECTIVE_TAB.ACTIVE">Active</v-tab>
         <v-tab :value="OBJECTIVE_TAB.INACTIVE">Done</v-tab>
+        <v-tab :value="OBJECTIVE_TAB.IDEAS">Ideas</v-tab>
       </v-tabs>
 
-      <v-btn class="button" icon="mdi-lightbulb" @click.stop="showIdeas = false" v-if="showIdeas"/>
-      <v-btn class="button" icon="mdi-lightbulb-outline" @click.stop="showIdeas = true" v-else/>
-
       <AddObjectiveDialog
-        v-model="openAddObjDialog"
-        :value-id="value.id"
-        @created="addObjective"
+          v-if="tab === OBJECTIVE_TAB.ACTIVE"
+          v-model="openAddObjDialog"
+          :value-id="value.id"
+          @created="addObjective"
       />
     </div>
 
     <div style="display: flex; overflow-x:scroll;">
-      <Ideas class="obj" :valueId="appState.selectedValue.id" v-if="showIdeas"/>
+      <Ideas class="obj" :valueId="appState.selectedValue.id" v-if="tab === OBJECTIVE_TAB.IDEAS"/>
       <Objective v-for="objective in filterObjectives(value.objectives, tab === OBJECTIVE_TAB.ACTIVE)"
+                 v-if="tab !== OBJECTIVE_TAB.IDEAS"
                  :key="objective.id"
                  :objective="objective"
                  @deleted="deleteObjective"
@@ -127,15 +126,18 @@ onMounted(loadData)
 .appbar {
   display: inline-flex;
 }
+
 .title {
   width: 300px;
 }
+
 .button {
   margin-left: 10px;
   margin-right: 10px;
   background: #181818;
   color: darkgrey
 }
+
 .button:hover {
   background: #2f2f2f;
 }
