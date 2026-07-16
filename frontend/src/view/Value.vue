@@ -96,29 +96,33 @@ onMounted(loadData)
   <div>
 
     <div class="appbar">
-      <v-btn class="button" variant="tonal" rounded="lg" @click="unselectValue()">
+      <v-btn class="button backButton" variant="tonal" rounded="lg" @click="unselectValue()">
         <v-icon icon="mdi-arrow-left"/>
       </v-btn>
       <h1 class="title">{{ value.name }}</h1>
 
-      <v-tabs v-model="tab" bg-color="primary">
-        <v-tab :value="OBJECTIVE_TAB.ACTIVE">Active</v-tab>
-        <v-tab :value="OBJECTIVE_TAB.INACTIVE">Done</v-tab>
-        <v-tab :value="OBJECTIVE_TAB.IDEAS">Ideas</v-tab>
-      </v-tabs>
+      <div class="tabs">
+        <v-tabs v-model="tab" bg-color="primary">
+          <v-tab :value="OBJECTIVE_TAB.ACTIVE">Active</v-tab>
+          <v-tab :value="OBJECTIVE_TAB.INACTIVE">Done</v-tab>
+          <v-tab :value="OBJECTIVE_TAB.IDEAS">Ideas</v-tab>
+        </v-tabs>
+      </div>
 
-      <AddObjectiveDialog
-          v-if="tab === OBJECTIVE_TAB.ACTIVE"
-          v-model="openAddObjDialog"
-          :value-id="value.id"
-          @created="addObjective"
-      />
-      <AddIdeaDialog
-          v-if="tab === OBJECTIVE_TAB.IDEAS"
-          v-model="openAddIdeaDialog"
-          :value-id="value.id"
-          @created="addIdea"
-      />
+      <div class="addAction">
+        <AddObjectiveDialog
+            v-if="tab === OBJECTIVE_TAB.ACTIVE"
+            v-model="openAddObjDialog"
+            :value-id="value.id"
+            @created="addObjective"
+        />
+        <AddIdeaDialog
+            v-if="tab === OBJECTIVE_TAB.IDEAS"
+            v-model="openAddIdeaDialog"
+            :value-id="value.id"
+            @created="addIdea"
+        />
+      </div>
     </div>
 
     <div style="display: flex; overflow-x:scroll;">
@@ -150,5 +154,51 @@ onMounted(loadData)
 .button {
   margin-left: 10px;
   margin-right: 10px;
+}
+
+@media (max-width: 600px) {
+  .appbar {
+    display: grid;
+    width: 100%;
+    grid-template-areas:
+      "title add"
+      "tabs tabs";
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .backButton {
+    display: none;
+  }
+
+  .title {
+    grid-area: title;
+    width: auto;
+    margin-left: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tabs {
+    grid-area: tabs;
+    width: 100%;
+  }
+
+  .tabs :deep(.v-tabs),
+  .tabs :deep(.v-slide-group__content) {
+    width: 100%;
+  }
+
+  .tabs :deep(.v-tab) {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 4px;
+  }
+
+  .addAction {
+    grid-area: add;
+    justify-self: end;
+    margin-right: 10px;
+  }
 }
 </style>
