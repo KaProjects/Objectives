@@ -1,11 +1,12 @@
 <script setup>
-import {ref, watch} from 'vue'
+import {ref} from 'vue'
 import {compareDates, formatDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
 import KeyResultDialog from '@/components/KeyResultDialog.vue'
 import ObjectiveDialog from '@/components/ObjectiveDialog.vue'
 import {KEY_RESULT_STATE, OBJECTIVE_STATE} from '@/constants/states'
+import AddKeyResultDialog from '@/components/AddKeyResultDialog.vue'
 
 const props = defineProps({
   objective: {type: Object, required: true},
@@ -16,16 +17,12 @@ const objective = props.objective
 const focused = ref(false)
 const openObjDialog = ref(false)
 const openAddKrDialog = ref(false)
-const newKr = ref({name: '', description: ''})
 const selectedKr = ref(null)
 const selectedKr_parent = ref(null)
 const selectedObj = ref(null)
 const openKrDialog = ref(false)
 const isSubmitting = ref(false)
-
-watch(openAddKrDialog, (isOpen) => {
-  if (isOpen) newKr.value = {name: '', description: ''}
-})
+const submissionError = ref(null)
 
 function compareKeyResults(a, b) {
       let comparison
@@ -60,29 +57,15 @@ function openObjective() {
   openObjDialog.value = true
 }
 
-async function addKeyResult() {
-  if (isSubmitting.value) return
-  isSubmitting.value = true
-  try {
-    const keyResult = {...newKr.value, objective_id: objective.id}
-    const body = await api.post('/key_result', keyResult)
-    emit('key-result-created', {objectiveId: objective.id, keyResult: body})
-    openAddKrDialog.value = false
-  } catch (error) {
-    setError(error)
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
 async function deleteKeyResult(keyResult) {
   if (isSubmitting.value) return
   isSubmitting.value = true
+  submissionError.value = null
   try {
     await api.delete('/key_result/' + keyResult.id)
     emit('key-result-deleted', {objectiveId: objective.id, keyResultId: keyResult.id})
   } catch (error) {
-    setError(error)
+    submissionError.value = error.message
   } finally {
     isSubmitting.value = false
   }
@@ -131,20 +114,11 @@ async function deleteKeyResult(keyResult) {
     </div>
 
     <v-card-actions v-if="objective.state === OBJECTIVE_STATE.ACTIVE">
-      <v-dialog v-model="openAddKrDialog" width="300">
-        <template v-slot:activator="{ props }">
-          <v-btn color="primary" v-bind="props">
-            <v-icon icon="mdi-plus" large/>
-          </v-btn>
-        </template>
-        <v-card>
-          <v-text-field label="Name" v-model="newKr.name"/>
-          <v-text-field label="Description" v-model="newKr.description"/>
-          <v-card-actions>
-            <v-btn block @click="addKeyResult" :disabled="isSubmitting || !newKr.name">Add</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <AddKeyResultDialog
+        v-model="openAddKrDialog"
+        :objective-id="objective.id"
+        @created="emit('key-result-created', {objectiveId: objective.id, keyResult: $event})"
+      />
 
     </v-card-actions>
   </v-card>

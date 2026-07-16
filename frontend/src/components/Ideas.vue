@@ -2,6 +2,7 @@
 import {onMounted, ref} from 'vue'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
+import DialogCard from '@/components/DialogCard.vue'
 
 const props = defineProps({
   valueId: Number,
@@ -14,6 +15,7 @@ const newIdea = ref('')
 const selectedIdeaId = ref(null)
 const ideaPendingDeletionId = ref(null)
 const isSubmitting = ref(false)
+const submissionError = ref(null)
 
 async function loadData() {
   try {
@@ -28,13 +30,14 @@ async function loadData() {
 async function addIdea() {
   if (isSubmitting.value) return
   isSubmitting.value = true
+  submissionError.value = null
   try {
     const body = await api.post('/value/' + props.valueId + '/idea', {idea: newIdea.value})
     ideas.value.push({id: body.new_id, value: body.idea})
     newIdeaDialog.value = false
     newIdea.value = ''
   } catch (error) {
-    setError(error)
+    submissionError.value = error.message
   } finally {
     isSubmitting.value = false
   }
@@ -43,12 +46,13 @@ async function addIdea() {
 async function deleteIdea(idea) {
   if (isSubmitting.value) return
   isSubmitting.value = true
+  submissionError.value = null
   try {
     await api.delete('/value/' + props.valueId + '/idea/' + idea.id)
     ideas.value.splice(ideas.value.indexOf(idea), 1)
     ideaPendingDeletionId.value = null
   } catch (error) {
-    setError(error)
+    submissionError.value = error.message
   } finally {
     isSubmitting.value = false
   }
@@ -77,7 +81,7 @@ onMounted(loadData)
                 <v-icon icon="mdi-delete" large v-bind="props" v-if="selectedIdeaId === idea.id"/>
               </template>
 
-              <v-card>
+              <DialogCard :error="submissionError">
                 <v-card-title class="text-h5 grey lighten-2">
                   Delete Idea?
                 </v-card-title>
@@ -87,7 +91,7 @@ onMounted(loadData)
                 <v-card-actions>
                   <v-btn block :disabled="isSubmitting" @click="deleteIdea(idea)">Confirm</v-btn>
                 </v-card-actions>
-              </v-card>
+              </DialogCard>
             </v-dialog>
 
           </div>
@@ -104,7 +108,7 @@ onMounted(loadData)
             </v-btn>
           </template>
 
-          <v-card>
+          <DialogCard :error="submissionError">
             <v-text-field
                 label="Idea"
                 v-model="newIdea"
@@ -113,7 +117,7 @@ onMounted(loadData)
             <v-card-actions>
               <v-btn block :disabled="isSubmitting || !newIdea" @click="addIdea">Add</v-btn>
             </v-card-actions>
-          </v-card>
+          </DialogCard>
         </v-dialog>
       </v-card-actions>
     </div>

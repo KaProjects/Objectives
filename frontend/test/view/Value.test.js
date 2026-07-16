@@ -15,16 +15,14 @@ describe('Value view', () => {
     vi.clearAllMocks()
   })
 
-  it('loads its value and adds an objective', async () => {
+  it('loads its value and adds a created objective to its list', async () => {
     api.get.mockResolvedValue({id: 1, name: 'Health', objectives: []})
-    api.post.mockResolvedValue({id: 2, name: 'Walk', state: 'active'})
     const wrapper = shallowMount(Value)
     await flushPromises()
-    wrapper.vm.newObj = {name: 'Walk', description: 'Daily'}
-    await wrapper.vm.addObjective()
+    wrapper.vm.addObjective({id: 2, name: 'Walk', state: 'active'})
 
-    expect(api.post).toHaveBeenCalledWith('/objective', {name: 'Walk', description: 'Daily', value_id: 1})
     expect(wrapper.vm.value.objectives).toEqual([{id: 2, name: 'Walk', state: 'active'}])
+    expect(wrapper.vm.tab).toBe('active')
     unselectValue()
   })
 })

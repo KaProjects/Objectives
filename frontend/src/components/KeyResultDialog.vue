@@ -5,6 +5,7 @@ import {formatDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
 import {KEY_RESULT_STATE, OBJECTIVE_STATE, TASK_STATE} from '@/constants/states'
+import DialogCard from '@/components/DialogCard.vue'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -31,6 +32,7 @@ const statePendingConfirmation = ref(null)
 const showSmart = ref(false)
 const confirmDeleteKrDialog = ref(false)
 const isSubmitting = ref(false)
+const submissionError = ref(null)
 
 watch(() => props.kr, (value) => {
   kr.value = value ? {...value, tasks: value.tasks.map((task) => ({...task}))} : null
@@ -46,6 +48,7 @@ function stopEditing() { editingField.value = null; isAddingTask.value = false; 
 async function withSubmissionLock(action) {
   if (isSubmitting.value) return false
   isSubmitting.value = true
+  submissionError.value = null
   try {
     return await action()
   } finally {
@@ -69,7 +72,7 @@ async function updateKeyResult() {
       emit('updated', {...kr_parent.value})
       return true
     } catch (error) {
-      setError(error)
+      submissionError.value = error.message
       return false
     }
   })
@@ -79,18 +82,18 @@ async function update(field) { const previousValue = draftKeyResult.value[field]
 function startAddingTask() { if (!canEdit()) return; stopEditing(); editingValue.value = ''; isAddingTask.value = true }
 function startEditingTask(task) { if (!canEdit()) return; stopEditing(); editingValue.value = task.value; editingTaskId.value = task.id }
 async function retrieveKeyResultReviewDate() { const body = await api.get('/key_result/' + kr.value.id); kr.value.date_reviewed = body.date_reviewed; kr_parent.value.date_reviewed = body.date_reviewed }
-async function updateTaskValue(task) { return withSubmissionLock(async () => { try { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: editingValue.value, state: task.state}); task.value = body.value; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}); stopEditing() } catch (error) { setError(error) } }) }
+async function updateTaskValue(task) { return withSubmissionLock(async () => { try { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: editingValue.value, state: task.state}); task.value = body.value; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}); stopEditing() } catch (error) { submissionError.value = error.message } }) }
 function closeDialog() { stopEditing(); showSmart.value = false; isOpen.value = false; emit('close') }
-async function addTask() { return withSubmissionLock(async () => { try { const body = await api.post('/task', {kr_id: kr.value.id, value: editingValue.value}); kr.value.tasks.push(body); kr_parent.value.all_tasks_count += 1; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}); isAddingTask.value = false } catch (error) { setError(error) } }) }
-async function updateTaskState(task, state) { return withSubmissionLock(async () => { try { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: task.value, state}); if (task.state === TASK_STATE.ACTIVE && body.state !== TASK_STATE.ACTIVE) kr_parent.value.resolved_tasks_count += 1; if (task.state !== TASK_STATE.ACTIVE && body.state === TASK_STATE.ACTIVE) kr_parent.value.resolved_tasks_count -= 1; task.state = body.state; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}) } catch (error) { setError(error) } }) }
-async function deleteTask(task) { return withSubmissionLock(async () => { try { await api.delete('/task/' + task.id); taskPendingDeletionId.value = null; kr.value.tasks.splice(kr.value.tasks.indexOf(task), 1); kr_parent.value.all_tasks_count -= 1; if (task.state !== TASK_STATE.ACTIVE) kr_parent.value.resolved_tasks_count -= 1; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}) } catch (error) { setError(error) } }) }
-async function updateKeyResultState(state) { return withSubmissionLock(async () => { try { const body = await api.put('/key_result/' + kr.value.id + '/state', {state}); kr.value.state = body; kr_parent.value.state = body; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}); statePendingConfirmation.value = null } catch (error) { setError(error) } }) }
+async function addTask() { return withSubmissionLock(async () => { try { const body = await api.post('/task', {kr_id: kr.value.id, value: editingValue.value}); kr.value.tasks.push(body); kr_parent.value.all_tasks_count += 1; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}); isAddingTask.value = false } catch (error) { submissionError.value = error.message } }) }
+async function updateTaskState(task, state) { return withSubmissionLock(async () => { try { const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: task.value, state}); if (task.state === TASK_STATE.ACTIVE && body.state !== TASK_STATE.ACTIVE) kr_parent.value.resolved_tasks_count += 1; if (task.state !== TASK_STATE.ACTIVE && body.state === TASK_STATE.ACTIVE) kr_parent.value.resolved_tasks_count -= 1; task.state = body.state; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}) } catch (error) { submissionError.value = error.message } }) }
+async function deleteTask(task) { return withSubmissionLock(async () => { try { await api.delete('/task/' + task.id); taskPendingDeletionId.value = null; kr.value.tasks.splice(kr.value.tasks.indexOf(task), 1); kr_parent.value.all_tasks_count -= 1; if (task.state !== TASK_STATE.ACTIVE) kr_parent.value.resolved_tasks_count -= 1; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}) } catch (error) { submissionError.value = error.message } }) }
+async function updateKeyResultState(state) { return withSubmissionLock(async () => { try { const body = await api.put('/key_result/' + kr.value.id + '/state', {state}); kr.value.state = body; kr_parent.value.state = body; await retrieveKeyResultReviewDate(); emit('updated', {...kr_parent.value}); statePendingConfirmation.value = null } catch (error) { submissionError.value = error.message } }) }
 function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDialog.value = false; closeDialog() }
 </script>
 
 <template>
   <v-dialog v-model="isOpen" persistent width="600">
-    <v-card>
+    <DialogCard :error="submissionError">
 
       <Editable v-if="editingField === 'name'" :cancel="stopEditing" :submit="update" index="name">
         <v-text-field @keydown.enter="update('name')" @keydown.esc="stopEditing"
@@ -274,7 +277,7 @@ function deleteKeyResult() { emit('deleted', kr_parent.value); confirmDeleteKrDi
         Add Task
       </v-btn>
 
-    </v-card>
+    </DialogCard>
 
     <div>
       <v-dialog :model-value="statePendingConfirmation === KEY_RESULT_STATE.FAILED" @update:model-value="statePendingConfirmation = $event ? KEY_RESULT_STATE.FAILED : null" width="300" v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE">

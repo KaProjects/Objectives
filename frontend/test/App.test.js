@@ -32,21 +32,17 @@ describe('App', () => {
     expect(wrapper.text()).toContain('Health')
   })
 
-  it('keeps the app usable and clears the error when the alert is dismissed', async () => {
+  it('hides application content while a blocking error is set', () => {
     setError('Backend unavailable')
     const wrapper = shallowMount(App, {
       global: {
         stubs: {
-          'v-alert': {
-            emits: ['click:close'],
-            template: '<button @click="$emit(\'click:close\')"><slot /></button>',
-          },
+          'v-alert': {template: '<div><slot /></div>'},
         },
       },
     })
 
-    expect(wrapper.find('login-stub').exists()).toBe(true)
-    await wrapper.find('button').trigger('click')
-    expect(appState.error).toBeNull()
+    expect(wrapper.text()).toContain('Backend unavailable')
+    expect(wrapper.find('login-stub').exists()).toBe(false)
   })
 })

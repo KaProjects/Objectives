@@ -135,6 +135,7 @@ describe('frontend components', () => {
     expect(wrapper.vm.draftObjective.name).toBe('Exercise')
     expect(wrapper.vm.obj.name).toBe('Exercise')
     expect(wrapper.vm.editingField).toBe('name')
+    expect(wrapper.vm.submissionError).toBe('Network unavailable')
     expect(wrapper.emitted('updated')).toBeUndefined()
   })
 

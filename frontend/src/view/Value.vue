@@ -1,22 +1,18 @@
 <script setup>
-import {onMounted, ref, watch} from 'vue'
+import {onMounted, ref} from 'vue'
 import {appState, setError, unselectValue} from '@/state/appState'
 import Objective from '@/components/Objective.vue'
 import {compareDates} from '@/utils'
 import {api} from '@/services/apiClient'
 import Ideas from '@/components/Ideas.vue'
 import {OBJECTIVE_STATE, OBJECTIVE_TAB} from '@/constants/states'
+import AddObjectiveDialog from '@/components/AddObjectiveDialog.vue'
 
 const value = ref({objectives: []})
 const tab = ref(OBJECTIVE_TAB.ACTIVE)
 const openAddObjDialog = ref(false)
-const newObj = ref({name: '', description: ''})
 const showIdeas = ref(false)
 const isSubmitting = ref(false)
-
-watch(openAddObjDialog, (isOpen) => {
-  if (isOpen) newObj.value = {name: '', description: ''}
-})
 
 async function loadData() {
   try {
@@ -42,20 +38,9 @@ function filterObjectives(objectives, isActive) {
     .slice().sort(compareObjectives)
 }
 
-async function addObjective() {
-  if (isSubmitting.value) return
-  isSubmitting.value = true
-  try {
-    const objective = {...newObj.value, value_id: value.value.id}
-    const body = await api.post('/objective', objective)
-    value.value.objectives.push(body)
-    openAddObjDialog.value = false
-    tab.value = OBJECTIVE_TAB.ACTIVE
-  } catch (error) {
-    setError(error)
-  } finally {
-    isSubmitting.value = false
-  }
+function addObjective(objective) {
+  value.value.objectives.push(objective)
+  tab.value = OBJECTIVE_TAB.ACTIVE
 }
 
 function selectTab(state) {
@@ -116,18 +101,11 @@ onMounted(loadData)
       <v-btn class="button" icon="mdi-lightbulb" @click.stop="showIdeas = false" v-if="showIdeas"/>
       <v-btn class="button" icon="mdi-lightbulb-outline" @click.stop="showIdeas = true" v-else/>
 
-      <v-dialog v-model="openAddObjDialog" width="300">
-        <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" class="button" icon="mdi-plus"/>
-        </template>
-        <v-card>
-          <v-text-field label="Name" v-model="newObj.name"/>
-          <v-text-field label="Description" v-model="newObj.description"/>
-          <v-card-actions>
-            <v-btn block @click="addObjective" :disabled="isSubmitting || !newObj.name">Add</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <AddObjectiveDialog
+        v-model="openAddObjDialog"
+        :value-id="value.id"
+        @created="addObjective"
+      />
     </div>
 
     <div style="display: flex; overflow-x:scroll;">

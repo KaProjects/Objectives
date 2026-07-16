@@ -46,13 +46,18 @@ describe('api client', () => {
     expect(options.body).toBe(JSON.stringify({user: 'alice', password: 'password'}))
   })
 
-  it('throws a structured error for failed requests', async () => {
-    global.fetch = vi.fn().mockResolvedValue(mockResponse({ok: false, status: 404, body: 'Not found'}))
+  it('uses the backend error message for failed JSON requests', async () => {
+    global.fetch = vi.fn().mockResolvedValue(mockResponse({
+      ok: false,
+      status: 404,
+      contentType: 'application/json',
+      body: {error: {message: 'Not found'}},
+    }))
 
     await expect(api.get('/missing')).rejects.toMatchObject({
       name: 'ApiError',
       status: 404,
-      message: '[404] Not found',
+      message: 'Not found',
     })
     await expect(api.get('/missing')).rejects.toBeInstanceOf(ApiError)
   })

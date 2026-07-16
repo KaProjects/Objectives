@@ -5,6 +5,7 @@ import {formatDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
 import {OBJECTIVE_STATE} from '@/constants/states'
+import DialogCard from '@/components/DialogCard.vue'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -26,6 +27,7 @@ const ideas = ref([])
 const ideaPendingDeletionId = ref(null)
 const confirmDeleteObjDialog = ref(false)
 const isSubmitting = ref(false)
+const submissionError = ref(null)
 
 watch(() => props.obj, async (value) => {
   obj.value = value ? {...value, key_results: [...value.key_results]} : null
@@ -42,6 +44,7 @@ function stopEditing() { editingField.value = null; editingIdeaId.value = null }
 async function withSubmissionLock(action) {
   if (isSubmitting.value) return
   isSubmitting.value = true
+  submissionError.value = null
   try {
     await action()
   } finally {
@@ -62,7 +65,7 @@ async function updateObjective(field) {
       editingField.value = null
       emit('updated', {id: obj.value.id, name: obj.value.name, description: obj.value.description})
     } catch (error) {
-      setError(error)
+      submissionError.value = error.message
     }
   })
 }
@@ -75,7 +78,7 @@ async function updateObjectiveState(state) {
       emit('updated', {id: obj.value.id, state: body.state, date_finished: body.date})
       statePendingConfirmation.value = null; closeDialog(); emit('state-changed', body.state)
     } catch (error) {
-      setError(error)
+      submissionError.value = error.message
     }
   })
 }
@@ -89,7 +92,7 @@ async function updateIdeaValue(idea) {
       const body = await api.put('/objective/' + obj.value.id + '/idea/' + idea.id, {value: editingValue.value})
       idea.value = body.value; stopEditing()
     } catch (error) {
-      setError(error)
+      submissionError.value = error.message
     }
   })
 }
@@ -100,7 +103,7 @@ async function addIdea() {
       ideas.value.push(body); obj.value.ideas_count += 1; editingField.value = null
       emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
     } catch (error) {
-      setError(error)
+      submissionError.value = error.message
     }
   })
 }
@@ -111,7 +114,7 @@ async function deleteIdea(idea) {
       ideas.value.splice(ideas.value.indexOf(idea), 1); obj.value.ideas_count -= 1; ideaPendingDeletionId.value = null
       emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
     } catch (error) {
-      setError(error)
+      submissionError.value = error.message
     }
   })
 }
@@ -120,7 +123,7 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
 
 <template>
   <v-dialog v-model="isOpen" persistent width="600">
-    <v-card>
+    <DialogCard :error="submissionError">
       <Editable v-if="editingField === 'name'" :cancel="stopEditing" :submit="updateObjective" index="name">
         <v-text-field @keydown.enter="updateObjective('name')" @keydown.esc="stopEditing"
                       v-model="editingValue"
@@ -212,7 +215,7 @@ function deleteObjective() { emit('deleted', obj.value); confirmDeleteObjDialog.
         Add Idea
       </v-btn>
 
-    </v-card>
+    </DialogCard>
 
     <div>
       <v-dialog :model-value="statePendingConfirmation === OBJECTIVE_STATE.FAILED" @update:model-value="statePendingConfirmation = $event ? OBJECTIVE_STATE.FAILED : null" width="300" v-if="obj.state === OBJECTIVE_STATE.ACTIVE">
