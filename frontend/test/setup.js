@@ -10,6 +10,7 @@ config.global.stubs = {
   'v-icon': {template: '<i><slot /></i>'},
   'v-text-field': {props: ['modelValue'], template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'},
   'v-textarea': {props: ['modelValue'], template: '<textarea :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'},
+  'v-checkbox': {props: ['modelValue'], template: '<input type="checkbox" :checked="modelValue" @change="$emit(\'update:modelValue\', $event.target.checked)" />'},
   'v-alert': {template: '<div><slot /></div>'},
   'v-container': {template: '<div><slot /></div>'},
   'v-layout': {template: '<div><slot /></div>'},

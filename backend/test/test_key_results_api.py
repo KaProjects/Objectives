@@ -94,6 +94,28 @@ class TestKeyResultsApi(unittest.TestCase):
         status, error, message = post_request("/key_result", None)
         self.assertIn(status, (400, 422), message)
 
+    def test_create_key_result_with_smart_values(self):
+        payload = json.dumps({
+            "name": "SMART key result", "description": "a desc", "objective_id": 4,
+            "s": "true", "m": "10 km", "a": "5 km", "r": "true", "t": "2026-12-31",
+        })
+        status, created_key_result, message = post_request("/key_result", payload)
+
+        self.assertEqual(status, 201, message)
+        self.assertEqual(created_key_result["s"], "true", message)
+        self.assertEqual(created_key_result["m"], "10 km", message)
+        self.assertEqual(created_key_result["a"], "5 km", message)
+        self.assertEqual(created_key_result["r"], "true", message)
+        self.assertEqual(created_key_result["t"], "2026-12-31", message)
+
+        status, key_result, message = get_request("/key_result/" + str(created_key_result["id"]))
+        self.assertEqual(status, 200, message)
+        self.assertEqual(key_result["s"], "true", message)
+        self.assertEqual(key_result["m"], "10 km", message)
+        self.assertEqual(key_result["a"], "5 km", message)
+        self.assertEqual(key_result["r"], "true", message)
+        self.assertEqual(key_result["t"], "2026-12-31", message)
+
     def test_create_key_result_null_name(self):
         payload = json.dumps({"name": None, "description": "a desc", "objective_id": 4})
         status, error, message = post_request("/key_result", payload)

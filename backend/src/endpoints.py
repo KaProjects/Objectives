@@ -131,7 +131,12 @@ class KeyResults(Resource):
     @authenticated
     @key_result.expect(api.model('KeyResultCreate', {'name': non_blank_string('name'),
                                                      'description': fields.String(required=True, example='description'),
-                                                     'objective_id': fields.Integer(required=True, example=1)}))
+                                                     'objective_id': fields.Integer(required=True, example=1),
+                                                     's': fields.String(required=False, example='true'),
+                                                     'm': fields.String(required=False, example='measurable target'),
+                                                     'a': fields.String(required=False, example='attainable target'),
+                                                     'r': fields.String(required=False, example='true'),
+                                                     't': fields.String(required=False, example='2026-12-31')}))
     @key_result.response(404, 'Objective with ID not found')
     @key_result.response(201, 'Created')
     def post(self):
@@ -143,7 +148,10 @@ class KeyResults(Resource):
             if not Service().check_objective_exist(objective_id):
                 return create_response("objective with id '" + str(objective_id) + "' not found", 404)
 
-            new_id, date_created = Service().create_key_result(name, description, objective_id)
+            new_id, date_created = Service().create_key_result(
+                name, description, objective_id,
+                data.get("s", ""), data.get("m", ""), data.get("a", ""), data.get("r", ""), data.get("t", ""),
+            )
             data["id"] = new_id
             data["state"] = KeyResultState.ACTIVE.value
             data["date_reviewed"] = date_created

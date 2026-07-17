@@ -32,10 +32,12 @@ class Service:
     def delete_idea(self, value_id: str, idea_id: str):
         firebase_manager.delete_idea(value_id, idea_id)
 
-    def create_key_result(self, name, description, objective_id):
+    def create_key_result(self, name, description, objective_id, s="", m="", a="", r="", t=""):
         today = date.today().isoformat()
         with DatabaseManager() as database:
-            key_result_id = database.insert_key_result(name, description, KeyResultState.ACTIVE.value, objective_id, "", "", "", "", "", today)
+            key_result_id = database.insert_key_result(
+                name, description, KeyResultState.ACTIVE.value, objective_id, s, m, a, r, t, today,
+            )
         return key_result_id, today
 
     def get_single_key_result(self, id):
