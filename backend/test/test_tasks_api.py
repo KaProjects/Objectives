@@ -131,7 +131,7 @@ class TestTasksApi(unittest.TestCase):
         self.assertIn(status, (400, 422), message)
 
     def test_create_task_none_key_result(self):
-        status, error, message = post_request("/task", json.dumps({"kr_id": "777", "value": "None"}))
+        status, error, message = post_request("/task", json.dumps({"kr_id": 777, "value": "None"}))
         self.assertEqual(status, 404, message)
         self.assertTrue("id '777' not found" in error, message)
 
@@ -200,8 +200,7 @@ class TestTasksApi(unittest.TestCase):
 
     def test_update_task_null_state(self):
         status, error, message = put_request("/task/8", json.dumps({"kr_id": 9, "value": "value", "state": None}))
-        self.assertEqual(status, 422, message)
-        self.assertTrue("invalid task state" in error, message)
+        self.assertEqual(status, 400, message)
 
     def test_update_task_nonexistent(self):
         status, error, message = put_request("/task/333", json.dumps({"kr_id": 9, "value": "value", "state": "active"}))

@@ -14,6 +14,10 @@ describe('utility helpers', () => {
     expect(string_to_html('https://github.com/vuejs/core')).toContain('gh-vuejs-core')
   })
 
+  it('formats each strikethrough pair independently', () => {
+    expect(string_to_html('^first^ and ^second^')).toBe('<s>first</s> and <s>second</s>')
+  })
+
   it('removes unsafe markup before it reaches v-html', () => {
     const html = string_to_html('Hello <img src=x onerror="alert(1)"><script>alert(1)</script>')
 

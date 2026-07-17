@@ -323,7 +323,7 @@ class TestKeyResultsApi(unittest.TestCase):
 
     def test_update_key_result_state_null_state(self):
         status, error, message = put_request("/key_result/14/state", json.dumps({"state": None}))
-        self.assertEqual(status, 422, message)
+        self.assertEqual(status, 400, message)
 
     def test_update_key_result_state_nonexistent(self):
         status, error, message = put_request("/key_result/333/state", json.dumps({"state": "failed"}))

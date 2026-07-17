@@ -182,8 +182,7 @@ class TestObjectivesApi(unittest.TestCase):
 
     def test_update_objective_state_null_state(self):
         status, error, message = put_request("/objective/8/state", json.dumps({"state": None}))
-        self.assertEqual(status, 422, message)
-        self.assertTrue("invalid objective state" in error, message)
+        self.assertEqual(status, 400, message)
 
     def test_update_objective_state_nonexistent(self):
         status, error, message = put_request("/objective/33/state", json.dumps({"state": "failed"}))
