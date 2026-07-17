@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 import firebase_manager
 from auth_manager import authenticate
@@ -74,6 +74,30 @@ class Service:
         today = date.today().isoformat()
         with DatabaseManager() as database:
             return database.create_task_and_review_key_result(value, kr_id, today)
+
+    def create_tasks(self, value, kr_id, count):
+        today = date.today().isoformat()
+        with DatabaseManager() as database:
+            return database.create_tasks_and_review_key_result(value, kr_id, count, today)
+
+    def create_daily_tasks(self, value, kr_id, from_date, to_date):
+        start = date.fromisoformat(from_date)
+        end = date.fromisoformat(to_date)
+        if end < start:
+            raise ValueError('The end date cannot be before the start date.')
+
+        count = (end - start).days + 1
+        if count > 20:
+            raise ValueError('A daily task range cannot exceed 20 days.')
+
+        task_values = [
+            f'{day.day}.{day.month}.' + (f' {value.strip()}' if value.strip() else '')
+            for day in (start + timedelta(days=offset) for offset in range(count))
+        ]
+        today = date.today().isoformat()
+        with DatabaseManager() as database:
+            task_ids = database.create_task_values_and_review_key_result(task_values, kr_id, today)
+        return task_ids, task_values
 
     def update_task(self, id, value, state):
         today = date.today().isoformat()

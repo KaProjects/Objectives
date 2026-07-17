@@ -6,6 +6,7 @@ import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
 import {KEY_RESULT_STATE, OBJECTIVE_STATE, TASK_STATE} from '@/constants/states'
 import DialogCard from '@/dialogs/DialogCard.vue'
+import AddTaskDialog from '@/dialogs/AddTaskDialog.vue'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -26,6 +27,7 @@ const selectedTaskId = ref(null)
 const taskPendingDeletionId = ref(null)
 const statePendingConfirmation = ref(null)
 const confirmDeleteKrDialog = ref(false)
+const openAddTaskDialog = ref(false)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
 
@@ -118,20 +120,15 @@ function closeDialog() {
   emit('close')
 }
 
-async function addTask(value) {
-  return withSubmissionLock(async () => {
-    try {
-      const body = await api.post('/task', {kr_id: kr.value.id, value});
-      kr.value.tasks.push(body);
-      kr_parent.value.all_tasks_count += 1;
-      await retrieveKeyResultReviewDate();
-      emit('updated', {...kr_parent.value});
-      return true
-    } catch (error) {
-      submissionError.value = error.message
-      return false
-    }
-  })
+async function addCreatedTasks(tasks) {
+  kr.value.tasks.push(...tasks)
+  kr_parent.value.all_tasks_count += tasks.length
+  try {
+    await retrieveKeyResultReviewDate()
+    emit('updated', {...kr_parent.value})
+  } catch (error) {
+    submissionError.value = error.message
+  }
 }
 
 async function updateTaskState(task, state) {
@@ -281,6 +278,7 @@ function deleteKeyResult() {
 
       <v-divider></v-divider>
 
+      <div class="tasks">
       <div v-for="task in kr.tasks.slice().sort(compareTasks)" :key="task.id">
         <Editable :value="task.value" :editable="canEdit()" :submit="(value) => updateTaskValue(task, value)" label="Task" hide-details>
           <template #display="{startEditing}">
@@ -334,15 +332,13 @@ function deleteKeyResult() {
           </template>
         </Editable>
       </div>
+      </div>
 
-      <Editable value="" :submit="addTask" label="Add Task" hide-details>
-        <template #display="{startEditing}">
-          <v-btn v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
-               block class="dialogAdd" color="secondary" @click="startEditing">
-            Add Task
-          </v-btn>
-        </template>
-      </Editable>
+      <v-btn v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+             block class="dialogAdd" color="secondary" @click="openAddTaskDialog = true">
+        Add Task
+      </v-btn>
+      <AddTaskDialog v-if="kr" v-model="openAddTaskDialog" :key-result-id="kr.id" @created="addCreatedTasks"/>
 
     </DialogCard>
 
@@ -408,6 +404,11 @@ function deleteKeyResult() {
   background-color: rgb(var(--v-theme-surface));
   color: rgb(var(--v-theme-on-surface));
   display: flex;
+}
+
+.tasks {
+  max-height: 252px;
+  overflow-y: auto;
 }
 
 .taskMain {

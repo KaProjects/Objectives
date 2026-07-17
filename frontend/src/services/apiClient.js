@@ -35,7 +35,10 @@ async function request(path, {method = 'GET', data, authenticated = true} = {}) 
     if (response.status === 401) {
       sessionStorage.removeItem('token')
     }
-    throw new ApiError(response.status, `[${response.status}] ${typeof body === 'string' ? body : JSON.stringify(body)}`)
+    const message = typeof body === 'string'
+      ? body
+      : body?.error?.message ?? body?.message ?? JSON.stringify(body)
+    throw new ApiError(response.status, message)
   }
 
   return body

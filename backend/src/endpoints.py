@@ -280,6 +280,67 @@ class Tasks(Resource):
             return create_exception_response(e)
 
 
+@task.route('/bulk')
+class BulkTasks(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
+    @task.expect(api.model('TaskBulkCreate', {
+        'value': non_blank_string('value'),
+        'kr_id': fields.Integer(required=True, example=1),
+        'count': fields.Integer(required=True, min=1, max=20, example=3),
+    }))
+    @task.response(404, 'Key Result with ID not found')
+    @task.response(201, 'Created')
+    def post(self):
+        try:
+            data: dict = api.payload
+            value = data['value']
+            kr_id = data['kr_id']
+            count = data['count']
+            if not Service().check_key_result_exist(kr_id):
+                return create_response("key result with id '" + str(kr_id) + "' not found", 404)
+
+            task_ids = Service().create_tasks(value, kr_id, count)
+            tasks = [
+                {'id': task_id, 'kr_id': kr_id, 'state': TaskState.ACTIVE.value, 'value': f'{value} {number}'}
+                for number, task_id in enumerate(task_ids, start=1)
+            ]
+            return create_response(tasks, 201)
+        except Exception as e:
+            return create_exception_response(e)
+
+
+@task.route('/daily')
+class DailyTasks(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
+    @task.expect(api.model('TaskDailyCreate', {
+        'value': fields.String(required=False, example='Drink water'),
+        'kr_id': fields.Integer(required=True, example=1),
+        'from_date': non_blank_string('2026-07-02'),
+        'to_date': non_blank_string('2026-07-03'),
+    }))
+    @task.response(400, 'Invalid date range')
+    @task.response(404, 'Key Result with ID not found')
+    @task.response(201, 'Created')
+    def post(self):
+        try:
+            data: dict = api.payload
+            value = data.get('value', '')
+            kr_id = data['kr_id']
+            if not Service().check_key_result_exist(kr_id):
+                return create_response("key result with id '" + str(kr_id) + "' not found", 404)
+
+            task_ids, task_values = Service().create_daily_tasks(value, kr_id, data['from_date'], data['to_date'])
+            tasks = [
+                {'id': task_id, 'kr_id': kr_id, 'state': TaskState.ACTIVE.value, 'value': task_value}
+                for task_id, task_value in zip(task_ids, task_values)
+            ]
+            return create_response(tasks, 201)
+        except Exception as e:
+            return create_exception_response(e)
+
+
 @task.route('/<id>')
 @task.response(404, 'Task not found')
 @task.param('id', 'Task identifier')

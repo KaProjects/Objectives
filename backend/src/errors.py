@@ -42,7 +42,9 @@ def translate_exception(error):
     """Turn expected boundary/database input failures into safe API errors."""
     if isinstance(error, ApiError):
         return error
-    if isinstance(error, (BadRequest, KeyError, TypeError, ValueError)):
+    if isinstance(error, ValueError):
+        return ValidationError(str(error))
+    if isinstance(error, (BadRequest, KeyError, TypeError)):
         return ValidationError()
     if isinstance(error, sqlite3.IntegrityError):
         return UnprocessableEntityError()

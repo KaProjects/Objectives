@@ -201,6 +201,21 @@ class DatabaseManager:
                            (date_reviewed, int(kr_id)))
             return task_id
 
+    def create_tasks_and_review_key_result(self, value, kr_id, count, date_reviewed) -> list[int]:
+        task_values = [f"{value} {number}" for number in range(1, count + 1)]
+        return self.create_task_values_and_review_key_result(task_values, kr_id, date_reviewed)
+
+    def create_task_values_and_review_key_result(self, values, kr_id, date_reviewed) -> list[int]:
+        with self.cursor(commit=True) as cursor:
+            task_ids = []
+            for value in values:
+                cursor.execute(sql("insert into Tasks(kr_id, state, value) values (?,?,?)"),
+                               (kr_id, TaskState.ACTIVE.value, value))
+                task_ids.append(cursor.lastrowid)
+            cursor.execute(sql('update KeyResults set date_reviewed=? where id=?'),
+                           (date_reviewed, int(kr_id)))
+            return task_ids
+
     def update_task_and_review_key_result(self, task_id, value, state, kr_id, date_reviewed):
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update Tasks set value=?,state=? where id=?'), (value, state, int(task_id)))

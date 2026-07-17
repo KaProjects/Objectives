@@ -13,6 +13,7 @@ import Editable from '@/components/Editable.vue'
 import Ideas from '@/components/Ideas.vue'
 import AddIdeaDialog from '@/dialogs/AddIdeaDialog.vue'
 import AddKeyResultDialog from '@/dialogs/AddKeyResultDialog.vue'
+import AddTaskDialog from '@/dialogs/AddTaskDialog.vue'
 import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
 import Login from '@/components/Login.vue'
 import Objective from '@/components/Objective.vue'
@@ -242,7 +243,7 @@ describe('frontend components', () => {
     expect(wrapper.emitted('update:modelValue')).toEqual([[false]])
   })
 
-  it('KeyResultDialog opens the Add Task editor', async () => {
+  it('KeyResultDialog opens the Add Task dialog', async () => {
     const wrapper = mount(KeyResultDialog, {
       props: {
         modelValue: true,
@@ -254,7 +255,39 @@ describe('frontend components', () => {
 
     await addTaskButton.trigger('click')
 
-    expect(wrapper.find('input').exists()).toBe(true)
+    expect(wrapper.vm.openAddTaskDialog).toBe(true)
+  })
+
+  it('AddTaskDialog creates one task when no mode is selected', async () => {
+    api.post.mockResolvedValue({id: 11, kr_id: 2, state: 'active', value: 'Walk'})
+    const wrapper = shallowMount(AddTaskDialog, {props: {modelValue: true, keyResultId: 2}})
+    wrapper.vm.task.value = 'Walk'
+
+    await wrapper.vm.addTasks()
+
+    expect(api.post).toHaveBeenCalledWith('/task', {kr_id: 2, value: 'Walk'})
+    expect(wrapper.emitted('created')).toEqual([[[{id: 11, kr_id: 2, state: 'active', value: 'Walk'}]]])
+  })
+
+  it('AddTaskDialog creates repetitive or daily tasks using their endpoints', async () => {
+    api.post.mockResolvedValue([])
+    const wrapper = shallowMount(AddTaskDialog, {props: {modelValue: true, keyResultId: 2}})
+
+    wrapper.vm.task = {value: 'Walk', repetitive: true, daily: false, count: 3, fromDate: '', toDate: ''}
+    await wrapper.vm.addTasks()
+    expect(api.post).toHaveBeenCalledWith('/task/bulk', {kr_id: 2, value: 'Walk', count: 3})
+
+    wrapper.vm.task = {value: 'Walk', repetitive: false, daily: true, count: 2, fromDate: '2026-07-02', toDate: '2026-07-03'}
+    await wrapper.vm.addTasks()
+    expect(api.post).toHaveBeenCalledWith('/task/daily', {
+      kr_id: 2, value: 'Walk', from_date: '2026-07-02', to_date: '2026-07-03',
+    })
+
+    wrapper.vm.task = {value: '', repetitive: false, daily: true, count: 2, fromDate: '2026-07-02', toDate: '2026-07-03'}
+    await wrapper.vm.addTasks()
+    expect(api.post).toHaveBeenLastCalledWith('/task/daily', {
+      kr_id: 2, value: '', from_date: '2026-07-02', to_date: '2026-07-03',
+    })
   })
 
   it('KeyResultDialog sends named draft fields in its update payload', async () => {
