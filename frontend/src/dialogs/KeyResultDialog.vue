@@ -25,7 +25,6 @@ const draftKeyResult = ref({
 const selectedTaskId = ref(null)
 const taskPendingDeletionId = ref(null)
 const statePendingConfirmation = ref(null)
-const showSmart = ref(false)
 const confirmDeleteKrDialog = ref(false)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
@@ -55,10 +54,6 @@ function canEdit() {
   return kr.value.state === KEY_RESULT_STATE.ACTIVE && kr_parent.value.obj_state === OBJECTIVE_STATE.ACTIVE
 }
 
-function validateSmart(value) {
-  return value !== null && value !== undefined && value.length > 0 && !value.startsWith('[!!!]')
-}
-
 function compareTasks(a, b) {
   if (a.state === TASK_STATE.ACTIVE && b.state !== TASK_STATE.ACTIVE) return -1;
   if (a.state !== TASK_STATE.ACTIVE && b.state === TASK_STATE.ACTIVE) return 1;
@@ -76,8 +71,6 @@ async function updateKeyResult() {
       const body = await api.put('/key_result/' + kr.value.id, updated)
       Object.assign(kr.value, updated, {date_reviewed: body});
       Object.assign(kr_parent.value, updated, {date_reviewed: body})
-      kr.value.is_smart = [kr.value.s, kr.value.m, kr.value.a, kr.value.r, kr.value.t].every(validateSmart);
-      kr_parent.value.is_smart = kr.value.is_smart
       emit('updated', {...kr_parent.value})
       return true
     } catch (error) {
@@ -121,7 +114,6 @@ async function updateTaskValue(task, value) {
 }
 
 function closeDialog() {
-  showSmart.value = false;
   isOpen.value = false;
   emit('close')
 }
@@ -237,20 +229,12 @@ function deleteKeyResult() {
 
       <v-divider></v-divider>
 
-      <div
-          v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && kr.is_smart && !showSmart"
-          class="smartMark"
-          @click="showSmart = true">
-        <v-icon style="vertical-align: top;" icon="mdi-check-bold"/>
-        SMART
-      </div>
-
       <Editable :value="draftKeyResult.specific" :editable="canEdit()" :submit="(value) => update('specific', value)"
                 label="Specific" :input-props="{hint: 'The goal should have a clear, highly-specific endpoint. If your goal is too vague, it won’t be SMART.'}">
         <template #display="{startEditing}">
-          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
+          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
            @click="startEditing"
-           class="smart" :class="validateSmart(kr.s).toString()">
+           class="smart">
         <div class="smartLabel">Specific:</div>
         <div class="smartValue">{{ kr.s }}</div>
       </div>
@@ -260,9 +244,9 @@ function deleteKeyResult() {
       <Editable :value="draftKeyResult.measurable" :editable="canEdit()" :submit="(value) => update('measurable', value)"
                 label="Measurable" :input-props="{hint: 'You need to be able to accurately track your progress, so you can judge when a goal will be met.'}">
         <template #display="{startEditing}">
-          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
+          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
            @click="startEditing"
-           class="smart" :class="validateSmart(kr.m).toString()">
+           class="smart">
         <div class="smartLabel">Measurable:</div>
         <div class="smartValue">{{ kr.m }}</div>
       </div>
@@ -272,9 +256,9 @@ function deleteKeyResult() {
       <Editable :value="draftKeyResult.attainable" :editable="canEdit()" :submit="(value) => update('attainable', value)"
                 label="Attainable" :input-props="{hint: 'Of course, setting a goal that’s too ambitious will see you struggle to achieve it. This will sap at your motivation, both now and in the future.'}">
         <template #display="{startEditing}">
-          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
+          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
            @click="startEditing"
-           class="smart" :class="validateSmart(kr.a).toString()">
+           class="smart">
         <div class="smartLabel">Attainable:</div>
         <div class="smartValue">{{ kr.a }}</div>
       </div>
@@ -284,9 +268,9 @@ function deleteKeyResult() {
       <Editable :value="draftKeyResult.relevant" :editable="canEdit()" :submit="(value) => update('relevant', value)"
                 label="Relevant" :input-props="{hint: 'The goal you pick should be pertinent to your chosen field, or should benefit you directly.'}">
         <template #display="{startEditing}">
-          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
+          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
            @click="startEditing"
-           class="smart" :class="validateSmart(kr.r).toString()">
+           class="smart">
         <div class="smartLabel">Relevant:</div>
         <div class="smartValue">{{ kr.r }}</div>
       </div>
@@ -296,9 +280,9 @@ function deleteKeyResult() {
       <Editable :value="draftKeyResult.timeBound" :editable="canEdit()" :submit="(value) => update('timeBound', value)"
                 label="Time-Bound" :input-props="{hint: 'Finally, setting a timeframe for your goal helps quantify it further, and helps keep your focus on track.'}">
         <template #display="{startEditing}">
-          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && (!kr.is_smart || showSmart)"
+          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
            @click="startEditing"
-           class="smart" :class="validateSmart(kr.t).toString()">
+           class="smart">
         <div class="smartLabel">Time-Bound:</div>
         <div class="smartValue">{{ kr.t }}</div>
       </div>
@@ -451,14 +435,6 @@ function deleteKeyResult() {
   padding-left: 5px;
 }
 
-.smart.false {
-  color: #ff0000;
-}
-
-.smart.true {
-
-}
-
 .smartLabel {
   min-width: 95px;
   margin-left: 5px;
@@ -466,16 +442,6 @@ function deleteKeyResult() {
 
 .smartValue {
   display: inline;
-}
-
-.smartMark {
-  padding-left: 10px;
-  color: #017901;
-  font-weight: normal;
-}
-
-.smartMark:hover {
-  font-weight: bold;
 }
 
 .keyResultDetails {
