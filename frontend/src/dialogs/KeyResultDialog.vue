@@ -229,61 +229,51 @@ function deleteKeyResult() {
 
       <v-divider></v-divider>
 
-      <Editable :value="draftKeyResult.specific" :editable="canEdit()" :submit="(value) => update('specific', value)"
-                label="Specific" :input-props="{hint: 'The goal should have a clear, highly-specific endpoint. If your goal is too vague, it won’t be SMART.'}">
-        <template #display="{startEditing}">
-          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
-           @click="startEditing"
-           class="smart">
-        <div class="smartLabel">Specific:</div>
-        <div class="smartValue">{{ kr.s }}</div>
+      <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && kr.s && kr.r"
+           class="smartMarks">
+        <div class="smartMark">
+          <v-icon icon="mdi-check-bold" size="14"/>
+          SMART
+        </div>
       </div>
-        </template>
-      </Editable>
 
-      <Editable :value="draftKeyResult.measurable" :editable="canEdit()" :submit="(value) => update('measurable', value)"
-                label="Measurable" :input-props="{hint: 'You need to be able to accurately track your progress, so you can judge when a goal will be met.'}">
+      <v-divider class="smartDivider"/>
+
+      <Editable :value="draftKeyResult.measurable" :editable="canEdit()" :submit="(value) => update('measurable', value)" textarea
+                label="Acceptance Criteria">
         <template #display="{startEditing}">
           <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
            @click="startEditing"
-           class="smart">
-        <div class="smartLabel">Measurable:</div>
+           class="smart smartRow">
+        <v-icon class="smartIcon" icon="mdi-format-list-checks" size="18"/>
         <div class="smartValue">{{ kr.m }}</div>
       </div>
         </template>
       </Editable>
 
-      <Editable :value="draftKeyResult.attainable" :editable="canEdit()" :submit="(value) => update('attainable', value)"
-                label="Attainable" :input-props="{hint: 'Of course, setting a goal that’s too ambitious will see you struggle to achieve it. This will sap at your motivation, both now and in the future.'}">
+      <v-divider class="smartDivider"/>
+
+      <Editable :value="draftKeyResult.attainable" :editable="canEdit()" :submit="(value) => update('attainable', value)" textarea
+                label="Completion Risks">
         <template #display="{startEditing}">
           <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
            @click="startEditing"
-           class="smart">
-        <div class="smartLabel">Attainable:</div>
+           class="smart smartRow smartRiskRow">
+        <v-icon class="smartIcon" icon="mdi-alert-outline" size="18"/>
         <div class="smartValue">{{ kr.a }}</div>
       </div>
         </template>
       </Editable>
 
-      <Editable :value="draftKeyResult.relevant" :editable="canEdit()" :submit="(value) => update('relevant', value)"
-                label="Relevant" :input-props="{hint: 'The goal you pick should be pertinent to your chosen field, or should benefit you directly.'}">
-        <template #display="{startEditing}">
-          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
-           @click="startEditing"
-           class="smart">
-        <div class="smartLabel">Relevant:</div>
-        <div class="smartValue">{{ kr.r }}</div>
-      </div>
-        </template>
-      </Editable>
+      <v-divider class="smartDivider"/>
 
       <Editable :value="draftKeyResult.timeBound" :editable="canEdit()" :submit="(value) => update('timeBound', value)"
-                label="Time-Bound" :input-props="{hint: 'Finally, setting a timeframe for your goal helps quantify it further, and helps keep your focus on track.'}">
+                label="Deadline">
         <template #display="{startEditing}">
           <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
            @click="startEditing"
-           class="smart">
-        <div class="smartLabel">Time-Bound:</div>
+           class="smart smartRow">
+        <v-icon class="smartIcon" icon="mdi-calendar" size="18"/>
         <div class="smartValue">{{ kr.t }}</div>
       </div>
         </template>
@@ -431,17 +421,46 @@ function deleteKeyResult() {
 }
 
 .smart {
-  display: flex;
+  align-items: start;
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
   padding-left: 5px;
-}
-
-.smartLabel {
-  min-width: 95px;
-  margin-left: 5px;
 }
 
 .smartValue {
   display: inline;
+  white-space: pre-wrap;
+}
+
+.smartIcon {
+  margin-left: 3px;
+  margin-top: 3px;
+  opacity: var(--v-medium-emphasis-opacity);
+}
+
+.smartRiskRow .smartIcon {
+  color: #b87500;
+  opacity: 1;
+}
+
+.smartDivider {
+  margin: 4px 10px;
+  opacity: 0.35;
+}
+
+.smartMarks {
+  display: flex;
+  gap: 12px;
+  margin-bottom: -6px;
+  padding: 4px 10px 4px 11px;
+}
+
+.smartMark {
+  align-items: center;
+  color: #017901;
+  display: flex;
+  font-size: 14px;
+  gap: 4px;
 }
 
 .keyResultDetails {
