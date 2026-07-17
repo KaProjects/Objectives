@@ -242,6 +242,21 @@ describe('frontend components', () => {
     expect(wrapper.emitted('update:modelValue')).toEqual([[false]])
   })
 
+  it('KeyResultDialog opens the Add Task editor', async () => {
+    const wrapper = mount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult},
+        kr_parent: {id: 1, obj_state: 'active', all_tasks_count: 0},
+      },
+    })
+    const addTaskButton = wrapper.findAll('button').find((button) => button.text() === 'Add Task')
+
+    await addTaskButton.trigger('click')
+
+    expect(wrapper.find('input').exists()).toBe(true)
+  })
+
   it('KeyResultDialog sends named draft fields in its update payload', async () => {
     api.put.mockResolvedValue('02/01/2026')
     const wrapper = shallowMount(KeyResultDialog, {

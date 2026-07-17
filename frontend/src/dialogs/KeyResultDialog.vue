@@ -191,7 +191,7 @@ function deleteKeyResult() {
   <v-dialog v-model="isOpen" persistent width="600">
     <DialogCard :error="submissionError">
 
-      <Editable :value="draftKeyResult.name" :editable="canEdit()" :submit="(value) => update('name', value)" label="Name">
+      <Editable :value="draftKeyResult.name" :editable="canEdit()" :submit="(value) => update('name', value)" label="Name" hide-details>
         <template #display="{startEditing}">
           <v-card-title @click="startEditing" class="text-h5 grey lighten-2">
             {{ kr.name }}
@@ -199,7 +199,7 @@ function deleteKeyResult() {
         </template>
       </Editable>
 
-      <Editable :value="draftKeyResult.description" :editable="canEdit()" textarea
+      <Editable :value="draftKeyResult.description" :editable="canEdit()" textarea hide-details
                 :submit="(value) => update('description', value)" label="Description">
         <template #display="{startEditing}">
           <v-card-text v-html="string_to_html(kr.description)" @click="startEditing"/>
@@ -239,7 +239,7 @@ function deleteKeyResult() {
 
       <v-divider class="smartDivider"/>
 
-      <Editable :value="draftKeyResult.measurable" :editable="canEdit()" :submit="(value) => update('measurable', value)" textarea
+      <Editable :value="draftKeyResult.measurable" :editable="canEdit()" :submit="(value) => update('measurable', value)" textarea hide-details
                 label="Acceptance Criteria">
         <template #display="{startEditing}">
           <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
@@ -253,7 +253,7 @@ function deleteKeyResult() {
 
       <v-divider class="smartDivider"/>
 
-      <Editable :value="draftKeyResult.attainable" :editable="canEdit()" :submit="(value) => update('attainable', value)" textarea
+      <Editable :value="draftKeyResult.attainable" :editable="canEdit()" :submit="(value) => update('attainable', value)" textarea hide-details
                 label="Completion Risks">
         <template #display="{startEditing}">
           <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
@@ -267,7 +267,7 @@ function deleteKeyResult() {
 
       <v-divider class="smartDivider"/>
 
-      <Editable :value="draftKeyResult.timeBound" :editable="canEdit()" :submit="(value) => update('timeBound', value)"
+      <Editable :value="draftKeyResult.timeBound" :editable="canEdit()" :submit="(value) => update('timeBound', value)" hide-details
                 label="Deadline">
         <template #display="{startEditing}">
           <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
@@ -282,26 +282,28 @@ function deleteKeyResult() {
       <v-divider></v-divider>
 
       <div v-for="task in kr.tasks.slice().sort(compareTasks)" :key="task.id">
-        <Editable :value="task.value" :editable="canEdit()" :submit="(value) => updateTaskValue(task, value)" label="Task">
+        <Editable :value="task.value" :editable="canEdit()" :submit="(value) => updateTaskValue(task, value)" label="Task" hide-details>
           <template #display="{startEditing}">
             <div class="task"
              @mouseover="selectedTaskId = task.id"
              @mouseleave="selectedTaskId = null">
-          <div :class="task.state">
-            <v-icon icon="mdi-close-box-outline" large v-if="task.state === TASK_STATE.FAILED"/>
-            <v-icon icon="mdi-checkbox-marked-outline" large v-if="task.state === TASK_STATE.FINISHED"/>
-            <v-icon icon="mdi-checkbox-blank-outline" large v-if="task.state === TASK_STATE.ACTIVE"/>
-          </div>
-          <div v-html="string_to_html(task.value)" @click="startEditing" :class="task.state"
-               style="display: inline; padding-left: 3px; flex: 25;"/>
+              <div class="taskMain smart">
+                <div class="taskState" :class="task.state">
+                  <v-icon class="smartIcon" icon="mdi-close-box-outline" size="18" v-if="task.state === TASK_STATE.FAILED"/>
+                  <v-icon class="smartIcon" icon="mdi-checkbox-marked-outline" size="18" v-if="task.state === TASK_STATE.FINISHED"/>
+                  <v-icon class="smartIcon" icon="mdi-checkbox-blank-outline" size="18" v-if="task.state === TASK_STATE.ACTIVE"/>
+                </div>
+                <div class="smartValue taskValue" v-html="string_to_html(task.value)" @click="startEditing" :class="task.state"/>
+              </div>
 
-          <v-icon style="flex: 1;" icon="mdi-checkbox-blank-outline" large
+              <div class="taskActions">
+          <v-icon icon="mdi-checkbox-blank-outline" size="18"
                   v-if="selectedTaskId === task.id && task.state !== TASK_STATE.ACTIVE && kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
                   @click="updateTaskState(task, TASK_STATE.ACTIVE)"/>
-          <v-icon style="flex: 1;" icon="mdi-checkbox-marked-outline" large
+          <v-icon icon="mdi-checkbox-marked-outline" size="18"
                   v-if="selectedTaskId === task.id && task.state !== TASK_STATE.FINISHED && kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
                   @click="updateTaskState(task, TASK_STATE.FINISHED)"/>
-          <v-icon style="flex: 1;" icon="mdi-close-box-outline" large
+          <v-icon icon="mdi-close-box-outline" size="18"
                   v-if="selectedTaskId === task.id && task.state !== TASK_STATE.FAILED && kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
                   @click="updateTaskState(task, TASK_STATE.FAILED)"/>
 
@@ -311,7 +313,7 @@ function deleteKeyResult() {
               width="300"
           >
             <template v-slot:activator="{ props }">
-              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props"
+              <v-icon icon="mdi-delete-forever" size="18" v-bind="props"
                       v-if="selectedTaskId === task.id && kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"/>
             </template>
 
@@ -327,12 +329,13 @@ function deleteKeyResult() {
               </v-card-actions>
             </v-card>
           </v-dialog>
+              </div>
             </div>
           </template>
         </Editable>
       </div>
 
-      <Editable value="" :submit="addTask" label="Add Task">
+      <Editable value="" :submit="addTask" label="Add Task" hide-details>
         <template #display="{startEditing}">
           <v-btn v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
                block class="dialogAdd" color="secondary" @click="startEditing">
@@ -401,23 +404,36 @@ function deleteKeyResult() {
 
 <style scoped>
 .task {
-  display: flex;
+  align-items: start;
   background-color: rgb(var(--v-theme-surface));
   color: rgb(var(--v-theme-on-surface));
+  display: flex;
 }
 
-.task:hover {
-  background-color: rgb(var(--v-theme-surface-variant));
+.taskMain {
+  flex: 1;
 }
 
-.task > div.failed {
+.task .smartIcon {
+  margin-top: -3px;
+}
+
+.taskState.failed,
+.taskValue.failed {
   color: rgba(246, 28, 28, 0.40);
   text-decoration: line-through;
 }
 
-.task > div.finished {
+.taskState.finished,
+.taskValue.finished {
   color: rgba(74, 194, 6, 0.35);
   text-decoration: line-through;
+}
+
+.taskActions {
+  display: flex;
+  gap: 4px;
+  margin: 3px;
 }
 
 .smart {

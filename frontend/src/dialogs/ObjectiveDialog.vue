@@ -136,7 +136,7 @@ function deleteObjective() {
 <template>
   <v-dialog v-model="isOpen" persistent width="600">
     <DialogCard :error="submissionError">
-      <Editable :value="draftObjective.name" :editable="obj.state === OBJECTIVE_STATE.ACTIVE"
+      <Editable :value="draftObjective.name" :editable="obj.state === OBJECTIVE_STATE.ACTIVE" hide-details
                 :submit="(value) => updateObjective('name', value)" label="Name">
         <template #display="{startEditing}">
           <v-card-title @click="startEditing" class="text-h5 grey lighten-2">
@@ -145,7 +145,7 @@ function deleteObjective() {
         </template>
       </Editable>
 
-      <Editable :value="draftObjective.description" :editable="obj.state === OBJECTIVE_STATE.ACTIVE" textarea
+      <Editable :value="draftObjective.description" :editable="obj.state === OBJECTIVE_STATE.ACTIVE" textarea hide-details
                 :submit="(value) => updateObjective('description', value)" label="Description">
         <template #display="{startEditing}">
           <v-card-text v-html="string_to_html(obj.description)" @click="startEditing"/>
@@ -177,15 +177,14 @@ function deleteObjective() {
       <v-divider></v-divider>
 
       <div v-for="idea in ideas" :key="idea.id">
-        <Editable :value="idea.value" :editable="obj.state === OBJECTIVE_STATE.ACTIVE"
+        <Editable :value="idea.value" :editable="obj.state === OBJECTIVE_STATE.ACTIVE" hide-details
                   :submit="(value) => updateIdeaValue(idea, value)" label="Idea">
           <template #display="{startEditing}">
             <div class="idea"
              @mouseover="selectedIdeaId = idea.id"
              @mouseleave="selectedIdeaId = null">
-          <v-icon icon="mdi-lightbulb-variant-outline" large/>
-          <div v-html="string_to_html(idea.value)" @click="startEditing"
-               style="margin-left: 5px; flex: 25;"/>
+          <v-icon class="ideaIcon" icon="mdi-lightbulb-variant-outline" size="18"/>
+          <div class="ideaValue" v-html="string_to_html(idea.value)" @click="startEditing"/>
 
           <v-dialog
               :model-value="ideaPendingDeletionId === idea.id"
@@ -193,7 +192,7 @@ function deleteObjective() {
               width="300"
           >
             <template v-slot:activator="{ props }">
-              <v-icon style="flex: 1;" icon="mdi-delete-forever" large v-bind="props"
+              <v-icon class="ideaDeleteIcon" icon="mdi-delete-forever" size="18" v-bind="props"
                       v-if="selectedIdeaId === idea.id && obj.state === OBJECTIVE_STATE.ACTIVE"/>
             </template>
 
@@ -214,7 +213,7 @@ function deleteObjective() {
         </Editable>
       </div>
 
-      <Editable value="" :submit="addIdea" label="Add Idea">
+      <Editable value="" :submit="addIdea" label="Add Idea" hide-details>
         <template #display="{startEditing}">
           <v-btn v-if="obj.state === OBJECTIVE_STATE.ACTIVE" block class="dialogAdd" color="secondary" @click="startEditing">
             Add Idea
@@ -285,13 +284,26 @@ function deleteObjective() {
 
 <style scoped>
 .idea {
-  display: flex;
+  align-items: start;
   background-color: rgb(var(--v-theme-surface));
   color: rgb(var(--v-theme-on-surface));
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr) min-content;
+  padding-left: 5px;
 }
 
-.idea:hover {
-  background-color: rgb(var(--v-theme-surface-variant));
+.ideaIcon {
+  margin-left: 3px;
+  margin-top: 3px;
+  opacity: var(--v-medium-emphasis-opacity);
+}
+
+.ideaValue {
+  white-space: pre-wrap;
+}
+
+.ideaDeleteIcon {
+  margin: 3px;
 }
 
 .objectiveDetails {

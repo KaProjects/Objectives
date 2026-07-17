@@ -7,6 +7,7 @@ const props = defineProps({
   editable: {type: Boolean, default: true},
   label: {type: String, required: true},
   textarea: {type: Boolean, default: false},
+  hideDetails: {type: Boolean, default: false},
   inputProps: {type: Object, default: () => ({})},
 })
 
@@ -14,6 +15,7 @@ const isEditing = ref(false)
 const draftValue = ref('')
 const editor = ref(null)
 const pointerClickPending = ref(false)
+const isStartingEdit = ref(false)
 let closeAfterClick = false
 
 function handlePointerDown() {
@@ -41,9 +43,11 @@ onBeforeUnmount(() => {
 async function startEditing() {
   if (!props.editable) return
   draftValue.value = props.value
+  isStartingEdit.value = true
   isEditing.value = true
   await nextTick()
   editor.value?.querySelector('input, textarea')?.focus()
+  isStartingEdit.value = false
 }
 
 function setValue(value) {
@@ -70,20 +74,20 @@ function cancel() {
 }
 
 function handleFocusOut(event) {
-  if (isEditing.value && !event.currentTarget.contains(event.relatedTarget)) {
+  if (!isStartingEdit.value && isEditing.value && !event.currentTarget.contains(event.relatedTarget)) {
     save({deferClose: true})
   }
 }
 </script>
 
 <template>
-  <div ref="editor" class="edit" @focusout="handleFocusOut">
+  <div ref="editor" class="edit" :class="{compact: hideDetails}" @focusout="handleFocusOut">
     <div class="text">
       <v-textarea v-if="isEditing && textarea" :model-value="draftValue" @update:model-value="setValue"
                   @keydown.ctrl.enter.prevent="save" @keydown.meta.enter.prevent="save" @keydown.esc="cancel"
-                  :label="label" v-bind="inputProps"/>
+                  :label="label" :hide-details="hideDetails" v-bind="inputProps"/>
       <v-text-field v-else-if="isEditing" :model-value="draftValue" @update:model-value="setValue"
-                    @keydown.enter="save" @keydown.esc="cancel" :label="label" v-bind="inputProps"/>
+                    @keydown.enter="save" @keydown.esc="cancel" :label="label" :hide-details="hideDetails" v-bind="inputProps"/>
       <slot v-else name="display" :start-editing="startEditing"/>
     </div>
   </div>
@@ -96,6 +100,10 @@ function handleFocusOut(event) {
 
 .text {
   flex: 15;
+}
+
+.edit.compact :deep(.v-input__details) {
+  display: none;
 }
 
 </style>
