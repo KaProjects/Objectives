@@ -6,7 +6,6 @@ import DialogCard from '@/dialogs/DialogCard.vue'
 const props = defineProps({
   modelValue: Boolean,
   valueId: Number,
-  subvalueId: [String, Number],
 })
 const emit = defineEmits(['update:modelValue', 'created'])
 
@@ -14,24 +13,21 @@ const isOpen = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
 })
-const newIdea = ref({name: '', description: ''})
+const name = ref('')
 const isSubmitting = ref(false)
 const submissionError = ref(null)
 
 watch(isOpen, (open) => {
-  if (open) newIdea.value = {name: '', description: ''}
+  if (open) name.value = ''
 })
 
-async function addIdea() {
+async function addSubvalue() {
   if (isSubmitting.value) return
   isSubmitting.value = true
   submissionError.value = null
   try {
-    const idea = await api.post(
-        '/value/' + props.valueId + '/subvalue/' + props.subvalueId + '/idea',
-        newIdea.value,
-    )
-    emit('created', idea)
+    const subvalue = await api.post('/value/' + props.valueId + '/subvalue', {name: name.value})
+    emit('created', subvalue)
     isOpen.value = false
   } catch (error) {
     submissionError.value = error.message
@@ -44,14 +40,14 @@ async function addIdea() {
 <template>
   <v-dialog v-model="isOpen" width="300">
     <template v-slot:activator="{ props }">
-      <v-btn v-bind="props" class="addIdeaButton" variant="text" icon="mdi-plus" @click="isOpen = true"/>
+      <v-btn v-bind="props" variant="tonal" rounded="lg">
+        <v-icon icon="mdi-plus"/>
+      </v-btn>
     </template>
-
     <DialogCard :error="submissionError">
-      <v-text-field label="Name" v-model="newIdea.name" required/>
-      <v-text-field label="Description" v-model="newIdea.description" required/>
+      <v-text-field label="Name" v-model="name"/>
       <v-card-actions>
-        <v-btn block :disabled="isSubmitting || !newIdea.name" @click="addIdea">Add</v-btn>
+        <v-btn block @click="addSubvalue" :disabled="isSubmitting || !name">Add</v-btn>
       </v-card-actions>
     </DialogCard>
   </v-dialog>

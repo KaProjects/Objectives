@@ -40,7 +40,12 @@ class MemoryReference:
 
     def push(self, value):
         target = self._value(True)
-        key = f'idea-{len(target) + 1}'
+        existing_numbers = [
+            int(key.removeprefix('idea-'))
+            for key in target
+            if key.startswith('idea-') and key.removeprefix('idea-').isdigit()
+        ]
+        key = f'idea-{max(existing_numbers, default=0) + 1}'
         target[key] = copy.deepcopy(value)
         return type('PushResult', (), {'key': key})()
 

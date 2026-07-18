@@ -59,6 +59,24 @@ class TestFirebaseManager(unittest.TestCase):
             ]},
         ])
 
+    def test_adding_ideas_to_a_list_with_non_sequential_keys_does_not_overwrite_them(self):
+        firebase_manager.create_value('1', 'Health')
+        subvalue_id = firebase_manager.create_subvalue('1', 'Exercise')
+        ideas = self.store['values']['1']['subvalues'][subvalue_id]['ideas']
+        ideas.update({
+            'idea-4': {'name': 'Walk', 'description': ''},
+            'idea-5': {'name': 'Strength train', 'description': ''},
+            'idea-6': {'name': 'Stretch', 'description': ''},
+        })
+
+        first_new_id = firebase_manager.add_idea_to_subvalue('1', subvalue_id, 'Run', '')
+        second_new_id = firebase_manager.add_idea_to_subvalue('1', subvalue_id, 'Swim', '')
+
+        self.assertEqual((first_new_id, second_new_id), ('idea-7', 'idea-8'))
+        self.assertEqual([idea['name'] for idea in ideas.values()], [
+            'Walk', 'Strength train', 'Stretch', 'Run', 'Swim',
+        ])
+
     def test_test_runtime_uses_in_memory_firebase_data(self):
         original_db = firebase_manager.db
         try:

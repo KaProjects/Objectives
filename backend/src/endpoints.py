@@ -141,12 +141,82 @@ class Subvalues(Resource):
         except Exception as e:
             return create_exception_response(e)
 
+    @value.doc(security="Bearer")
+    @authenticated
+    @value.expect(api.model('SubvalueCreate', {'name': non_blank_string('new subvalue')}))
+    @value.response(201, 'Created')
+    def post(self, id):
+        try:
+            return create_response(Service().create_subvalue(id, api.payload['name']), 201)
+        except Exception as e:
+            return create_exception_response(e)
+
+
+@value.route('/<id>/subvalue/<subvalue_id>')
+@value.param('id', 'Value identifier')
+@value.param('subvalue_id', 'Subvalue identifier')
+class Subvalue(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
+    @value.expect(api.model('SubvalueUpdate', {'name': non_blank_string('updated subvalue')}))
+    @value.response(200, 'Updated')
+    def put(self, id, subvalue_id):
+        try:
+            return create_response(Service().update_subvalue(id, subvalue_id, api.payload['name']), 200)
+        except Exception as e:
+            return create_exception_response(e)
+
+    @value.doc(security="Bearer")
+    @authenticated
+    @value.response(204, 'Deleted')
+    def delete(self, id, subvalue_id):
+        try:
+            Service().delete_subvalue(id, subvalue_id)
+            return create_response(None, 204)
+        except Exception as e:
+            return create_exception_response(e)
+
+
+@value.route('/<id>/subvalue/<subvalue_id>/idea')
+@value.param('id', 'Value identifier')
+@value.param('subvalue_id', 'Subvalue identifier')
+class SubvalueIdeas(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
+    @value.expect(api.model('SubvalueIdeaCreate', {
+        'name': non_blank_string('new idea'),
+        'description': fields.String(required=True, example='idea details'),
+    }))
+    @value.response(201, 'Created')
+    def post(self, id, subvalue_id):
+        try:
+            data: dict = api.payload
+            idea = Service().add_subvalue_idea(id, subvalue_id, data['name'], data['description'])
+            return create_response(idea, 201)
+        except Exception as e:
+            return create_exception_response(e)
+
 
 @value.route('/<id>/subvalue/<subvalue_id>/idea/<idea_id>')
 @value.param('id', 'Value identifier')
 @value.param('subvalue_id', 'Subvalue identifier')
 @value.param('idea_id', 'Idea identifier')
 class SubvalueIdea(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
+    @value.expect(api.model('SubvalueIdeaUpdate', {
+        'name': non_blank_string('updated idea'),
+        'description': fields.String(required=True, example='updated idea details'),
+    }))
+    @value.response(200, 'Updated')
+    def put(self, id, subvalue_id, idea_id):
+        try:
+            data: dict = api.payload
+            idea = Service().update_subvalue_idea(id, subvalue_id, idea_id, data['name'], data['description'])
+            return create_response(idea, 200)
+        except Exception as e:
+            return create_exception_response(e)
+
     @value.doc(security="Bearer")
     @authenticated
     @value.response(204, 'Deleted')

@@ -13,6 +13,7 @@ import Editable from '@/components/Editable.vue'
 import Ideas from '@/components/Ideas.vue'
 import AddIdeaDialog from '@/dialogs/AddIdeaDialog.vue'
 import AddKeyResultDialog from '@/dialogs/AddKeyResultDialog.vue'
+import AddSubvalueDialog from '@/dialogs/AddSubvalueDialog.vue'
 import AddTaskDialog from '@/dialogs/AddTaskDialog.vue'
 import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
 import Login from '@/components/Login.vue'
@@ -110,25 +111,92 @@ describe('frontend components', () => {
 
   it('Ideas renders supplied subvalue lists without loading them itself', async () => {
     const subvalues = [
-      {id: '0', name: 'Default', ideas: [{id: 'first', name: 'First', description: ''}]},
+      {id: '0', name: 'Default', ideas: [{id: 'first', name: 'First', description: 'First description'}]},
       {id: '1', name: 'Fitness', ideas: [{id: 'run', name: 'Run', description: ''}]},
     ]
     const wrapper = mount(Ideas, {props: {valueId: 7, subvalues}})
 
     expect(wrapper.text()).toContain('First')
+    expect(wrapper.text()).toContain('First description')
     expect(wrapper.text()).toContain('Fitness')
+    expect(wrapper.text()).not.toContain('Default')
+    expect(wrapper.findAll('.addIdeaButton')).toHaveLength(2)
     expect(api.get).not.toHaveBeenCalled()
   })
 
-  it('AddIdeaDialog creates an idea and notifies its parent', async () => {
-    api.post.mockResolvedValue({new_id: 2, idea: 'Second'})
-    const wrapper = mount(AddIdeaDialog, {props: {modelValue: true, valueId: 7}})
+  it('Ideas controls the add dialog for the list whose plus button was clicked', async () => {
+    const wrapper = mount(Ideas, {
+      props: {valueId: 7, subvalues: [{id: '1', name: 'Fitness', ideas: []}]},
+    })
 
-    await wrapper.find('input').setValue('Second')
+    await wrapper.find('.addIdeaButton').trigger('click')
+
+    expect(wrapper.findComponent(AddIdeaDialog).props('modelValue')).toBe(true)
+  })
+
+  it('Ideas saves inline edits and notifies its parent', async () => {
+    const idea = {id: 'idea-1', name: 'Walk', description: 'Short walk'}
+    const subvalue = {id: '1', name: 'Fitness', ideas: [idea]}
+    const updatedIdea = {...idea, name: 'Run', description: 'Twenty minutes'}
+    api.put.mockResolvedValue(updatedIdea)
+    const wrapper = mount(Ideas, {props: {valueId: 7, subvalues: [subvalue]}})
+
+    await wrapper.vm.startEditing(subvalue, idea)
+    wrapper.vm.draftIdea = {name: 'Run', description: 'Twenty minutes'}
+    await wrapper.vm.saveIdea(subvalue, idea)
+
+    expect(api.put).toHaveBeenCalledWith('/value/7/subvalue/1/idea/idea-1', {
+      name: 'Run', description: 'Twenty minutes',
+    })
+    expect(wrapper.emitted('updated')).toEqual([[{subvalueId: '1', idea: updatedIdea}]])
+  })
+
+  it('Ideas saves an edited subvalue name and notifies its parent', async () => {
+    const subvalue = {id: '1', name: 'Fitness', ideas: []}
+    api.put.mockResolvedValue({id: '1', name: 'Training'})
+    const wrapper = mount(Ideas, {props: {valueId: 7, subvalues: [subvalue]}})
+
+    await wrapper.vm.updateSubvalue(subvalue, 'Training')
+
+    expect(api.put).toHaveBeenCalledWith('/value/7/subvalue/1', {name: 'Training'})
+    expect(wrapper.emitted('subvalue-updated')).toEqual([[{id: '1', name: 'Training'}]])
+  })
+
+  it('Ideas deletes a subvalue and notifies its parent', async () => {
+    const subvalue = {id: '1', name: 'Fitness', ideas: []}
+    api.delete.mockResolvedValue(undefined)
+    const wrapper = mount(Ideas, {props: {valueId: 7, subvalues: [subvalue]}})
+
+    await wrapper.vm.deleteSubvalue(subvalue)
+
+    expect(api.delete).toHaveBeenCalledWith('/value/7/subvalue/1')
+    expect(wrapper.emitted('subvalue-deleted')).toEqual([['1']])
+  })
+
+  it('AddIdeaDialog creates an idea and notifies its parent', async () => {
+    const idea = {id: 'idea-2', name: 'Second', description: 'Details'}
+    api.post.mockResolvedValue(idea)
+    const wrapper = mount(AddIdeaDialog, {props: {modelValue: true, valueId: 7, subvalueId: '1'}})
+
+    wrapper.vm.newIdea = {name: 'Second', description: 'Details'}
     await wrapper.vm.addIdea()
 
-    expect(api.post).toHaveBeenCalledWith('/value/7/idea', {idea: 'Second'})
-    expect(wrapper.emitted('created')).toEqual([[{id: 2, value: 'Second'}]])
+    expect(api.post).toHaveBeenCalledWith('/value/7/subvalue/1/idea', {
+      name: 'Second', description: 'Details',
+    })
+    expect(wrapper.emitted('created')).toEqual([[idea]])
+  })
+
+  it('AddSubvalueDialog creates an empty subvalue and notifies its parent', async () => {
+    const subvalue = {id: '3', name: 'Nutrition', ideas: []}
+    api.post.mockResolvedValue(subvalue)
+    const wrapper = mount(AddSubvalueDialog, {props: {modelValue: true, valueId: 7}})
+    wrapper.vm.name = 'Nutrition'
+
+    await wrapper.vm.addSubvalue()
+
+    expect(api.post).toHaveBeenCalledWith('/value/7/subvalue', {name: 'Nutrition'})
+    expect(wrapper.emitted('created')).toEqual([[subvalue]])
   })
 
   it('AddKeyResultDialog submits SMART setup values', async () => {

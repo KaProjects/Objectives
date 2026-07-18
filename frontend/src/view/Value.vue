@@ -8,7 +8,7 @@ import {api} from '@/services/apiClient'
 import Ideas from '@/components/Ideas.vue'
 import {OBJECTIVE_STATE, OBJECTIVE_TAB} from '@/constants/states'
 import AddObjectiveDialog from '@/dialogs/AddObjectiveDialog.vue'
-import AddIdeaDialog from '@/dialogs/AddIdeaDialog.vue'
+import AddSubvalueDialog from '@/dialogs/AddSubvalueDialog.vue'
 
 const value = ref({objectives: []})
 const route = useRoute()
@@ -16,7 +16,7 @@ const router = useRouter()
 const valueId = computed(() => route.params.valueId)
 const tab = ref(OBJECTIVE_TAB.ACTIVE)
 const openAddObjDialog = ref(false)
-const openAddIdeaDialog = ref(false)
+const openAddSubvalueDialog = ref(false)
 const subvalues = ref([])
 const isSubmitting = ref(false)
 
@@ -49,9 +49,28 @@ function addObjective(objective) {
   tab.value = OBJECTIVE_TAB.ACTIVE
 }
 
-function addIdea(idea) {
-  const defaultSubvalue = subvalues.value.find((subvalue) => subvalue.id === '0')
-  if (defaultSubvalue) defaultSubvalue.ideas.push({id: idea.id, name: idea.value, description: ''})
+function addIdea({subvalueId, idea}) {
+  const subvalue = subvalues.value.find((item) => item.id === subvalueId)
+  if (subvalue) subvalue.ideas.push(idea)
+}
+
+function updateIdea({subvalueId, idea}) {
+  const subvalue = subvalues.value.find((item) => item.id === subvalueId)
+  const existingIdea = subvalue?.ideas.find((item) => item.id === idea.id)
+  if (existingIdea) Object.assign(existingIdea, idea)
+}
+
+function addSubvalue(subvalue) {
+  subvalues.value.push(subvalue)
+}
+
+function updateSubvalue(updatedSubvalue) {
+  const subvalue = subvalues.value.find((item) => item.id === updatedSubvalue.id)
+  if (subvalue) Object.assign(subvalue, updatedSubvalue)
+}
+
+function removeSubvalue(subvalueId) {
+  subvalues.value = subvalues.value.filter((subvalue) => subvalue.id !== subvalueId)
 }
 
 function removeIdea({subvalueId, ideaId}) {
@@ -123,18 +142,18 @@ watch(valueId, loadData, {immediate: true})
         </v-tabs>
       </div>
 
-      <div class="addAction">
+      <div v-if="tab === OBJECTIVE_TAB.ACTIVE" class="addAction">
         <AddObjectiveDialog
-            v-if="tab === OBJECTIVE_TAB.ACTIVE"
             v-model="openAddObjDialog"
             :value-id="value.id"
             @created="addObjective"
         />
-        <AddIdeaDialog
-            v-if="tab === OBJECTIVE_TAB.IDEAS"
-            v-model="openAddIdeaDialog"
+      </div>
+      <div v-else-if="tab === OBJECTIVE_TAB.IDEAS" class="addAction">
+        <AddSubvalueDialog
+            v-model="openAddSubvalueDialog"
             :value-id="value.id"
-            @created="addIdea"
+            @created="addSubvalue"
         />
       </div>
     </div>
@@ -144,6 +163,10 @@ watch(valueId, loadData, {immediate: true})
              class="obj"
              :value-id="valueId"
              :subvalues="subvalues"
+             @created="addIdea"
+             @updated="updateIdea"
+             @subvalue-updated="updateSubvalue"
+             @subvalue-deleted="removeSubvalue"
              @deleted="removeIdea"/>
       <Objective v-for="objective in filterObjectives(value.objectives, tab === OBJECTIVE_TAB.ACTIVE)"
                  v-if="tab !== OBJECTIVE_TAB.IDEAS"

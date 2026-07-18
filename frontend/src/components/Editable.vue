@@ -1,5 +1,5 @@
 <script setup>
-import {nextTick, onBeforeUnmount, onMounted, ref} from 'vue'
+import {nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 
 const props = defineProps({
   value: {type: String, default: ''},
@@ -9,7 +9,9 @@ const props = defineProps({
   textarea: {type: Boolean, default: false},
   hideDetails: {type: Boolean, default: false},
   inputProps: {type: Object, default: () => ({})},
+  cancelEditing: {type: Boolean, default: false},
 })
+const emit = defineEmits(['editing-changed'])
 
 const isEditing = ref(false)
 const draftValue = ref('')
@@ -26,7 +28,7 @@ function handleWindowClick() {
   pointerClickPending.value = false
   if (closeAfterClick) {
     closeAfterClick = false
-    isEditing.value = false
+    stopEditing()
   }
 }
 
@@ -45,9 +47,16 @@ async function startEditing() {
   draftValue.value = props.value
   isStartingEdit.value = true
   isEditing.value = true
+  emit('editing-changed', true)
   await nextTick()
   editor.value?.querySelector('input, textarea')?.focus()
   isStartingEdit.value = false
+}
+
+function stopEditing() {
+  if (!isEditing.value) return
+  isEditing.value = false
+  emit('editing-changed', false)
 }
 
 function setValue(value) {
@@ -63,15 +72,19 @@ async function save({deferClose = false} = {}) {
   if (deferClose && pointerClickPending.value) {
     closeAfterClick = true
   } else {
-    isEditing.value = false
+    stopEditing()
   }
 
   return true
 }
 
 function cancel() {
-  isEditing.value = false
+  stopEditing()
 }
+
+watch(() => props.cancelEditing, (cancelEditing) => {
+  if (cancelEditing) stopEditing()
+})
 
 function handleFocusOut(event) {
   if (!isStartingEdit.value && isEditing.value && !event.currentTarget.contains(event.relatedTarget)) {

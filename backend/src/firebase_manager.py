@@ -76,6 +76,14 @@ def delete_idea_from_subvalue(value_id: str, subvalue_id: str, idea_key: str):
 
 def get_subvalues(value_id: str) -> list[dict]:
     subvalues = db.reference(f'{_value_path(value_id)}/subvalues').get() or {}
+    if DEFAULT_SUBVALUE_ID not in subvalues:
+        subvalues = {
+            DEFAULT_SUBVALUE_ID: {
+                'name': DEFAULT_SUBVALUE_NAME,
+                'ideas': {},
+            },
+            **subvalues,
+        }
     return [
         {
             'id': str(subvalue_id),

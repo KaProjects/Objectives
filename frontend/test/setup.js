@@ -18,6 +18,7 @@ config.global.stubs = {
   'v-tabs': {template: '<div><slot /></div>'},
   'v-tab': {template: '<button><slot /></button>'},
   'v-progress-circular': {template: '<div />'},
+  'v-list': {template: '<div><slot /></div>'},
   'v-list-item': {template: '<div><slot /></div>'},
   'v-list-item-title': {template: '<div><slot /></div>'},
   'v-list-item-content': {template: '<div><slot /></div>'},

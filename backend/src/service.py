@@ -44,8 +44,29 @@ class Service:
     def get_subvalues(self, value_id: str):
         return self.firebase.get_subvalues(value_id)
 
+    def create_subvalue(self, value_id: str, name: str):
+        subvalue_id = self.firebase.create_subvalue(value_id, name)
+        return {'id': subvalue_id, 'name': name, 'ideas': []}
+
+    def update_subvalue(self, value_id: str, subvalue_id: str, name: str):
+        self.firebase.update_subvalue(value_id, subvalue_id, name)
+        return {'id': subvalue_id, 'name': name}
+
+    def delete_subvalue(self, value_id: str, subvalue_id: str):
+        if str(subvalue_id) == '0':
+            raise ValueError('default subvalue cannot be deleted')
+        self.firebase.delete_subvalue(value_id, subvalue_id)
+
     def delete_subvalue_idea(self, value_id: str, subvalue_id: str, idea_id: str):
         self.firebase.delete_idea_from_subvalue(value_id, subvalue_id, idea_id)
+
+    def add_subvalue_idea(self, value_id: str, subvalue_id: str, name: str, description: str):
+        idea_id = self.firebase.add_idea_to_subvalue(value_id, subvalue_id, name, description)
+        return {'id': idea_id, 'name': name, 'description': description}
+
+    def update_subvalue_idea(self, value_id: str, subvalue_id: str, idea_id: str, name: str, description: str):
+        self.firebase.update_idea(value_id, subvalue_id, idea_id, name, description)
+        return {'id': idea_id, 'name': name, 'description': description}
 
     def create_key_result(self, name, description, objective_id, s="", m="", a="", r="", t=""):
         today = date.today().isoformat()
