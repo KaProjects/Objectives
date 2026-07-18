@@ -17,12 +17,17 @@ const valueId = computed(() => route.params.valueId)
 const tab = ref(OBJECTIVE_TAB.ACTIVE)
 const openAddObjDialog = ref(false)
 const openAddIdeaDialog = ref(false)
-const ideas = ref(null)
+const subvalues = ref([])
 const isSubmitting = ref(false)
 
 async function loadData() {
   try {
-    value.value = await api.get('/value/' + valueId.value)
+    const [loadedValue, loadedSubvalues] = await Promise.all([
+      api.get('/value/' + valueId.value),
+      api.get('/value/' + valueId.value + '/subvalue'),
+    ])
+    value.value = loadedValue
+    subvalues.value = loadedSubvalues
   } catch (error) {
     setError(error)
   }
@@ -45,7 +50,13 @@ function addObjective(objective) {
 }
 
 function addIdea(idea) {
-  ideas.value?.addCreatedIdea(idea)
+  const defaultSubvalue = subvalues.value.find((subvalue) => subvalue.id === '0')
+  if (defaultSubvalue) defaultSubvalue.ideas.push({id: idea.id, name: idea.value, description: ''})
+}
+
+function removeIdea({subvalueId, ideaId}) {
+  const subvalue = subvalues.value.find((item) => item.id === subvalueId)
+  if (subvalue) subvalue.ideas = subvalue.ideas.filter((idea) => idea.id !== ideaId)
 }
 
 function returnToValues() {
@@ -129,7 +140,11 @@ watch(valueId, loadData, {immediate: true})
     </div>
 
     <div style="display: flex; overflow-x:scroll;">
-      <Ideas ref="ideas" class="obj" :valueId="valueId" v-if="tab === OBJECTIVE_TAB.IDEAS"/>
+      <Ideas v-if="tab === OBJECTIVE_TAB.IDEAS"
+             class="obj"
+             :value-id="valueId"
+             :subvalues="subvalues"
+             @deleted="removeIdea"/>
       <Objective v-for="objective in filterObjectives(value.objectives, tab === OBJECTIVE_TAB.ACTIVE)"
                  v-if="tab !== OBJECTIVE_TAB.IDEAS"
                  :key="objective.id"

@@ -15,7 +15,9 @@ describe('Value view', () => {
   })
 
   it('loads its value and adds a created objective to its list', async () => {
-    api.get.mockResolvedValue({id: 1, name: 'Health', objectives: []})
+    api.get.mockImplementation((path) => path.endsWith('/subvalue')
+        ? Promise.resolve([{id: '0', name: 'Default', ideas: []}])
+        : Promise.resolve({id: 1, name: 'Health', objectives: []}))
     await router.push('/values/1')
     const wrapper = shallowMount(Value, {global: {plugins: [router]}})
     await flushPromises()
@@ -23,5 +25,6 @@ describe('Value view', () => {
 
     expect(wrapper.vm.value.objectives).toEqual([{id: 2, name: 'Walk', state: 'active'}])
     expect(wrapper.vm.tab).toBe('active')
+    expect(api.get).toHaveBeenCalledWith('/value/1/subvalue')
   })
 })

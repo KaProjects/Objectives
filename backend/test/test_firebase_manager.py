@@ -1,5 +1,6 @@
 import copy
 import importlib.util
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -117,6 +118,27 @@ class TestFirebaseManager(unittest.TestCase):
         firebase_manager.delete_idea_from_subvalue('1', subvalue_id, idea_key)
         firebase_manager.delete_subvalue('1', subvalue_id)
         self.assertNotIn('1', self.store['values']['1']['subvalues'])
+
+    def test_get_subvalues_returns_each_idea_list(self):
+        firebase_manager.create_value('1', 'Health')
+        fitness_id = firebase_manager.create_subvalue('1', 'Fitness')
+        firebase_manager.add_idea_to_subvalue('1', fitness_id, 'Run', '30 minutes')
+
+        self.assertEqual(firebase_manager.get_subvalues('1'), [
+            {'id': '0', 'name': 'default', 'ideas': []},
+            {'id': '1', 'name': 'Fitness', 'ideas': [
+                {'id': 'idea-1', 'name': 'Run', 'description': '30 minutes'},
+            ]},
+        ])
+
+    def test_test_environment_uses_in_memory_firebase_data(self):
+        original_db = firebase_manager.db
+        try:
+            with patch.dict(os.environ, {'APP_ENV': 'test'}, clear=False):
+                firebase_manager.init_firebase()
+            self.assertEqual(firebase_manager.get_subvalues('1')[0]['name'], 'default')
+        finally:
+            firebase_manager.db = original_db
 
     def test_migration_script_creates_default_subvalues(self):
         self.store.update({

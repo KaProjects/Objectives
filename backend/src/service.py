@@ -32,6 +32,12 @@ class Service:
     def delete_idea(self, value_id: str, idea_id: str):
         firebase_manager.delete_idea(value_id, idea_id)
 
+    def get_subvalues(self, value_id: str):
+        return firebase_manager.get_subvalues(value_id)
+
+    def delete_subvalue_idea(self, value_id: str, subvalue_id: str, idea_id: str):
+        firebase_manager.delete_idea_from_subvalue(value_id, subvalue_id, idea_id)
+
     def create_key_result(self, name, description, objective_id, s="", m="", a="", r="", t=""):
         today = date.today().isoformat()
         with DatabaseManager() as database:

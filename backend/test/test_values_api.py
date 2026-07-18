@@ -68,6 +68,15 @@ class TestValuesApi(unittest.TestCase):
         self.assertEqual(len(values), 5, message)
         self.assertEqual(values[0]["name"], "Zdravie", message)
 
+    def test_get_subvalues_uses_test_firebase_data(self):
+        status, subvalues, message = get_request('/value/1/subvalue')
+
+        self.assertEqual(status, 200, message)
+        self.assertEqual([subvalue['name'] for subvalue in subvalues], ['default', 'Exercise'], message)
+        self.assertEqual(subvalues[1]['ideas'][0], {
+            'id': 'idea-2', 'name': 'Walk', 'description': '30 minutes',
+        }, message)
+
     def test_get_value_check_tasks_count(self):
         status, value, message = get_request("/value/5")
         self.assertEqual(status, 200, message)

@@ -125,6 +125,35 @@ class Idea(Resource):
             return create_exception_response(e)
 
 
+@value.route('/<id>/subvalue')
+@value.param('id', 'Value identifier')
+class Subvalues(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
+    @value.response(200, 'Success')
+    def get(self, id):
+        try:
+            return create_response(Service().get_subvalues(id), 200)
+        except Exception as e:
+            return create_exception_response(e)
+
+
+@value.route('/<id>/subvalue/<subvalue_id>/idea/<idea_id>')
+@value.param('id', 'Value identifier')
+@value.param('subvalue_id', 'Subvalue identifier')
+@value.param('idea_id', 'Idea identifier')
+class SubvalueIdea(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
+    @value.response(204, 'Deleted')
+    def delete(self, id, subvalue_id, idea_id):
+        try:
+            Service().delete_subvalue_idea(id, subvalue_id, idea_id)
+            return create_response(None, 204)
+        except Exception as e:
+            return create_exception_response(e)
+
+
 @key_result.route('')
 class KeyResults(Resource):
     @value.doc(security="Bearer")

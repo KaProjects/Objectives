@@ -108,15 +108,16 @@ describe('frontend components', () => {
     expect(wrapper.emitted('logged-in')).toEqual([['token']])
   })
 
-  it('Ideas loads ideas and adds a created idea', async () => {
-    api.get.mockResolvedValue([{id: 1, value: 'First'}])
-    const wrapper = mount(Ideas, {props: {valueId: 7}})
-    await flushPromises()
-    expect(wrapper.text()).toContain('First')
+  it('Ideas renders supplied subvalue lists without loading them itself', async () => {
+    const subvalues = [
+      {id: '0', name: 'Default', ideas: [{id: 'first', name: 'First', description: ''}]},
+      {id: '1', name: 'Fitness', ideas: [{id: 'run', name: 'Run', description: ''}]},
+    ]
+    const wrapper = mount(Ideas, {props: {valueId: 7, subvalues}})
 
-    wrapper.vm.addCreatedIdea({id: 2, value: 'Second'})
-    await wrapper.vm.$nextTick()
-    expect(wrapper.text()).toContain('Second')
+    expect(wrapper.text()).toContain('First')
+    expect(wrapper.text()).toContain('Fitness')
+    expect(api.get).not.toHaveBeenCalled()
   })
 
   it('AddIdeaDialog creates an idea and notifies its parent', async () => {
