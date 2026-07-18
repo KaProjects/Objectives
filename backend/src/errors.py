@@ -46,7 +46,7 @@ def translate_exception(error):
         return error
     if isinstance(error, ValueError):
         return ValidationError(str(error))
-    if isinstance(error, (BadRequest, KeyError, TypeError)):
+    if isinstance(error, BadRequest):
         return ValidationError()
     if isinstance(error, DatabaseIntegrityError):
         return UnprocessableEntityError()

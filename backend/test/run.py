@@ -71,6 +71,7 @@ def run_tests():
         import test_tasks_api
         import test_values_api
         import test_error_contract_api
+        import test_errors
         import test_database_manager
         import test_json_encoder
         import test_auth_manager
@@ -81,7 +82,7 @@ def run_tests():
             test_runner.run(unittest.TestLoader().loadTestsFromModule(module))
             for module in (
                 test_values_api, test_objectives_api, test_key_results_api,
-                test_tasks_api, test_error_contract_api, test_database_manager,
+                test_tasks_api, test_error_contract_api, test_errors, test_database_manager,
                 test_json_encoder, test_auth_manager, test_firebase_manager,
             )
         ]
