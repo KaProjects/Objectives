@@ -49,7 +49,11 @@ def create_exception_response(exception):
     error = translate_exception(exception)
     if error.status_code == 500:
         current_app.logger.exception('Unhandled API exception')
-    raise error
+    return Response(
+        response=json.dumps(error_body(error)),
+        status=error.status_code,
+        mimetype='application/json',
+    )
 
 
 @value.route('s')
@@ -300,7 +304,7 @@ class Tasks(Resource):
             value = data["value"]
             kr_id = data["kr_id"]
             if not Service().check_key_result_exist(kr_id):
-                return create_response("key result with id '" + kr_id + "' not found", 404)
+                return create_response("key result with id '" + str(kr_id) + "' not found", 404)
             new_id = Service().create_task(value, kr_id)
             data["id"] = new_id
             data["state"] = TaskState.ACTIVE.value

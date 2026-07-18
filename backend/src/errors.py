@@ -1,5 +1,3 @@
-import sqlite3
-
 from werkzeug.exceptions import BadRequest
 
 
@@ -38,6 +36,10 @@ class InternalServerError(ApiError):
     pass
 
 
+class DatabaseIntegrityError(Exception):
+    """A database constraint was violated."""
+
+
 def translate_exception(error):
     """Turn expected boundary/database input failures into safe API errors."""
     if isinstance(error, ApiError):
@@ -46,7 +48,7 @@ def translate_exception(error):
         return ValidationError(str(error))
     if isinstance(error, (BadRequest, KeyError, TypeError)):
         return ValidationError()
-    if isinstance(error, sqlite3.IntegrityError):
+    if isinstance(error, DatabaseIntegrityError):
         return UnprocessableEntityError()
     return InternalServerError()
 

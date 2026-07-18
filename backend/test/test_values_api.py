@@ -72,9 +72,9 @@ class TestValuesApi(unittest.TestCase):
         status, subvalues, message = get_request('/value/1/subvalue')
 
         self.assertEqual(status, 200, message)
-        self.assertEqual([subvalue['name'] for subvalue in subvalues], ['default', 'Exercise'], message)
+        self.assertEqual([subvalue['name'] for subvalue in subvalues], ['default', 'Exercise', 'Recovery'], message)
         self.assertEqual(subvalues[1]['ideas'][0], {
-            'id': 'idea-2', 'name': 'Walk', 'description': '30 minutes',
+            'id': 'idea-4', 'name': 'Walk', 'description': '30 minutes after lunch.',
         }, message)
 
     def test_get_value_check_tasks_count(self):

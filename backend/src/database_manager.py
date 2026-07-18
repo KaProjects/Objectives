@@ -1,51 +1,45 @@
-import json
-import sqlite3
 from contextlib import contextmanager
-from enum import Enum
-from sqlite3 import Connection
-
-import mysql.connector
+from contextvars import ContextVar
+from datetime import date
 
 from classes import Value, Objective, KeyResult, Task, ObjectiveIdea
-from dates import normalize_date, validate_iso_date
+from errors import DatabaseIntegrityError
 from states import TaskState
 
-
-class DataSource(Enum):
-    PRODUCTION = "prod"
-    DEVEL = "dev"
-    TEST = "test"
-
-
-datasource: DataSource = None
+_placeholder = ContextVar('database_placeholder', default='?')
 
 
 def sql(query: str):
-    if datasource == DataSource.PRODUCTION:
-        query = query.replace("?", "%s")
-    return query
+    return query.replace('?', _placeholder.get())
+
+
+def validate_iso_date(value: str, allow_empty: bool = False) -> str:
+    if value == '' and allow_empty:
+        return value
+    if not isinstance(value, str):
+        raise ValueError('date must be a string')
+    try:
+        return date.fromisoformat(value).isoformat()
+    except ValueError as error:
+        raise ValueError('date must use ISO format YYYY-MM-DD') from error
 
 
 class DatabaseManager:
 
-    def __init__(self):
-        if datasource == DataSource.PRODUCTION:
-            with open("envs_prod_db.json") as envs_file:
-                envs = json.load(envs_file)
-                self.conn = mysql.connector.connect(
-                    host=envs["host"],
-                    port=envs["port"],
-                    user=envs["user"],
-                    password=envs["password"],
-                    database=envs["database"],
-                    buffered=True
-                )
-        elif datasource == DataSource.DEVEL:
-            self.conn: Connection = sqlite3.connect("devel.db")
-            self.conn.execute('PRAGMA foreign_keys = ON')
-        elif datasource == DataSource.TEST:
-            self.conn: Connection = sqlite3.connect("test.db")
-            self.conn.execute('PRAGMA foreign_keys = ON')
+    def __init__(self, connect, placeholder='?', integrity_errors=()):
+        self._connect = connect
+        self._placeholder = placeholder
+        self._integrity_errors = integrity_errors
+        self._placeholder_token = None
+        self.conn = None
+
+    def open(self):
+        """Create a short-lived session using this manager's configuration."""
+        return DatabaseManager(
+            connect=self._connect,
+            placeholder=self._placeholder,
+            integrity_errors=self._integrity_errors,
+        )
 
     def close(self):
         if getattr(self, 'conn', None) is not None:
@@ -53,22 +47,24 @@ class DatabaseManager:
             self.conn = None
 
     def __enter__(self):
+        self.conn = self._connect()
+        self._placeholder_token = _placeholder.set(self._placeholder)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
+        _placeholder.reset(self._placeholder_token)
 
     @contextmanager
     def cursor(self, commit: bool = False):
         cursor = self.conn.cursor()
         try:
             yield cursor
-        except Exception as err:
-            print("DatabaseError {} ".format(err))
-            raise err
-        else:
             if commit:
                 self.conn.commit()
+        except self._integrity_errors as error:
+            self.conn.rollback()
+            raise DatabaseIntegrityError() from error
         finally:
             cursor.close()
 
@@ -76,25 +72,6 @@ class DatabaseManager:
         with self.cursor() as cursor:
             for script in scripts:
                 cursor.executescript(open(script, "r").read())
-
-    def migrate_legacy_dates(self) -> int:
-        date_columns = (
-            ('Objectives', 'date_created', False),
-            ('Objectives', 'date_finished', True),
-            ('KeyResults', 'date_created', False),
-            ('KeyResults', 'date_reviewed', False),
-        )
-        updated = 0
-        with self.cursor(commit=True) as cursor:
-            for table, column, allow_empty in date_columns:
-                cursor.execute(sql(f'select id, {column} from {table}'))
-                for record_id, value in cursor.fetchall():
-                    normalized = normalize_date(value, allow_empty=allow_empty)
-                    if normalized != value:
-                        cursor.execute(sql(f'update {table} set {column}=? where id=?'),
-                                       (normalized, record_id))
-                        updated += 1
-        return updated
 
     def select_all_values(self) -> list:
         values = list()
