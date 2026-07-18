@@ -59,6 +59,29 @@ class TestFirebaseManager(unittest.TestCase):
             ]},
         ])
 
+    def test_subvalues_and_ideas_can_be_read_from_firebase_array_nodes(self):
+        self.store.update({
+            'values': {
+                '1': {
+                    'subvalues': [
+                        {'name': 'default', 'ideas': []},
+                        {'name': 'Exercise', 'ideas': [
+                            {'name': 'Walk', 'description': 'After lunch.'},
+                        ]},
+                    ],
+                },
+            },
+        })
+
+        self.assertEqual(firebase_manager.get_subvalues('1'), [
+            {'id': '0', 'name': 'default', 'ideas': []},
+            {'id': '1', 'name': 'Exercise', 'ideas': [
+                {'id': '0', 'name': 'Walk', 'description': 'After lunch.'},
+            ]},
+        ])
+
+        self.assertEqual(firebase_manager.create_subvalue('1', 'Recovery'), '2')
+
     def test_adding_ideas_to_a_list_with_non_sequential_keys_does_not_overwrite_them(self):
         firebase_manager.create_value('1', 'Health')
         subvalue_id = firebase_manager.create_subvalue('1', 'Exercise')
