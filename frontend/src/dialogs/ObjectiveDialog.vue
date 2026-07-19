@@ -6,12 +6,13 @@ import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
 import {OBJECTIVE_STATE} from '@/constants/states'
 import DialogCard from '@/dialogs/DialogCard.vue'
+import AddKeyResultDialog from '@/dialogs/AddKeyResultDialog.vue'
 
 const props = defineProps({
   modelValue: Boolean,
   obj: Object,
 })
-const emit = defineEmits(['update:modelValue', 'close', 'deleted', 'updated', 'state-changed'])
+const emit = defineEmits(['update:modelValue', 'close', 'deleted', 'updated', 'state-changed', 'key-result-created'])
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
@@ -22,6 +23,9 @@ const statePendingConfirmation = ref(null)
 const selectedIdeaId = ref(null)
 const ideas = ref([])
 const ideaPendingDeletionId = ref(null)
+const openAddKeyResultDialog = ref(false)
+const keyResultDraft = ref(null)
+const ideaToDeleteAfterKeyResult = ref(null)
 const confirmDeleteObjDialog = ref(false)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
@@ -116,10 +120,43 @@ async function deleteIdea(idea) {
   await withSubmissionLock(async () => {
     try {
       await api.delete('/objective/' + obj.value.id + '/idea/' + idea.id)
-      ideas.value.splice(ideas.value.indexOf(idea), 1);
-      obj.value.ideas_count -= 1;
+      removeIdeaFromState(idea)
       ideaPendingDeletionId.value = null
-      emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
+    } catch (error) {
+      submissionError.value = error.message
+    }
+  })
+}
+
+function removeIdeaFromState(idea) {
+  const index = ideas.value.indexOf(idea)
+  if (index < 0) return
+
+  ideas.value.splice(index, 1)
+  obj.value.ideas_count -= 1
+  emit('updated', {id: obj.value.id, ideas_count: obj.value.ideas_count})
+}
+
+function createKeyResultFromIdea(idea) {
+  if (isSubmitting.value || obj.value.state !== OBJECTIVE_STATE.ACTIVE) return
+
+  keyResultDraft.value = {name: idea.value}
+  ideaToDeleteAfterKeyResult.value = idea
+  openAddKeyResultDialog.value = true
+}
+
+async function keyResultCreatedFromIdea(keyResult) {
+  const idea = ideaToDeleteAfterKeyResult.value
+  keyResultDraft.value = null
+  ideaToDeleteAfterKeyResult.value = null
+  if (!idea) return
+
+  await withSubmissionLock(async () => {
+    try {
+      await api.delete('/objective/' + obj.value.id + '/idea/' + idea.id)
+      removeIdeaFromState(idea)
+      emit('key-result-created', keyResult)
+      closeDialog()
     } catch (error) {
       submissionError.value = error.message
     }
@@ -186,28 +223,32 @@ function deleteObjective() {
           <v-icon class="ideaIcon" icon="mdi-lightbulb-variant-outline" size="18"/>
           <div class="ideaValue" v-html="string_to_html(idea.value)" @click="startEditing"/>
 
-          <v-dialog
-              :model-value="ideaPendingDeletionId === idea.id"
-              @update:model-value="ideaPendingDeletionId = $event ? idea.id : null"
-              width="300"
-          >
-            <template v-slot:activator="{ props }">
-              <v-icon class="ideaDeleteIcon" icon="mdi-delete-forever" size="18" v-bind="props"
-                      v-if="selectedIdeaId === idea.id && obj.state === OBJECTIVE_STATE.ACTIVE"/>
-            </template>
+          <div v-if="selectedIdeaId === idea.id && obj.state === OBJECTIVE_STATE.ACTIVE" class="ideaActions">
+            <v-icon class="ideaCreateKeyResultIcon" icon="mdi-flag-plus-outline" size="18"
+                    @click.stop="createKeyResultFromIdea(idea)"/>
 
-            <v-card>
-              <v-card-title class="text-h5 grey lighten-2">
-                Delete Idea?
-              </v-card-title>
-              <v-card-text>
-                {{ idea.value }}
-              </v-card-text>
-              <v-card-actions>
-                <v-btn block :disabled="isSubmitting" @click="deleteIdea(idea)">Confirm</v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
+            <v-dialog
+                :model-value="ideaPendingDeletionId === idea.id"
+                @update:model-value="ideaPendingDeletionId = $event ? idea.id : null"
+                width="300"
+            >
+              <template v-slot:activator="{ props }">
+                <v-icon class="ideaDeleteIcon" icon="mdi-delete-forever" size="18" v-bind="props"/>
+              </template>
+
+              <v-card>
+                <v-card-title class="text-h5 grey lighten-2">
+                  Delete Idea?
+                </v-card-title>
+                <v-card-text>
+                  {{ idea.value }}
+                </v-card-text>
+                <v-card-actions>
+                  <v-btn block :disabled="isSubmitting" @click="deleteIdea(idea)">Confirm</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+          </div>
             </div>
           </template>
         </Editable>
@@ -220,6 +261,14 @@ function deleteObjective() {
           </v-btn>
         </template>
       </Editable>
+
+      <AddKeyResultDialog
+          v-model="openAddKeyResultDialog"
+          :objective-id="obj.id"
+          :initial-key-result="keyResultDraft"
+          :show-activator="false"
+          @created="keyResultCreatedFromIdea"
+      />
 
     </DialogCard>
 
@@ -304,6 +353,16 @@ function deleteObjective() {
 
 .ideaDeleteIcon {
   margin: 3px;
+}
+
+.ideaCreateKeyResultIcon {
+  margin: 3px;
+}
+
+.ideaActions {
+  align-items: center;
+  display: flex;
+  gap: 4px;
 }
 
 .objectiveDetails {

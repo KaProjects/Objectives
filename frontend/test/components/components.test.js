@@ -272,6 +272,19 @@ describe('frontend components', () => {
     expect(wrapper.emitted('created')).toEqual([[keyResult]])
   })
 
+  it('AddKeyResultDialog uses an initial key result draft', async () => {
+    const wrapper = mount(AddKeyResultDialog, {
+      props: {
+        modelValue: true,
+        objectiveId: 7,
+        initialKeyResult: {name: 'Turn idea into a result'},
+        showActivator: false,
+      },
+    })
+
+    expect(wrapper.vm.newKeyResult.name).toBe('Turn idea into a result')
+  })
+
   it('AddKeyResultDialog validates required fields and unlocks Add after a correction', async () => {
     const wrapper = mount(AddKeyResultDialog, {props: {modelValue: true, objectiveId: 7}})
 
@@ -354,6 +367,29 @@ describe('frontend components', () => {
     expect(wrapper.vm.obj.name).toBe('Exercise')
     expect(wrapper.vm.submissionError).toBe('Network unavailable')
     expect(wrapper.emitted('updated')).toBeUndefined()
+  })
+
+  it('ObjectiveDialog turns an idea into a key result, then removes the source idea and closes', async () => {
+    const idea = {id: 3, value: 'Walk after lunch'}
+    api.get.mockResolvedValue([idea])
+    api.delete.mockResolvedValue(undefined)
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective, ideas_count: 1}},
+    })
+    await flushPromises()
+
+    wrapper.vm.createKeyResultFromIdea(idea)
+    expect(wrapper.vm.keyResultDraft).toEqual({name: 'Walk after lunch'})
+    expect(wrapper.vm.openAddKeyResultDialog).toBe(true)
+
+    const keyResult = {id: 9, name: 'Walk after lunch'}
+    await wrapper.vm.keyResultCreatedFromIdea(keyResult)
+
+    expect(api.delete).toHaveBeenCalledWith('/objective/1/idea/3')
+    expect(wrapper.vm.ideas).toEqual([])
+    expect(wrapper.emitted('key-result-created')).toEqual([[keyResult]])
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('update:modelValue')).toContainEqual([false])
   })
 
   it('KeyResultDialog closes by emitting an event', () => {

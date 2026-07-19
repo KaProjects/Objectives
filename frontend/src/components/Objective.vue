@@ -71,7 +71,8 @@ async function deleteKeyResult(keyResult) {
   >
     <ObjectiveDialog :obj="selectedObj" v-model="openObjDialog" @close="openObjDialog = false"
                      @deleted="emit('deleted', $event)" @updated="emit('updated', $event)"
-                     @state-changed="emit('state-changed', $event)"/>
+                     @state-changed="emit('state-changed', $event)"
+                     @key-result-created="emit('key-result-created', {objectiveId: objective.id, keyResult: $event})"/>
     <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" v-model="openKrDialog"
                      @close="openKrDialog = false"
                      @updated="emit('key-result-updated', {objectiveId: objective.id, keyResult: $event})"

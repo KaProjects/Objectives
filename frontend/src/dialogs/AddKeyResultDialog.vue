@@ -6,6 +6,8 @@ import DialogCard from '@/dialogs/DialogCard.vue'
 const props = defineProps({
   modelValue: Boolean,
   objectiveId: {type: Number, required: true},
+  initialKeyResult: {type: Object, default: null},
+  showActivator: {type: Boolean, default: true},
 })
 const emit = defineEmits(['update:modelValue', 'created'])
 
@@ -24,7 +26,10 @@ const hasMoreContentBelow = ref(false)
 
 watch(isOpen, async (isOpen) => {
   if (isOpen) {
-    newKeyResult.value = {name: '', description: '', s: false, m: '', a: '', r: false, t: ''}
+    newKeyResult.value = {
+      name: '', description: '', s: false, m: '', a: '', r: false, t: '',
+      ...props.initialKeyResult,
+    }
     validationErrors.value = {}
     isValidationBlocked.value = false
     await nextTick()
@@ -32,7 +37,7 @@ watch(isOpen, async (isOpen) => {
   } else {
     hasMoreContentBelow.value = false
   }
-})
+}, {immediate: true})
 
 watch(validationErrors, async () => {
   await nextTick()
@@ -106,7 +111,7 @@ function updateScrollHint() {
 
 <template>
   <v-dialog v-model="isOpen" width="600">
-    <template v-slot:activator="{ props }">
+    <template v-if="showActivator" v-slot:activator="{ props }">
       <v-btn color="primary" v-bind="props">
         <v-icon icon="mdi-plus" large style="color: #000000"/>
       </v-btn>
