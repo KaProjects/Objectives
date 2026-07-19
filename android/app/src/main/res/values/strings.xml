@@ -1,7 +1,10 @@
 <resources>
     <string name="app_name">Ideas Tracker</string>
     <string name="select_value">Select Value</string>
+    <string name="select_subvalue">Select Subvalue</string>
     <string name="new_idea">New Idea</string>
+    <string name="name">Name</string>
+    <string name="description">Description</string>
     <string name="add">Add</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>

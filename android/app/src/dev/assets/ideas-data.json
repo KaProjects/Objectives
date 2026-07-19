@@ -1,0 +1,63 @@
+{
+  "values": {
+    "1": {
+      "name": "Health",
+      "subvalues": {
+        "0": {
+          "name": "default",
+          "ideas": {
+            "idea-1": { "name": "Drink water throughout the day", "description": "Keep a bottle nearby." },
+            "idea-2": { "name": "Prepare healthy snacks", "description": "Fruit, nuts, or yogurt." },
+            "idea-3": { "name": "Plan meals for the week", "description": "" }
+          }
+        },
+        "1": {
+          "name": "Exercise",
+          "ideas": {
+            "idea-4": { "name": "Walk for 30 minutes after lunch", "description": "" },
+            "idea-5": { "name": "Strength training twice a week", "description": "Keep sessions short." },
+            "idea-6": { "name": "Stretch in the morning", "description": "Five minutes is enough." }
+          }
+        },
+        "2": {
+          "name": "Recovery",
+          "ideas": {
+            "idea-7": { "name": "Keep a consistent bedtime", "description": "Aim for seven to eight hours." },
+            "idea-8": { "name": "Take screen-free breaks", "description": "" }
+          }
+        }
+      }
+    },
+    "2": {
+      "name": "Learning",
+      "subvalues": {
+        "0": {
+          "name": "default",
+          "ideas": {
+            "idea-9": { "name": "Read one chapter", "description": "" },
+            "idea-10": { "name": "Write down one clear next step", "description": "" }
+          }
+        },
+        "1": {
+          "name": "Programming",
+          "ideas": {
+            "idea-11": { "name": "Practice Kotlin for 20 minutes", "description": "" },
+            "idea-12": { "name": "Review one Android API", "description": "Take notes about when to use it." }
+          }
+        }
+      }
+    },
+    "4": {
+      "name": "Personal growth",
+      "subvalues": {
+        "0": {
+          "name": "default",
+          "ideas": {
+            "idea-13": { "name": "Review this week's progress", "description": "" },
+            "idea-14": { "name": "Plan a calm evening", "description": "" }
+          }
+        }
+      }
+    }
+  }
+}

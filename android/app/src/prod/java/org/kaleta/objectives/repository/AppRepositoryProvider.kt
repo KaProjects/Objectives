@@ -3,5 +3,5 @@ package org.kaleta.objectives.repository
 import android.content.Context
 
 object AppRepositoryProvider {
-    fun create(context: Context): IdeasRepository = LegacyFirebaseIdeasRepository()
+    fun create(context: Context): IdeasRepository = FirebaseIdeasRepository()
 }

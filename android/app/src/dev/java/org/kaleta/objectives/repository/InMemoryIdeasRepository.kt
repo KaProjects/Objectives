@@ -1,18 +1,19 @@
 package org.kaleta.objectives.repository
 
 import org.kaleta.objectives.data.Idea
-import org.kaleta.objectives.data.ValueOption
+import org.kaleta.objectives.data.IdeasData
 
-class InMemoryIdeasRepository(initialData: DevIdeasData) : IdeasRepository {
-    private val values = initialData.values.toList()
-    private val ideasByValue = initialData.ideasByValue.mapValues { (_, ideas) -> ideas.toMutableList() }.toMutableMap()
+class InMemoryIdeasRepository(initialData: IdeasData) : IdeasRepository {
+    private val data = initialData.toMutableData()
     private val observers = mutableSetOf<IdeasRepository.Observer>()
-    private var nextIdeaNumber = ideasByValue.values.flatten().size + 1
+    private var nextIdeaNumber = data.ideasByValueAndSubvalue.values
+        .flatMap { it.values }
+        .flatten()
+        .size + 1
 
     override fun observe(observer: IdeasRepository.Observer): IdeasRepository.ListenerRegistration {
         observers += observer
-        observer.onValuesChanged(values)
-        observer.onIdeasChanged(snapshotIdeas())
+        observer.onDataChanged(data.snapshot())
 
         return IdeasRepository.ListenerRegistration {
             observers -= observer
@@ -21,65 +22,89 @@ class InMemoryIdeasRepository(initialData: DevIdeasData) : IdeasRepository {
 
     override fun addIdea(
         valueId: String,
-        value: String,
+        subvalueId: String,
+        name: String,
+        description: String,
         onComplete: IdeasRepository.OperationCallback,
     ) {
-        val ideas = ideasByValue[valueId]
-        if (ideas == null) {
-            onComplete.onComplete(Result.failure(IllegalArgumentException("Unknown value: $valueId")))
-            return
-        }
-
-        ideas += Idea(id = "dev-idea-${nextIdeaNumber++}", value = value)
-        notifyIdeasChanged()
+        val ideas = ideasFor(valueId, subvalueId) ?: return unknownSubvalue(valueId, subvalueId, onComplete)
+        ideas += Idea(id = "dev-idea-${nextIdeaNumber++}", name = name, description = description)
+        notifyDataChanged()
         onComplete.onComplete(Result.success(Unit))
     }
 
     override fun editIdea(
         valueId: String,
-        ideaId: String,
-        value: String,
+        subvalueId: String,
+        idea: Idea,
+        name: String,
+        description: String,
         onComplete: IdeasRepository.OperationCallback,
     ) {
-        val ideas = ideasByValue[valueId]
-        if (ideas == null) {
-            onComplete.onComplete(Result.failure(IllegalArgumentException("Unknown idea: $ideaId")))
-            return
-        }
-
-        val index = ideas.indexOfFirst { it.id == ideaId }
+        val ideas = ideasFor(valueId, subvalueId) ?: return unknownSubvalue(valueId, subvalueId, onComplete)
+        val index = ideas.indexOfFirst { it.id == idea.id }
         if (index < 0) {
-            onComplete.onComplete(Result.failure(IllegalArgumentException("Unknown idea: $ideaId")))
+            onComplete.onComplete(Result.failure(IllegalArgumentException("Unknown idea: ${idea.id}")))
             return
         }
 
-        ideas[index] = Idea(id = ideaId, value = value)
-        notifyIdeasChanged()
+        ideas[index] = idea.copy(name = name, description = description)
+        notifyDataChanged()
         onComplete.onComplete(Result.success(Unit))
     }
 
     override fun deleteIdea(
         valueId: String,
+        subvalueId: String,
         ideaId: String,
         onComplete: IdeasRepository.OperationCallback,
     ) {
-        val ideas = ideasByValue[valueId]
-        val removed = ideas?.removeAll { it.id == ideaId } == true
-        if (!removed) {
+        val ideas = ideasFor(valueId, subvalueId) ?: return unknownSubvalue(valueId, subvalueId, onComplete)
+        if (!ideas.removeAll { it.id == ideaId }) {
             onComplete.onComplete(Result.failure(IllegalArgumentException("Unknown idea: $ideaId")))
             return
         }
 
-        notifyIdeasChanged()
+        notifyDataChanged()
         onComplete.onComplete(Result.success(Unit))
     }
 
-    private fun notifyIdeasChanged() {
-        val snapshot = snapshotIdeas()
-        observers.forEach { observer -> observer.onIdeasChanged(snapshot) }
+    private fun ideasFor(valueId: String, subvalueId: String): MutableList<Idea>? = data
+        .ideasByValueAndSubvalue[valueId]
+        ?.get(subvalueId)
+
+    private fun unknownSubvalue(
+        valueId: String,
+        subvalueId: String,
+        onComplete: IdeasRepository.OperationCallback,
+    ) {
+        onComplete.onComplete(Result.failure(IllegalArgumentException("Unknown subvalue: $valueId/$subvalueId")))
     }
 
-    private fun snapshotIdeas(): Map<String, List<Idea>> = ideasByValue
-        .mapValues { (_, ideas) -> ideas.toList() }
-        .toMap()
+    private fun notifyDataChanged() {
+        val snapshot = data.snapshot()
+        observers.forEach { observer -> observer.onDataChanged(snapshot) }
+    }
+
+    private fun IdeasData.toMutableData() = MutableIdeasData(
+        values = values.toList(),
+        subvaluesByValue = subvaluesByValue.mapValues { (_, subvalues) -> subvalues.toList() }.toMutableMap(),
+        ideasByValueAndSubvalue = ideasByValueAndSubvalue.mapValues { (_, subvalues) ->
+            subvalues.mapValues { (_, ideas) -> ideas.toMutableList() }.toMutableMap()
+        }.toMutableMap(),
+    )
+
+    private data class MutableIdeasData(
+        val values: List<org.kaleta.objectives.data.ValueOption>,
+        val subvaluesByValue: MutableMap<String, List<org.kaleta.objectives.data.SubvalueOption>>,
+        val ideasByValueAndSubvalue: MutableMap<String, MutableMap<String, MutableList<Idea>>>,
+    ) {
+        fun snapshot() = IdeasData(
+            values = values,
+            subvaluesByValue = subvaluesByValue.mapValues { (_, subvalues) -> subvalues.toList() },
+            ideasByValueAndSubvalue = ideasByValueAndSubvalue.mapValues { (_, subvalues) ->
+                subvalues.mapValues { (_, ideas) -> ideas.toList() }
+            },
+        )
+    }
 }

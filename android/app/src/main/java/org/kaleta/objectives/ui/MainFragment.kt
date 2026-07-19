@@ -1,13 +1,15 @@
 package org.kaleta.objectives.ui
 
 import android.os.Bundle
+import android.text.InputType
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -21,11 +23,13 @@ import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputLayout
+import com.google.android.material.textfield.TextInputEditText
 import org.kaleta.objectives.R
 import org.kaleta.objectives.adapter.IdeasAdapter
 import org.kaleta.objectives.data.Idea
+import org.kaleta.objectives.data.SubvalueOption
 import org.kaleta.objectives.data.ValueOption
 import org.kaleta.objectives.repository.AppRepositoryProvider
 
@@ -49,17 +53,21 @@ class MainFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val spinner: Spinner = view.findViewById(R.id.valueSpinner)
+        val valueSpinner: Spinner = view.findViewById(R.id.valueSpinner)
+        val valueSpinnerFrame: View = view.findViewById(R.id.valueSpinnerFrame)
+        val subvalueSpinner: Spinner = view.findViewById(R.id.subvalueSpinner)
         val recyclerView: RecyclerView = view.findViewById(R.id.ideas)
-        val addButton: FloatingActionButton = view.findViewById(R.id.addIdea)
+        val addButton: MaterialButton = view.findViewById(R.id.addIdea)
         val topAppBar: MaterialToolbar = view.findViewById(R.id.topAppBar)
         val displayedValues = mutableListOf<ValueOption>()
+        val displayedSubvalues = mutableListOf<SubvalueOption>()
         val valuesAdapter = ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_spinner_item,
+            R.layout.spinner_selected_item,
+            android.R.id.text1,
             displayedValues,
         ).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            setDropDownViewResource(R.layout.spinner_dropdown_item)
             setNotifyOnChange(false)
         }
         val ideasAdapter = IdeasAdapter(
@@ -67,27 +75,40 @@ class MainFragment : Fragment() {
             onEditRequested = viewModel::editIdea,
         )
         var renderedValueId: String? = null
+        var renderedSubvalueId: String? = null
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = ideasAdapter
+        recyclerView.isClickable = true
+        recyclerView.setOnClickListener { ideasAdapter.stopEditing() }
+        recyclerView.setOnTouchListener { _, event ->
+            if (
+                event.action == MotionEvent.ACTION_UP &&
+                recyclerView.findChildViewUnder(event.x, event.y) == null
+            ) {
+                ideasAdapter.stopEditing()
+            }
+            false
+        }
 
-        val fabMargin = resources.getDimensionPixelOffset(R.dimen.fab_margin)
+        val buttonMargin = resources.getDimensionPixelOffset(R.dimen.dp_10)
         val listBottomPadding = resources.getDimensionPixelOffset(R.dimen.idea_list_bottom_padding)
         ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             topAppBar.updatePadding(top = systemBars.top)
-            recyclerView.updatePadding(bottom = listBottomPadding + systemBars.bottom)
+            valueSpinnerFrame.updatePadding(bottom = systemBars.bottom)
+            recyclerView.updatePadding(bottom = listBottomPadding)
             addButton.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = fabMargin + systemBars.bottom
+                bottomMargin = buttonMargin + systemBars.bottom
             }
             insets
         }
         ViewCompat.requestApplyInsets(view)
 
-        spinner.adapter = valuesAdapter
-        spinner.prompt = getString(R.string.select_value)
-        spinner.gravity = Gravity.CENTER
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+        valueSpinner.adapter = valuesAdapter
+        valueSpinner.prompt = getString(R.string.select_value)
+        valueSpinner.gravity = Gravity.CENTER
+        valueSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
                 parent: AdapterView<*>?,
                 selectedView: View?,
@@ -96,6 +117,33 @@ class MainFragment : Fragment() {
             ) {
                 displayedValues.getOrNull(position)?.let { value ->
                     viewModel.selectValue(value.id)
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+
+        val subvaluesAdapter = ArrayAdapter(
+            requireContext(),
+            R.layout.spinner_selected_item,
+            android.R.id.text1,
+            displayedSubvalues,
+        ).apply {
+            setDropDownViewResource(R.layout.spinner_dropdown_item)
+            setNotifyOnChange(false)
+        }
+        subvalueSpinner.adapter = subvaluesAdapter
+        subvalueSpinner.prompt = getString(R.string.select_subvalue)
+        subvalueSpinner.gravity = Gravity.CENTER
+        subvalueSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                selectedView: View?,
+                position: Int,
+                id: Long,
+            ) {
+                displayedSubvalues.getOrNull(position)?.let { subvalue ->
+                    viewModel.selectSubvalue(subvalue.id)
                 }
             }
 
@@ -111,17 +159,32 @@ class MainFragment : Fragment() {
                 valuesAdapter.notifyDataSetChanged()
             }
 
-            val selectedPosition = displayedValues.indexOfFirst { it.id == state.selectedValueId }
-            if (selectedPosition >= 0 && spinner.selectedItemPosition != selectedPosition) {
-                spinner.setSelection(selectedPosition, false)
+            val selectedValuePosition = displayedValues.indexOfFirst { it.id == state.selectedValueId }
+            if (selectedValuePosition >= 0 && valueSpinner.selectedItemPosition != selectedValuePosition) {
+                valueSpinner.setSelection(selectedValuePosition, false)
             }
 
-            if (renderedValueId != state.selectedValueId) {
+            if (displayedSubvalues != state.subvalues) {
+                displayedSubvalues.clear()
+                displayedSubvalues.addAll(state.subvalues)
+                subvaluesAdapter.notifyDataSetChanged()
+            }
+
+            val selectedSubvaluePosition = displayedSubvalues.indexOfFirst { it.id == state.selectedSubvalueId }
+            if (selectedSubvaluePosition >= 0 && subvalueSpinner.selectedItemPosition != selectedSubvaluePosition) {
+                subvalueSpinner.setSelection(selectedSubvaluePosition, false)
+            }
+
+            if (
+                renderedValueId != state.selectedValueId ||
+                renderedSubvalueId != state.selectedSubvalueId
+            ) {
                 ideasAdapter.stopEditing()
                 renderedValueId = state.selectedValueId
+                renderedSubvalueId = state.selectedSubvalueId
             }
             ideasAdapter.submitList(state.ideas)
-            addButton.isEnabled = state.selectedValueId != null
+            addButton.isEnabled = state.selectedValueId != null && state.selectedSubvalueId != null
 
             state.errorMessage?.let { message ->
                 Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
@@ -133,7 +196,9 @@ class MainFragment : Fragment() {
     private fun showAddIdeaDialog() {
         val state = viewModel.state.value ?: return
         val selectedValue = state.selectedValue ?: return
-        val inputLayout = TextInputLayout(requireContext()).apply {
+        val selectedSubvalue = state.selectedSubvalue ?: return
+        val dialogContent = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
             setPadding(
                 resources.getDimensionPixelOffset(R.dimen.dp_19),
                 0,
@@ -141,23 +206,57 @@ class MainFragment : Fragment() {
                 0,
             )
         }
-        val input = EditText(requireContext())
-        inputLayout.addView(input)
+        val nameInputLayout = TextInputLayout(requireContext()).apply {
+            boxBackgroundMode = TextInputLayout.BOX_BACKGROUND_OUTLINE
+            hint = getString(R.string.name)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply {
+                bottomMargin = resources.getDimensionPixelOffset(R.dimen.dp_5)
+            }
+        }
+        val nameInput = TextInputEditText(requireContext()).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or
+                    InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            minLines = 1
+            maxLines = 5
+            gravity = Gravity.TOP
+        }
+        nameInputLayout.addView(nameInput)
+        val descriptionInputLayout = TextInputLayout(requireContext()).apply {
+            boxBackgroundMode = TextInputLayout.BOX_BACKGROUND_OUTLINE
+            hint = getString(R.string.description)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+        }
+        val descriptionInput = TextInputEditText(requireContext()).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or
+                InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            minLines = 1
+            maxLines = 5
+            gravity = Gravity.TOP
+        }
+        descriptionInputLayout.addView(descriptionInput)
+        dialogContent.addView(nameInputLayout)
+        dialogContent.addView(descriptionInputLayout)
 
         val dialog = MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.new_idea)
-            .setMessage(selectedValue.name)
-            .setView(inputLayout)
+            .setMessage("${selectedValue.name} / ${selectedSubvalue.displayName}")
+            .setView(dialogContent)
             .setPositiveButton(R.string.add, null)
             .setNegativeButton(R.string.cancel, null)
             .create()
 
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                if (viewModel.addIdea(input.text.toString())) {
+                if (viewModel.addIdea(nameInput.text.toString(), descriptionInput.text.toString())) {
                     dialog.dismiss()
                 } else {
-                    input.error = getString(R.string.idea_required)
+                    nameInputLayout.error = getString(R.string.idea_required)
                 }
             }
         }

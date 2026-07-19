@@ -4,6 +4,7 @@ import android.text.SpannableStringBuilder
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
@@ -15,7 +16,7 @@ import org.kaleta.objectives.data.Idea
 
 class IdeasAdapter(
     private val onDeleteRequested: (Idea) -> Unit,
-    private val onEditRequested: (Idea, String) -> Boolean,
+    private val onEditRequested: (Idea, String, String) -> Boolean,
 ) : ListAdapter<Idea, IdeasAdapter.ViewHolder>(IdeaDiffCallback) {
     private var editingIdeaId: String? = null
 
@@ -26,7 +27,7 @@ class IdeasAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val idea = getItem(position)
-        holder.bind(idea, isEditing = idea.id == editingIdeaId)
+        holder.bind(idea, isEditing = idea.id == editingIdeaId, isFirst = position == 0)
     }
 
     fun stopEditing() {
@@ -48,14 +49,23 @@ class IdeasAdapter(
     }
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val ideaView: TextView = itemView.findViewById(R.id.idea)
+        private val ideaContent: View = itemView.findViewById(R.id.ideaContent)
+        private val firstIdeaSeparator: View = itemView.findViewById(R.id.firstIdeaSeparator)
+        private val ideaName: TextView = itemView.findViewById(R.id.ideaName)
+        private val ideaDescription: TextView = itemView.findViewById(R.id.ideaDescription)
+        private val ideaEditor: View = itemView.findViewById(R.id.ideaEditor)
         private val ideaEdit: TextInputEditText = itemView.findViewById(R.id.ideaEdit)
+        private val ideaDescriptionEdit: TextInputEditText = itemView.findViewById(R.id.ideaDescriptionEdit)
         private val deleteButton: ImageView = itemView.findViewById(R.id.deleteIdea)
         private val confirmEditButton: ImageView = itemView.findViewById(R.id.confirmEditIdea)
 
-        fun bind(idea: Idea, isEditing: Boolean) {
-            ideaView.text = idea.value
-            ideaEdit.text = SpannableStringBuilder(idea.value)
+        fun bind(idea: Idea, isEditing: Boolean, isFirst: Boolean) {
+            ideaName.text = idea.name
+            ideaDescription.text = idea.description
+            ideaDescription.visibility = if (idea.description.isBlank()) View.GONE else View.VISIBLE
+            ideaEdit.text = SpannableStringBuilder(idea.name)
+            ideaDescriptionEdit.text = SpannableStringBuilder(idea.description)
+            firstIdeaSeparator.visibility = if (isFirst) View.VISIBLE else View.GONE
             showEditingState(isEditing)
 
             itemView.setOnClickListener { stopEditing() }
@@ -67,7 +77,13 @@ class IdeasAdapter(
                 onDeleteRequested(idea)
             }
             confirmEditButton.setOnClickListener {
-                if (onEditRequested(idea, ideaEdit.text?.toString().orEmpty())) {
+                if (onEditRequested(
+                        idea,
+                        ideaEdit.text?.toString().orEmpty(),
+                        ideaDescriptionEdit.text?.toString().orEmpty(),
+                )
+                ) {
+                    hideKeyboard()
                     stopEditing()
                 } else {
                     ideaEdit.error = itemView.context.getString(R.string.idea_required)
@@ -76,11 +92,19 @@ class IdeasAdapter(
         }
 
         private fun showEditingState(isEditing: Boolean) {
-            val editVisibility = if (isEditing) View.VISIBLE else View.INVISIBLE
+            val editVisibility = if (isEditing) View.VISIBLE else View.GONE
             deleteButton.visibility = editVisibility
             confirmEditButton.visibility = editVisibility
-            ideaEdit.visibility = editVisibility
-            ideaView.visibility = if (isEditing) View.INVISIBLE else View.VISIBLE
+            ideaEditor.visibility = editVisibility
+            ideaContent.visibility = if (isEditing) View.GONE else View.VISIBLE
+        }
+
+        private fun hideKeyboard() {
+            ideaEdit.clearFocus()
+            ideaDescriptionEdit.clearFocus()
+            itemView.context
+                .getSystemService(InputMethodManager::class.java)
+                ?.hideSoftInputFromWindow(itemView.windowToken, 0)
         }
     }
 
