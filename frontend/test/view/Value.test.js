@@ -65,4 +65,25 @@ describe('Value view', () => {
     expect(api.delete).toHaveBeenCalledWith('/value/1/subvalue/0/idea/idea-1')
     expect(wrapper.vm.subvalues[0].ideas).toEqual([])
   })
+
+  it('places done Objectives on a newest-first timeline using their finished date', async () => {
+    api.get.mockImplementation((path) => path.endsWith('/subvalue')
+        ? Promise.resolve([])
+        : Promise.resolve({
+          id: 1,
+          name: 'Health',
+          objectives: [
+            {id: 1, state: 'achieved', date_finished: '2026-03-01'},
+            {id: 2, state: 'failed', date_finished: '2026-07-10'},
+            {id: 3, state: 'achieved', date_finished: 'not a date'},
+            {id: 4, state: 'active', date_finished: ''},
+          ],
+        }))
+    await router.push('/values/1')
+    const wrapper = shallowMount(Value, {global: {plugins: [router]}})
+    await flushPromises()
+
+    expect(wrapper.vm.doneObjectiveTimeline.map((objective) => objective.id)).toEqual([2, 1, 3])
+    expect(wrapper.vm.doneObjectiveTimeline.map((objective) => objective.showYear)).toEqual([true, false, false])
+  })
 })

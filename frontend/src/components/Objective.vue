@@ -7,6 +7,8 @@ import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
 import ObjectiveDialog from '@/dialogs/ObjectiveDialog.vue'
 import {KEY_RESULT_STATE, OBJECTIVE_STATE} from '@/constants/states'
 import AddKeyResultDialog from '@/dialogs/AddKeyResultDialog.vue'
+import achievementStamp from '@/assets/achievement-stamp.png'
+import failStamp from '@/assets/fail-stamp.png'
 
 const props = defineProps({
   objective: {type: Object, required: true},
@@ -81,6 +83,15 @@ async function deleteKeyResult(keyResult) {
     <v-card-title>{{ objective.name }}</v-card-title>
     <v-card-text v-html="string_to_html(objective.description)"/>
 
+    <img v-if="objective.state === OBJECTIVE_STATE.ACHIEVED"
+         :src="achievementStamp"
+         alt="Achievement"
+         class="achievementStamp">
+    <img v-else-if="objective.state === OBJECTIVE_STATE.FAILED"
+         :src="failStamp"
+         alt="Fail"
+         class="failureStamp">
+
     <v-icon class="objEdit" icon="mdi-pencil-circle-outline" large
             v-if="focused"
             @click="openObjective()"/>
@@ -151,6 +162,7 @@ async function deleteKeyResult(keyResult) {
 
 .obj {
   min-width: 300px;
+  position: relative;
   vertical-align: top;
   margin-bottom: auto;
   margin-left: 1px;
@@ -158,15 +170,18 @@ async function deleteKeyResult(keyResult) {
 }
 
 .obj.active {
-  background: #b2d1ec;
+  background: #dce8f1;
+  border-left: 4px solid #5f88a6;
 }
 
 .obj.failed {
-  background: #dc1a1a;
+  background: #f2e1e1;
+  border-left: 4px solid #ad5757;
 }
 
 .obj.achieved {
-  background: #84e184;
+  background: #e0eddf;
+  border-left: 4px solid #5f8c61;
 }
 
 .obj.failed > div > .kr {
@@ -175,6 +190,80 @@ async function deleteKeyResult(keyResult) {
 
 .obj.achieved > div > .kr {
   color: #262626;
+}
+
+.objectiveStamp {
+  align-items: center;
+  border: 3px double currentColor;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.7rem;
+  font-weight: 700;
+  height: 108px;
+  justify-content: center;
+  letter-spacing: 0.08em;
+  line-height: 1.05;
+  opacity: 0.55;
+  pointer-events: none;
+  position: absolute;
+  right: 12px;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(-12deg);
+  top: 12px;
+  width: 108px;
+}
+
+.objectiveStamp.achieved {
+  color: #337a38;
+}
+
+.achievementStamp {
+  height: 76px;
+  object-fit: contain;
+  opacity: 0.72;
+  pointer-events: none;
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  transform: rotate(-6deg);
+  width: 87px;
+}
+
+.failureStamp {
+  height: 44px;
+  object-fit: contain;
+  opacity: 0.72;
+  pointer-events: none;
+  position: absolute;
+  right: 4px;
+  top: 14px;
+  transform: rotate(8deg);
+  width: 110px;
+}
+
+.objectiveStamp.failed {
+  color: #a33f3f;
+  transform: rotate(10deg);
+}
+
+.obj.achieved .objEdit,
+.obj.failed .objEdit {
+  right: 120px;
+}
+
+.obj.achieved .objIdeas,
+.obj.failed .objIdeas {
+  right: 125px;
+}
+
+.obj.achieved .objEdit {
+  right: 97px;
+}
+
+.obj.achieved .objIdeas {
+  right: 102px;
 }
 
 .objEdit {

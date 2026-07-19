@@ -15,7 +15,19 @@ insert into Objectives(id, value_id, state, name, description, date_created, dat
   (5, 2, 'achieved', 'Complete the architecture course', 'Finish the course and capture the key practices to apply at work.', '2026-03-01', '2026-06-10'),
   (6, 3, 'active', 'Build a six-month emergency fund', 'Automate saving and review monthly spending.', '2026-05-01', ''),
   (7, 4, 'active', 'Be more present with family', 'Create regular space for conversations and shared time.', '2026-07-10', ''),
-  (8, 5, 'active', 'Read with intention', 'Keep a small, realistic reading habit and record useful ideas.', '2026-07-12', '');
+  (8, 5, 'active', 'Read with intention', 'Keep a small, realistic reading habit and record useful ideas.', '2026-07-12', ''),
+  (9, 1, 'achieved', 'Establish a consistent sleep routine', 'A previous successful health objective, kept as an example of a completed outcome.', '2026-01-05', '2026-02-14'),
+  (10, 1, 'achieved', 'Cook dinner at home on weekdays', 'Plan simple meals and reduce last-minute takeaway decisions.', '2026-02-01', '2026-03-31'),
+  (11, 1, 'achieved', 'Complete a month of daily mobility work', 'Ten minutes of mobility after the morning routine.', '2026-03-01', '2026-04-02'),
+  (12, 1, 'failed', 'Avoid all sugar for a month', 'The goal was too restrictive and not sustainable.', '2026-01-10', '2026-01-24'),
+  (13, 1, 'failed', 'Train six days every week', 'The training volume left too little recovery time.', '2026-03-15', '2026-04-05'),
+  (14, 1, 'failed', 'Meditate for an hour every day', 'The starting commitment was unrealistic for the schedule.', '2026-04-01', '2026-04-18'),
+  (15, 1, 'achieved', 'Build a regular walking habit', 'A first successful attempt at making movement part of the week.', '2023-04-01', '2023-06-30'),
+  (16, 1, 'failed', 'Do yoga every morning for 90 days', 'The routine was too ambitious for travel and busy mornings.', '2023-08-01', '2023-09-12'),
+  (17, 1, 'achieved', 'Reduce weekday caffeine', 'Replace the afternoon coffee with tea or water.', '2024-01-10', '2024-03-20'),
+  (18, 1, 'failed', 'Run a marathon in autumn', 'The plan did not leave enough time to build mileage safely.', '2024-06-01', '2024-10-05'),
+  (19, 1, 'achieved', 'Eat vegetables with lunch every weekday', 'Make vegetables the default part of weekday lunches.', '2025-02-01', '2025-04-30'),
+  (20, 1, 'failed', 'Never use a screen after 20:00', 'The absolute rule did not work with occasional evening plans.', '2025-09-01', '2025-10-15');
 
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values
   (1, 1, 'active', 'Average at least 7.5 hours of sleep', 'Track sleep on work nights and adjust the evening routine.', 'true', 'Weekly average is at least 7.5 hours', 'Keep a consistent 23:00 bedtime', 'true', '2026-07-10', '2026-07-01', '2026-07-16'),
@@ -31,7 +43,15 @@ insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t
   (11, 6, 'active', 'Review spending at the end of each month', 'Classify spending and decide one adjustment for the next month.', 'true', 'One review is completed each month', 'Use the existing bank export', 'true', '', '2026-05-01', '2026-06-30'),
   (12, 7, 'active', 'Plan one shared activity each week', 'Choose a simple activity together and protect the time.', 'true', 'One shared activity happens every week for two months', 'Keep activities local and low effort', 'true', '2026-09-15', '2026-07-10', '2026-07-17'),
   (13, 8, 'active', 'Read six books this quarter', 'Alternate fiction and non-fiction and note one useful takeaway.', 'true', 'Six finished books are recorded', 'Read 20 minutes before bed', 'true', '2026-09-30', '2026-07-12', '2026-07-18'),
-  (14, 8, 'active', 'Write a short note for every finished book', 'Capture an idea worth applying or discussing.', 'true', 'One note exists for every finished book', 'Use a three-sentence template', 'true', '', '2026-07-12', '2026-07-12');
+  (14, 8, 'active', 'Write a short note for every finished book', 'Capture an idea worth applying or discussing.', 'true', 'One note exists for every finished book', 'Use a three-sentence template', 'true', '', '2026-07-12', '2026-07-12'),
+  (15, 9, 'completed', 'Walk 7,000 steps on four days each week', 'The walking routine became stable by the end of the quarter.', 'true', 'Four days each week reach 7,000 steps', 'Use the commute and lunch break', 'true', '2023-06-30', '2023-04-01', '2023-06-30'),
+  (16, 9, 'completed', 'Plan one longer weekend walk each month', 'A low-pressure way to explore nearby places.', 'true', 'Three longer walks are completed', 'Invite a friend when possible', 'true', '2023-06-30', '2023-04-01', '2023-06-28'),
+  (17, 10, 'failed', 'Complete 90 morning yoga sessions', 'The initial target did not account for travel and recovery days.', 'true', 'Ninety sessions are logged', 'Use a ten-minute routine', 'true', '2023-10-30', '2023-08-01', '2023-09-12'),
+  (18, 11, 'completed', 'Replace afternoon coffee on four weekdays', 'The new routine reduced late-day caffeine.', 'true', 'Four weekdays each week use tea or water', 'Keep tea at the desk', 'true', '2024-03-20', '2024-01-10', '2024-03-20'),
+  (19, 12, 'failed', 'Complete a 30 km long run', 'The mileage increase was too aggressive.', 'true', 'One 30 km run is completed comfortably', 'Increase distance gradually', 'true', '2024-09-30', '2024-06-01', '2024-10-05'),
+  (20, 13, 'completed', 'Prepare vegetables for five weekday lunches', 'A simple Sunday preparation routine made lunch easier.', 'true', 'Five lunches include prepared vegetables each week', 'Use frozen vegetables when needed', 'true', '2025-04-30', '2025-02-01', '2025-04-30'),
+  (21, 13, 'completed', 'Try six new vegetable-based recipes', 'The recipe list now has several reliable favourites.', 'true', 'Six recipes are cooked and rated', 'Cook one recipe each weekend', 'true', '2025-04-30', '2025-02-01', '2025-04-22'),
+  (22, 14, 'failed', 'Keep every evening screen-free after 20:00', 'The rule was not flexible enough for real life.', 'true', 'Thirty consecutive screen-free evenings', 'Allow exceptions for planned events', 'true', '2025-10-01', '2025-09-01', '2025-10-15');
 
 insert into Tasks(id, kr_id, state, value) values
   (1, 1, 'finished', 'Set a 22:30 evening reminder'),

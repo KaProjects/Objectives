@@ -3,7 +3,7 @@ import {computed, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {appState, setError} from '@/state/appState'
 import Objective from '@/components/Objective.vue'
-import {compareDates} from '@/utils'
+import {compareDates, parseIsoDate} from '@/utils'
 import {api} from '@/services/apiClient'
 import Ideas from '@/components/Ideas.vue'
 import {OBJECTIVE_STATE, OBJECTIVE_TAB} from '@/constants/states'
@@ -45,6 +45,35 @@ function filterObjectives(objectives, isActive) {
   return objectives.filter((objective) => isActive ? objective.state === OBJECTIVE_STATE.ACTIVE : objective.state !== OBJECTIVE_STATE.ACTIVE)
       .slice().sort(compareObjectives)
 }
+
+const doneObjectiveTimeline = computed(() => {
+  const datedObjectives = []
+  const objectivesWithoutFinishedDate = []
+
+  for (const objective of value.value.objectives ?? []) {
+    if (objective.state === OBJECTIVE_STATE.ACTIVE) continue
+    const finishedDate = parseIsoDate(objective.date_finished)
+    if (finishedDate === null) {
+      objectivesWithoutFinishedDate.push(objective)
+    } else {
+      datedObjectives.push({...objective, finishedDate})
+    }
+  }
+
+  datedObjectives.sort((left, right) => -compareDates(left.finishedDate, right.finishedDate))
+  let previousYear = null
+  const timeline = datedObjectives.map((objective) => {
+    const year = objective.finishedDate.slice(0, 4)
+    const timelineObjective = {...objective, year, showYear: year !== previousYear}
+    previousYear = year
+    return timelineObjective
+  })
+
+  return [
+    ...timeline,
+    ...objectivesWithoutFinishedDate.map((objective) => ({...objective, finishedDate: null, showYear: false})),
+  ]
+})
 
 async function addObjective(objective) {
   value.value.objectives.push(objective)
@@ -202,8 +231,42 @@ watch(openAddObjDialog, (open) => {
         @created="addObjective"
     />
 
-    <div style="display: flex; overflow-x:scroll;">
-      <Ideas v-if="tab === OBJECTIVE_TAB.IDEAS"
+    <div v-if="tab === OBJECTIVE_TAB.ACTIVE" class="activeObjectives">
+      <Objective v-for="objective in filterObjectives(value.objectives, true)"
+                 :key="objective.id"
+                 :objective="objective"
+                 @deleted="deleteObjective"
+                 @state-changed="selectTab"
+                 @updated="updateObjective"
+                 @key-result-created="addKeyResult"
+                 @key-result-updated="updateKeyResult"
+                 @key-result-deleted="removeKeyResult"/>
+    </div>
+
+    <section v-else-if="tab === OBJECTIVE_TAB.INACTIVE" class="doneTimeline">
+      <div v-for="objective in doneObjectiveTimeline" :key="objective.id" class="timelineEvent">
+        <div v-if="objective.showYear" class="timelineYear">{{ objective.year }}</div>
+        <div class="timelineDate">
+          <template v-if="objective.finishedDate">
+            <span class="timelineMonth">{{ new Intl.DateTimeFormat('en-GB', {month: 'short', timeZone: 'UTC'}).format(new Date(`${objective.finishedDate}T00:00:00Z`)) }}</span>
+            <span class="timelineDay">{{ objective.finishedDate.slice(8, 10) }}</span>
+          </template>
+          <span v-else class="timelineUnknownDate">Unknown</span>
+        </div>
+        <div class="timelineRail"/>
+        <Objective class="timelineObjective"
+                   :objective="objective"
+                   @deleted="deleteObjective"
+                   @state-changed="selectTab"
+                   @updated="updateObjective"
+                   @key-result-created="addKeyResult"
+                   @key-result-updated="updateKeyResult"
+                   @key-result-deleted="removeKeyResult"/>
+      </div>
+    </section>
+
+    <div v-else class="ideasView">
+      <Ideas
              class="obj"
              :value-id="valueId"
              :subvalues="subvalues"
@@ -214,16 +277,6 @@ watch(openAddObjDialog, (open) => {
              @subvalue-deleted="removeSubvalue"
              @create-objective="createObjectiveFromIdea"
              @deleted="removeIdea"/>
-      <Objective v-for="objective in filterObjectives(value.objectives, tab === OBJECTIVE_TAB.ACTIVE)"
-                 v-if="tab !== OBJECTIVE_TAB.IDEAS"
-                 :key="objective.id"
-                 :objective="objective"
-                 @deleted="deleteObjective"
-                 @state-changed="selectTab"
-                 @updated="updateObjective"
-                 @key-result-created="addKeyResult"
-                 @key-result-updated="updateKeyResult"
-                 @key-result-deleted="removeKeyResult"/>
     </div>
   </div>
 </template>
@@ -243,7 +296,84 @@ watch(openAddObjDialog, (open) => {
   margin-right: 10px;
 }
 
+.activeObjectives,
+.ideasView {
+  display: flex;
+  overflow-x: scroll;
+}
+
+.doneTimeline {
+  margin: 0 0 0 100px;
+  max-width: 760px;
+  padding: 1rem;
+}
+
+.timelineEvent {
+  display: grid;
+  grid-template-columns: 64px 28px minmax(0, 1fr);
+  position: relative;
+}
+
+.timelineYear {
+  color: rgb(var(--v-theme-on-surface));
+  font-size: 1.35rem;
+  font-weight: 700;
+  grid-column: 1 / -1;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.timelineDate {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  padding: 0.8rem 0.6rem 0 0;
+}
+
+.timelineMonth {
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.timelineDay {
+  color: rgb(var(--v-theme-on-surface));
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.timelineUnknownDate {
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 0.75rem;
+  margin-top: 0.3rem;
+}
+
+.timelineRail {
+  min-height: 100%;
+  position: relative;
+}
+
+.timelineRail::before {
+  background: rgb(var(--v-theme-outline-variant));
+  bottom: 0;
+  content: '';
+  left: 50%;
+  position: absolute;
+  top: 0;
+  width: 2px;
+}
+
+.timelineObjective {
+  margin: 0.35rem 0 0.75rem;
+  min-width: 0;
+  width: 100% !important;
+}
+
 @media (max-width: 600px) {
+  .doneTimeline {
+    margin-left: 0;
+  }
+
   .appbar {
     display: grid;
     width: 100%;

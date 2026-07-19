@@ -185,7 +185,7 @@ function deleteKeyResult() {
 </script>
 
 <template>
-  <v-dialog v-model="isOpen" persistent width="600">
+  <v-dialog v-model="isOpen" width="600">
     <DialogCard :error="submissionError">
 
       <Editable :value="draftKeyResult.name" :editable="canEdit()" :submit="(value) => update('name', value)" label="Name" hide-details>

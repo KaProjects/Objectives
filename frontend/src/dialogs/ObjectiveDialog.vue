@@ -171,7 +171,7 @@ function deleteObjective() {
 </script>
 
 <template>
-  <v-dialog v-model="isOpen" persistent width="600">
+  <v-dialog v-model="isOpen" width="600">
     <DialogCard :error="submissionError">
       <Editable :value="draftObjective.name" :editable="obj.state === OBJECTIVE_STATE.ACTIVE" hide-details
                 :submit="(value) => updateObjective('name', value)" label="Name">
