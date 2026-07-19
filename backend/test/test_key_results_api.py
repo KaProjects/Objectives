@@ -19,6 +19,7 @@ class TestKeyResultsApi(unittest.TestCase):
         names = {key_result['name'] for key_result in key_results}
         self.assertIn('ccc', names, message)
         self.assertNotIn('aaa with description', names, message)
+        self.assertTrue(all(key_result['objective_state'] == 'active' for key_result in key_results), message)
 
     def test_get_key_result(self):
         status, key_result, message = get_request("/key_result/4")

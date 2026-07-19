@@ -4,7 +4,7 @@ from datetime import date
 
 from classes import Value, Objective, KeyResult, Task, ObjectiveIdea
 from errors import DatabaseIntegrityError
-from states import KeyResultState, TaskState
+from states import KeyResultState, ObjectiveState, TaskState
 
 _placeholder = ContextVar('database_placeholder', default='?')
 
@@ -153,8 +153,8 @@ class DatabaseManager:
                 from KeyResults key_results
                 join Objectives objectives on objectives.id = key_results.objective_id
                 join PValues values_table on values_table.id = objectives.value_id
-                where key_results.state = ?
-            '''), (KeyResultState.ACTIVE.value,))
+                where key_results.state = ? and objectives.state = ?
+            '''), (KeyResultState.ACTIVE.value, ObjectiveState.ACTIVE.value))
             return [
                 {
                     'id': row[0],
