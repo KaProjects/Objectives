@@ -284,6 +284,18 @@ class KeyResults(Resource):
             return create_exception_response(e)
 
 
+@key_result.route('/overview')
+class KeyResultOverview(Resource):
+    @key_result.doc(security="Bearer")
+    @authenticated
+    @key_result.response(200, 'Success')
+    def get(self):
+        try:
+            return create_response(Service().get_key_result_overview(), 200)
+        except Exception as e:
+            return create_exception_response(e)
+
+
 @key_result.route('/<id>')
 @key_result.response(404, 'Key Result not found')
 @key_result.param('id', 'Key Result identifier')

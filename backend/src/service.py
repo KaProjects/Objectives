@@ -86,6 +86,10 @@ class Service:
                 kr.set_tasks(database.select_tasks_for_key_result(kr.id))
         return kr
 
+    def get_key_result_overview(self):
+        with self.database_manager.open() as database:
+            return database.select_key_result_overview()
+
     def review_key_result(self, id):
         today = date.today().isoformat()
         with self.database_manager.open() as database:

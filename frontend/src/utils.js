@@ -54,3 +54,31 @@ export function formatDate(date) {
     day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC',
   }).format(parsedDate)
 }
+
+export function parseIsoDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+
+  const parsed = new Date(`${value}T00:00:00Z`)
+  return Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value ? null : value
+}
+
+export function sortKeyResultsByDeadline(keyResults) {
+  return keyResults.slice().sort((left, right) => {
+    const leftDeadline = parseIsoDate(left.t)
+    const rightDeadline = parseIsoDate(right.t)
+    if (leftDeadline === null && rightDeadline === null) return 0
+    if (leftDeadline === null) return 1
+    if (rightDeadline === null) return -1
+    return leftDeadline.localeCompare(rightDeadline)
+  })
+}
+
+export function isDueOrOverdue(value, today = new Date()) {
+  const deadline = parseIsoDate(value)
+  if (deadline === null) return false
+
+  const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60_000)
+      .toISOString()
+      .slice(0, 10)
+  return deadline <= localToday
+}

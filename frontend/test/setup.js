@@ -3,6 +3,7 @@ import {config} from '@vue/test-utils'
 config.global.stubs = {
   'v-card': {template: '<section><slot /></section>'},
   'v-card-title': {template: '<h2><slot /></h2>'},
+  'v-card-subtitle': {template: '<p><slot /></p>'},
   'v-card-text': {template: '<div><slot /></div>'},
   'v-card-actions': {template: '<div><slot /></div>'},
   'v-dialog': {template: '<div><slot /><slot name="activator" :props="{}" /></div>'},

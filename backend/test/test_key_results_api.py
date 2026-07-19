@@ -6,6 +6,20 @@ from utils import get_request, post_request, put_request, today, delete_request,
 
 class TestKeyResultsApi(unittest.TestCase):
 
+    def test_get_key_result_overview(self):
+        status, key_results, message = get_request('/key_result/overview')
+
+        self.assertEqual(status, 200, message)
+        self.assertGreater(len(key_results), 0, message)
+        self.assertEqual(
+            set(key_results[0]),
+            {'id', 'name', 't', 'objective_name', 'objective_state', 'value_name'},
+            message,
+        )
+        names = {key_result['name'] for key_result in key_results}
+        self.assertIn('ccc', names, message)
+        self.assertNotIn('aaa with description', names, message)
+
     def test_get_key_result(self):
         status, key_result, message = get_request("/key_result/4")
 

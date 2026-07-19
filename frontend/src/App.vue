@@ -26,6 +26,10 @@ function openValue(value) {
   router.push({name: 'value', params: {valueId: value.id}})
 }
 
+function openKeyResults() {
+  router.push({name: 'key-results'})
+}
+
 onMounted(() => {
   const token = sessionStorage.getItem('token')
   if (token) {
@@ -47,6 +51,10 @@ onMounted(() => {
     <div v-else>
       <div class="values0" v-if="isValuesList">
         <div class="values">
+          <v-btn class="keyResultsButton" variant="tonal" rounded="lg" @click="openKeyResults">
+            <v-icon icon="mdi-format-list-bulleted"/>
+            Key Results
+          </v-btn>
 
           <v-card class="value" elevation="20" outlined shaped
 
@@ -98,6 +106,10 @@ onMounted(() => {
 .addValue {
   width: 100%;
   background-color: #b2d5f3;
+}
+
+.keyResultsButton {
+  justify-self: end;
 }
 
 .value {

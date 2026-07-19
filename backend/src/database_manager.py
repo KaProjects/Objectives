@@ -4,7 +4,7 @@ from datetime import date
 
 from classes import Value, Objective, KeyResult, Task, ObjectiveIdea
 from errors import DatabaseIntegrityError
-from states import TaskState
+from states import KeyResultState, TaskState
 
 _placeholder = ContextVar('database_placeholder', default='?')
 
@@ -143,6 +143,29 @@ class DatabaseManager:
 
                 key_results.append(key_result)
         return key_results
+
+    def select_key_result_overview(self) -> list[dict]:
+        with self.cursor() as cursor:
+            cursor.execute(sql('''
+                select key_results.id, key_results.name, key_results.t,
+                       objectives.name as objective_name, objectives.state as objective_state,
+                       values_table.name as value_name
+                from KeyResults key_results
+                join Objectives objectives on objectives.id = key_results.objective_id
+                join PValues values_table on values_table.id = objectives.value_id
+                where key_results.state = ?
+            '''), (KeyResultState.ACTIVE.value,))
+            return [
+                {
+                    'id': row[0],
+                    'name': row[1],
+                    't': row[2],
+                    'objective_name': row[3],
+                    'objective_state': row[4],
+                    'value_name': row[5],
+                }
+                for row in cursor.fetchall()
+            ]
 
     def insert_key_result(self, name, description, state, objective_id, s, m, a, r, t, date_created) -> int:
         validate_iso_date(date_created)
