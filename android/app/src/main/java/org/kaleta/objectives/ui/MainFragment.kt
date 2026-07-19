@@ -15,6 +15,11 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
+import androidx.core.view.updatePadding
+import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputLayout
@@ -47,6 +52,7 @@ class MainFragment : Fragment() {
         val spinner: Spinner = view.findViewById(R.id.valueSpinner)
         val recyclerView: RecyclerView = view.findViewById(R.id.ideas)
         val addButton: FloatingActionButton = view.findViewById(R.id.addIdea)
+        val topAppBar: MaterialToolbar = view.findViewById(R.id.topAppBar)
         val displayedValues = mutableListOf<ValueOption>()
         val valuesAdapter = ArrayAdapter(
             requireContext(),
@@ -64,6 +70,19 @@ class MainFragment : Fragment() {
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = ideasAdapter
+
+        val fabMargin = resources.getDimensionPixelOffset(R.dimen.fab_margin)
+        val listBottomPadding = resources.getDimensionPixelOffset(R.dimen.idea_list_bottom_padding)
+        ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            topAppBar.updatePadding(top = systemBars.top)
+            recyclerView.updatePadding(bottom = listBottomPadding + systemBars.bottom)
+            addButton.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = fabMargin + systemBars.bottom
+            }
+            insets
+        }
+        ViewCompat.requestApplyInsets(view)
 
         spinner.adapter = valuesAdapter
         spinner.prompt = getString(R.string.select_value)

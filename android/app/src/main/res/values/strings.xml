@@ -7,4 +7,7 @@
     <string name="confirm">Confirm</string>
     <string name="delete_idea_question">Delete Idea?</string>
     <string name="idea_required">Idea cannot be blank</string>
+    <string name="add_idea">Add idea</string>
+    <string name="delete_idea">Delete idea</string>
+    <string name="save_idea">Save idea</string>
 </resources>
