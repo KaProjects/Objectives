@@ -27,7 +27,7 @@ import org.kaleta.objectives.R
 import org.kaleta.objectives.adapter.IdeasAdapter
 import org.kaleta.objectives.data.Idea
 import org.kaleta.objectives.data.ValueOption
-import org.kaleta.objectives.repository.LegacyFirebaseIdeasRepository
+import org.kaleta.objectives.repository.AppRepositoryProvider
 
 class MainFragment : Fragment() {
     private lateinit var viewModel: MainViewModel
@@ -36,7 +36,7 @@ class MainFragment : Fragment() {
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(
             this,
-            MainViewModelFactory(LegacyFirebaseIdeasRepository()),
+            MainViewModelFactory(AppRepositoryProvider.create(requireContext().applicationContext)),
         )[MainViewModel::class.java]
     }
 
