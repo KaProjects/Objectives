@@ -6,16 +6,15 @@ import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.MotionEvent
 import android.view.View
 import android.view.View.OnTouchListener
-import android.widget.Toast
 
 
-abstract class OnSwipeTouchListener(ctx: Context?) : OnTouchListener {
+abstract class OnSwipeTouchListener(ctx: Context) : OnTouchListener {
     private val gestureDetector: GestureDetector
     private val ctx: Context
 
     init {
         gestureDetector = GestureDetector(ctx, GestureListener())
-        this.ctx = ctx!!
+        this.ctx = ctx
     }
 
     override fun onTouch(v: View?, event: MotionEvent?): Boolean {
@@ -28,15 +27,16 @@ abstract class OnSwipeTouchListener(ctx: Context?) : OnTouchListener {
         }
 
         override fun onFling(
-            e1: MotionEvent,
+            e1: MotionEvent?,
             e2: MotionEvent,
             velocityX: Float,
             velocityY: Float
         ): Boolean {
             var result = false
             try {
-                val diffY = e2.y - e1.y
-                val diffX = e2.x - e1.x
+                val startEvent = e1 ?: return false
+                val diffY = e2.y - startEvent.y
+                val diffX = e2.x - startEvent.x
                 if (Math.abs(diffX) > Math.abs(diffY)) {
                     if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                         if (diffX > 0) {

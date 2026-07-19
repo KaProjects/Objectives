@@ -1,141 +1,92 @@
 package org.kaleta.objectives.adapter
 
-import android.app.AlertDialog
-import android.graphics.PorterDuff
-import android.text.Editable
 import android.text.SpannableStringBuilder
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewGroup.MarginLayoutParams
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
-import org.kaleta.objectives.DataSource
-import org.kaleta.objectives.R
-import org.kaleta.objectives.ValueParameter
-import org.kaleta.objectives.data.Idea
-import org.kaleta.objectives.listener.OnSwipeTouchListener
-import android.view.View.OnLongClickListener
-import android.widget.*
 import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
+import org.kaleta.objectives.R
+import org.kaleta.objectives.data.Idea
 
-
-class IdeasAdapter(valueParameter: ValueParameter): RecyclerView.Adapter<IdeasAdapter.ViewHolder>(), ValueEventListener {
-
-    val valueParameter: ValueParameter
-
-    private val views = ArrayList<ViewHolder>()
-
-    init{
-        DataSource.ideasReference.addValueEventListener(this)
-        this.valueParameter = valueParameter
-    }
-
-    fun resetViews(){
-        for (view in views){
-            view.hideButtons()
-        }
-    }
+class IdeasAdapter(
+    private val onDeleteRequested: (Idea) -> Unit,
+    private val onEditRequested: (Idea, String) -> Boolean,
+) : ListAdapter<Idea, IdeasAdapter.ViewHolder>(IdeaDiffCallback) {
+    private var editingIdeaId: String? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = ViewHolder(
-            LayoutInflater.from(parent.context)
-                .inflate(R.layout.idea_item, parent, false),
-            this)
-        views.add(view)
-        return view
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.idea_item, parent, false)
+        return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        var ideasList = DataSource.ideasMap.get(valueParameter.getValueId())!!
-        holder.bind(ideasList.get(position))
+        val idea = getItem(position)
+        holder.bind(idea, isEditing = idea.id == editingIdeaId)
     }
 
-    override fun getItemCount(): Int {
-        if (DataSource.ideasMap.keys.size == 0)
-            return 0
-        var ideasList = DataSource.ideasMap.get(valueParameter.getValueId())
-        return ideasList?.size ?: 0
+    fun stopEditing() {
+        updateEditingIdea(null)
     }
 
+    private fun updateEditingIdea(ideaId: String?) {
+        if (editingIdeaId == ideaId) return
 
-    class ViewHolder(itemView: View, val adapter: IdeasAdapter) : RecyclerView.ViewHolder(itemView) {
+        val previousId = editingIdeaId
+        editingIdeaId = ideaId
+        notifyIdeaChanged(previousId)
+        notifyIdeaChanged(ideaId)
+    }
 
-        var ideaView: TextView = itemView.findViewById(R.id.idea)
-        var ideaEdit: TextInputEditText = itemView.findViewById(R.id.ideaEdit)
-        var deleteButton: ImageView = itemView.findViewById(R.id.deleteIdea)
-        var confirmEditButton: ImageView = itemView.findViewById(R.id.confirmEditIdea)
+    private fun notifyIdeaChanged(ideaId: String?) {
+        val position = currentList.indexOfFirst { it.id == ideaId }
+        if (position >= 0) notifyItemChanged(position)
+    }
 
+    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val ideaView: TextView = itemView.findViewById(R.id.idea)
+        private val ideaEdit: TextInputEditText = itemView.findViewById(R.id.ideaEdit)
+        private val deleteButton: ImageView = itemView.findViewById(R.id.deleteIdea)
+        private val confirmEditButton: ImageView = itemView.findViewById(R.id.confirmEditIdea)
 
-        fun bind(idea: Idea) {
+        fun bind(idea: Idea, isEditing: Boolean) {
             ideaView.text = idea.value
             ideaEdit.text = SpannableStringBuilder(idea.value)
+            showEditingState(isEditing)
 
-            deleteButton.visibility = View.INVISIBLE
-            ideaEdit.visibility = View.INVISIBLE
-            confirmEditButton.visibility = View.INVISIBLE
-
-            itemView.setOnClickListener {
-                adapter.resetViews()
-                true
-            }
+            itemView.setOnClickListener { stopEditing() }
             itemView.setOnLongClickListener {
-                adapter.resetViews()
-                deleteButton.visibility = View.VISIBLE
-                confirmEditButton.visibility = View.VISIBLE
-                ideaEdit.text = SpannableStringBuilder(idea.value)
-                ideaEdit.visibility = View.VISIBLE
-                ideaView.visibility = View.INVISIBLE
+                updateEditingIdea(idea.id)
                 true
             }
-            deleteButton.setOnTouchListener { v, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_UP -> {
-                        val alert = AlertDialog.Builder(itemView.context)
-                            .setTitle("Delete Idea?")
-                            .setPositiveButton("Confirm") { dialog, _ ->
-                                DataSource.deleteIdea(adapter.valueParameter.getValueId(), idea.id)
-                                dialog.cancel()
-                                adapter.resetViews()
-                            }
-                            .setNegativeButton("Cancel") { dialog, _ ->
-                                dialog.cancel()
-                            }.create()
-
-                        alert.show()
-                    }
-                }
-                false
+            deleteButton.setOnClickListener {
+                onDeleteRequested(idea)
             }
-            confirmEditButton.setOnTouchListener { v, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_UP -> {
-                        DataSource.editIdea(adapter.valueParameter.getValueId(), idea.id, ideaEdit.text.toString())
-                        adapter.resetViews()
-                    }
+            confirmEditButton.setOnClickListener {
+                if (onEditRequested(idea, ideaEdit.text?.toString().orEmpty())) {
+                    stopEditing()
+                } else {
+                    ideaEdit.error = itemView.context.getString(R.string.idea_required)
                 }
-                false
             }
         }
 
-        fun hideButtons(){
-            deleteButton.visibility = View.INVISIBLE
-            confirmEditButton.visibility = View.INVISIBLE
-            ideaEdit.visibility = View.INVISIBLE
-            ideaView.visibility = View.VISIBLE
+        private fun showEditingState(isEditing: Boolean) {
+            val editVisibility = if (isEditing) View.VISIBLE else View.INVISIBLE
+            deleteButton.visibility = editVisibility
+            confirmEditButton.visibility = editVisibility
+            ideaEdit.visibility = editVisibility
+            ideaView.visibility = if (isEditing) View.INVISIBLE else View.VISIBLE
         }
     }
 
-    override fun onCancelled(p0: DatabaseError) {
-        println(p0.message)
-    }
+    private object IdeaDiffCallback : DiffUtil.ItemCallback<Idea>() {
+        override fun areItemsTheSame(oldItem: Idea, newItem: Idea): Boolean = oldItem.id == newItem.id
 
-    override fun onDataChange(p0: DataSnapshot) {
-//        views.clear()
-        this.notifyDataSetChanged();
+        override fun areContentsTheSame(oldItem: Idea, newItem: Idea): Boolean = oldItem == newItem
     }
 }

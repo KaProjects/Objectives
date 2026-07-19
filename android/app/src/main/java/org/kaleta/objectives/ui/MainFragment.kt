@@ -1,89 +1,162 @@
 package org.kaleta.objectives.ui
 
-import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
 import android.view.Gravity
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
-import androidx.lifecycle.Observer
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.EditText
+import android.widget.Spinner
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import org.kaleta.objectives.*
+import com.google.android.material.textfield.TextInputLayout
+import org.kaleta.objectives.R
 import org.kaleta.objectives.adapter.IdeasAdapter
-import org.kaleta.objectives.listener.AdapterValueEventListener
-import org.kaleta.objectives.listener.AddIdeaOnClickListener
+import org.kaleta.objectives.data.Idea
+import org.kaleta.objectives.data.ValueOption
+import org.kaleta.objectives.repository.LegacyFirebaseIdeasRepository
 
-class MainFragment : Fragment(), AdapterView.OnItemSelectedListener, ValueParameter{
-
-    companion object {
-        fun newInstance() = MainFragment()
-    }
-
-    private var valueId: String = "1"
-
+class MainFragment : Fragment() {
     private lateinit var viewModel: MainViewModel
-
-    private val ideasAdapter = IdeasAdapter(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+        viewModel = ViewModelProvider(
+            this,
+            MainViewModelFactory(LegacyFirebaseIdeasRepository()),
+        )[MainViewModel::class.java]
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        val root = inflater.inflate(R.layout.fragment_main, container, false)
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View = inflater.inflate(R.layout.fragment_main, container, false)
 
-        val spinner: Spinner = root.findViewById(R.id.valueSpinner)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
-        var labelsAdapter = ArrayAdapter(root.context, android.R.layout.simple_spinner_item, DataSource.labels)
-        labelsAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        DataSource.labelsReference.addValueEventListener(AdapterValueEventListener(labelsAdapter))
+        val spinner: Spinner = view.findViewById(R.id.valueSpinner)
+        val recyclerView: RecyclerView = view.findViewById(R.id.ideas)
+        val addButton: FloatingActionButton = view.findViewById(R.id.addIdea)
+        val displayedValues = mutableListOf<ValueOption>()
+        val valuesAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            displayedValues,
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            setNotifyOnChange(false)
+        }
+        val ideasAdapter = IdeasAdapter(
+            onDeleteRequested = ::showDeleteConfirmation,
+            onEditRequested = viewModel::editIdea,
+        )
+        var renderedValueId: String? = null
 
-        with(spinner)
-        {
-            adapter = labelsAdapter
-            setSelection(0, false)
-            onItemSelectedListener = this@MainFragment
-            prompt = "Select Value"
-            gravity = Gravity.CENTER
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        recyclerView.adapter = ideasAdapter
 
+        spinner.adapter = valuesAdapter
+        spinner.prompt = getString(R.string.select_value)
+        spinner.gravity = Gravity.CENTER
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                selectedView: View?,
+                position: Int,
+                id: Long,
+            ) {
+                displayedValues.getOrNull(position)?.let { value ->
+                    viewModel.selectValue(value.id)
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
         }
 
-        val recyclerView: RecyclerView = root.findViewById(R.id.ideas)
+        addButton.setOnClickListener { showAddIdeaDialog() }
 
-        viewModel.text.observe(viewLifecycleOwner, Observer {
+        viewModel.state.observe(viewLifecycleOwner) { state ->
+            if (displayedValues != state.values) {
+                displayedValues.clear()
+                displayedValues.addAll(state.values)
+                valuesAdapter.notifyDataSetChanged()
+            }
 
-            recyclerView.layoutManager = LinearLayoutManager(root.context)
-            recyclerView.adapter = ideasAdapter
-        })
+            val selectedPosition = displayedValues.indexOfFirst { it.id == state.selectedValueId }
+            if (selectedPosition >= 0 && spinner.selectedItemPosition != selectedPosition) {
+                spinner.setSelection(selectedPosition, false)
+            }
 
-        val fab: FloatingActionButton = root.findViewById(R.id.addIdea)
-        fab.setOnClickListener(AddIdeaOnClickListener(fab.context, this))
+            if (renderedValueId != state.selectedValueId) {
+                ideasAdapter.stopEditing()
+                renderedValueId = state.selectedValueId
+            }
+            ideasAdapter.submitList(state.ideas)
+            addButton.isEnabled = state.selectedValueId != null
 
-        return root
+            state.errorMessage?.let { message ->
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                viewModel.clearError()
+            }
+        }
     }
 
-    override fun setValueId(valueId: String) {
-        this.valueId = valueId
+    private fun showAddIdeaDialog() {
+        val state = viewModel.state.value ?: return
+        val selectedValue = state.selectedValue ?: return
+        val inputLayout = TextInputLayout(requireContext()).apply {
+            setPadding(
+                resources.getDimensionPixelOffset(R.dimen.dp_19),
+                0,
+                resources.getDimensionPixelOffset(R.dimen.dp_19),
+                0,
+            )
+        }
+        val input = EditText(requireContext())
+        inputLayout.addView(input)
+
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.new_idea)
+            .setMessage(selectedValue.name)
+            .setView(inputLayout)
+            .setPositiveButton(R.string.add, null)
+            .setNegativeButton(R.string.cancel, null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                if (viewModel.addIdea(input.text.toString())) {
+                    dialog.dismiss()
+                } else {
+                    input.error = getString(R.string.idea_required)
+                }
+            }
+        }
+        dialog.show()
     }
 
-    override fun getValueId(): String {
-        return this.valueId
+    private fun showDeleteConfirmation(idea: Idea) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.delete_idea_question)
+            .setPositiveButton(R.string.confirm) { dialog, _ ->
+                viewModel.deleteIdea(idea)
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
-    override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-        this.setValueId(DataSource.labelIds.get(position))
-        ideasAdapter.notifyDataSetChanged()
-    }
-
-    override fun onNothingSelected(p0: AdapterView<*>?) {
-
+    companion object {
+        fun newInstance() = MainFragment()
     }
 }
