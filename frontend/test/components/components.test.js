@@ -12,6 +12,7 @@ vi.mock('@/services/apiClient', () => ({api}))
 import Editable from '@/components/Editable.vue'
 import Ideas from '@/components/Ideas.vue'
 import AddIdeaDialog from '@/dialogs/AddIdeaDialog.vue'
+import AddObjectiveDialog from '@/dialogs/AddObjectiveDialog.vue'
 import AddKeyResultDialog from '@/dialogs/AddKeyResultDialog.vue'
 import AddSubvalueDialog from '@/dialogs/AddSubvalueDialog.vue'
 import AddTaskDialog from '@/dialogs/AddTaskDialog.vue'
@@ -151,6 +152,20 @@ describe('frontend components', () => {
     expect(wrapper.emitted('updated')).toEqual([[{subvalueId: '1', idea: updatedIdea}]])
   })
 
+  it('Ideas offers objective creation from a hovered idea', async () => {
+    const idea = {id: 'idea-1', name: 'Walk', description: 'Short walk'}
+    const subvalue = {id: '1', name: 'Fitness', ideas: [idea]}
+    const wrapper = mount(Ideas, {props: {valueId: 7, subvalues: [subvalue]}})
+    wrapper.vm.selectedIdeaId = '1:idea-1'
+    await wrapper.vm.$nextTick()
+
+    await wrapper.find('.createObjectiveFromIdea').trigger('click')
+
+    expect(wrapper.emitted('create-objective')).toEqual([[{
+      subvalueId: '1', idea,
+    }]])
+  })
+
   it('Ideas saves an edited subvalue name and notifies its parent', async () => {
     const subvalue = {id: '1', name: 'Fitness', ideas: []}
     api.put.mockResolvedValue({id: '1', name: 'Training'})
@@ -197,6 +212,18 @@ describe('frontend components', () => {
 
     expect(api.post).toHaveBeenCalledWith('/value/7/subvalue', {name: 'Nutrition'})
     expect(wrapper.emitted('created')).toEqual([[subvalue]])
+  })
+
+  it('AddObjectiveDialog uses the supplied objective draft', async () => {
+    const wrapper = mount(AddObjectiveDialog, {
+      props: {
+        modelValue: true,
+        valueId: 7,
+        initialObjective: {name: 'Walk', description: 'Short walk'},
+      },
+    })
+
+    expect(wrapper.vm.newObjective).toEqual({name: 'Walk', description: 'Short walk'})
   })
 
   it('AddKeyResultDialog submits SMART setup values', async () => {

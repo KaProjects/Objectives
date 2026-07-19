@@ -6,13 +6,13 @@ import AddIdeaDialog from '@/dialogs/AddIdeaDialog.vue'
 import Editable from '@/components/Editable.vue'
 
 const props = defineProps({
-  valueId: Number,
+  valueId: [String, Number],
   subvalues: {
     type: Array,
     default: () => [],
   },
 })
-const emit = defineEmits(['created', 'updated', 'subvalue-updated', 'subvalue-deleted', 'deleted'])
+const emit = defineEmits(['created', 'updated', 'subvalue-updated', 'subvalue-deleted', 'create-objective', 'deleted'])
 
 const selectedIdeaId = ref(null)
 const ideaPendingDeletionId = ref(null)
@@ -163,13 +163,19 @@ async function deleteSubvalue(subvalue) {
                      @mouseover="selectedIdeaId = subvalue.id + ':' + idea.id"
                      @mouseleave="selectedIdeaId = null">
           <v-list-item-content>
-            <div v-if="editingIdeaId !== ideaKey(subvalue, idea)" class="idea" @click="startEditing(subvalue, idea)">
-              <div class="ideaName">{{ idea.name }}</div>
-              <div v-if="idea.description" class="ideaDescription">{{ idea.description }}</div>
+            <div v-if="editingIdeaId !== ideaKey(subvalue, idea)" class="idea" :class="{shortIdea: !idea.description}"
+                 @click="startEditing(subvalue, idea)">
+              <div class="ideaContent">
+                <div class="ideaName">{{ idea.name }}</div>
+                <div v-if="idea.description" class="ideaDescription">{{ idea.description }}</div>
+              </div>
 
-              <v-icon v-if="selectedIdeaId === subvalue.id + ':' + idea.id"
-                      class="deleteIdea" icon="mdi-delete" size="18"
-                      @click.stop="ideaPendingDeletionId = ideaKey(subvalue, idea)"/>
+              <div v-if="selectedIdeaId === subvalue.id + ':' + idea.id" class="ideaActions">
+                <v-icon class="createObjectiveFromIdea" icon="mdi-flag-plus-outline" size="18"
+                        @click.stop="emit('create-objective', {subvalueId: subvalue.id, idea})"/>
+                <v-icon class="deleteIdea" icon="mdi-delete" size="18"
+                        @click.stop="ideaPendingDeletionId = ideaKey(subvalue, idea)"/>
+              </div>
               <v-dialog
                   :model-value="ideaPendingDeletionId === ideaKey(subvalue, idea)"
                   @update:model-value="ideaPendingDeletionId = $event ? ideaKey(subvalue, idea) : null"
@@ -213,6 +219,7 @@ async function deleteSubvalue(subvalue) {
 
 .subvalueList {
   display: flex;
+  flex: 0 0 300px;
   flex-direction: column;
   max-height: calc(100vh - 82px);
 }
@@ -249,6 +256,8 @@ async function deleteSubvalue(subvalue) {
 }
 
 .idea {
+  align-items: flex-start;
+  display: flex;
   padding: 8px 0;
   position: relative;
 }
@@ -265,7 +274,6 @@ async function deleteSubvalue(subvalue) {
   cursor: pointer;
   font-size: 0.9375rem;
   font-weight: 500;
-  padding-right: 28px;
 }
 
 .ideaDescription {
@@ -274,7 +282,24 @@ async function deleteSubvalue(subvalue) {
   font-size: 0.8125rem;
   font-weight: 400;
   margin-top: 2px;
-  padding-right: 28px;
+}
+
+.ideaContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.ideaActions {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 18px;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.shortIdea .ideaActions {
+  flex-basis: 40px;
+  flex-direction: row;
 }
 
 .ideaEditor {
@@ -289,8 +314,9 @@ async function deleteSubvalue(subvalue) {
 
 .deleteIdea {
   color: rgba(var(--v-theme-on-surface), 0.65);
-  position: absolute;
-  right: 0;
-  top: 8px;
+}
+
+.createObjectiveFromIdea {
+  color: rgba(var(--v-theme-on-surface), 0.65);
 }
 </style>

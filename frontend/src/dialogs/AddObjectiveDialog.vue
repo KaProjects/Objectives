@@ -6,6 +6,8 @@ import DialogCard from '@/dialogs/DialogCard.vue'
 const props = defineProps({
   modelValue: Boolean,
   valueId: Number,
+  initialObjective: {type: Object, default: null},
+  showActivator: {type: Boolean, default: true},
 })
 const emit = defineEmits(['update:modelValue', 'created'])
 
@@ -17,9 +19,14 @@ const newObjective = ref({name: '', description: ''})
 const isSubmitting = ref(false)
 const submissionError = ref(null)
 
-watch(isOpen, (isOpen) => {
-  if (isOpen) newObjective.value = {name: '', description: ''}
-})
+watch(isOpen, (open) => {
+  if (open) {
+    newObjective.value = {
+      name: props.initialObjective?.name || '',
+      description: props.initialObjective?.description || '',
+    }
+  }
+}, {immediate: true})
 
 async function addObjective() {
   if (isSubmitting.value) return
@@ -42,7 +49,7 @@ async function addObjective() {
 
 <template>
   <v-dialog v-model="isOpen" width="300">
-    <template v-slot:activator="{ props }">
+    <template v-if="showActivator" v-slot:activator="{ props }">
       <v-btn v-bind="props" variant="tonal" rounded="lg">
         <v-icon icon="mdi-plus"/>
       </v-btn>

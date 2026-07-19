@@ -16,6 +16,8 @@ const router = useRouter()
 const valueId = computed(() => route.params.valueId)
 const tab = ref(OBJECTIVE_TAB.ACTIVE)
 const openAddObjDialog = ref(false)
+const objectiveDraft = ref(null)
+const ideaToDeleteAfterObjective = ref(null)
 const openAddSubvalueDialog = ref(false)
 const subvalues = ref([])
 const isSubmitting = ref(false)
@@ -44,9 +46,27 @@ function filterObjectives(objectives, isActive) {
       .slice().sort(compareObjectives)
 }
 
-function addObjective(objective) {
+async function addObjective(objective) {
   value.value.objectives.push(objective)
   tab.value = OBJECTIVE_TAB.ACTIVE
+
+  const ideaToDelete = ideaToDeleteAfterObjective.value
+  objectiveDraft.value = null
+  ideaToDeleteAfterObjective.value = null
+  if (!ideaToDelete) return
+
+  try {
+    await api.delete('/value/' + valueId.value + '/subvalue/' + ideaToDelete.subvalueId + '/idea/' + ideaToDelete.id)
+    removeIdea({subvalueId: ideaToDelete.subvalueId, ideaId: ideaToDelete.id})
+  } catch (error) {
+    console.error('Objective was created, but its source idea could not be deleted.', error)
+  }
+}
+
+function createObjectiveFromIdea({subvalueId, idea}) {
+  objectiveDraft.value = {name: idea.name, description: idea.description}
+  ideaToDeleteAfterObjective.value = {subvalueId, id: idea.id}
+  openAddObjDialog.value = true
 }
 
 function addIdea({subvalueId, idea}) {
@@ -123,6 +143,12 @@ async function deleteObjective(objective) {
 }
 
 watch(valueId, loadData, {immediate: true})
+watch(openAddObjDialog, (open) => {
+  if (!open) {
+    objectiveDraft.value = null
+    ideaToDeleteAfterObjective.value = null
+  }
+})
 </script>
 
 <template>
@@ -146,6 +172,7 @@ watch(valueId, loadData, {immediate: true})
         <AddObjectiveDialog
             v-model="openAddObjDialog"
             :value-id="value.id"
+            :initial-objective="objectiveDraft"
             @created="addObjective"
         />
       </div>
@@ -158,6 +185,15 @@ watch(valueId, loadData, {immediate: true})
       </div>
     </div>
 
+    <AddObjectiveDialog
+        v-if="tab !== OBJECTIVE_TAB.ACTIVE && openAddObjDialog"
+        v-model="openAddObjDialog"
+        :value-id="value.id"
+        :initial-objective="objectiveDraft"
+        :show-activator="false"
+        @created="addObjective"
+    />
+
     <div style="display: flex; overflow-x:scroll;">
       <Ideas v-if="tab === OBJECTIVE_TAB.IDEAS"
              class="obj"
@@ -167,6 +203,7 @@ watch(valueId, loadData, {immediate: true})
              @updated="updateIdea"
              @subvalue-updated="updateSubvalue"
              @subvalue-deleted="removeSubvalue"
+             @create-objective="createObjectiveFromIdea"
              @deleted="removeIdea"/>
       <Objective v-for="objective in filterObjectives(value.objectives, tab === OBJECTIVE_TAB.ACTIVE)"
                  v-if="tab !== OBJECTIVE_TAB.IDEAS"
