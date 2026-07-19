@@ -32,7 +32,16 @@ class MemoryReference:
             parent[key] = copy.deepcopy(value)
 
     def update(self, value):
-        self._value(True).update(copy.deepcopy(value))
+        if self.path:
+            self._value(True).update(copy.deepcopy(value))
+            return
+
+        for path, updated_value in value.items():
+            reference = MemoryReference(self.store, path)
+            if updated_value is None:
+                reference.delete()
+            else:
+                reference.set(updated_value)
 
     def delete(self):
         parent, key = self._parent()

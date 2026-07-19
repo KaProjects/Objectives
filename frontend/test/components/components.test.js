@@ -177,6 +177,36 @@ describe('frontend components', () => {
     expect(wrapper.emitted('subvalue-updated')).toEqual([[{id: '1', name: 'Training'}]])
   })
 
+  it('Ideas moves a dragged idea to another subvalue', async () => {
+    const idea = {id: 'idea-1', name: 'Walk', description: ''}
+    const sourceSubvalue = {id: '0', name: 'default', ideas: [idea]}
+    const targetSubvalue = {id: '1', name: 'Fitness', ideas: []}
+    api.put.mockResolvedValue(idea)
+    const wrapper = mount(Ideas, {props: {valueId: 7, subvalues: [sourceSubvalue, targetSubvalue]}})
+    wrapper.vm.draggedIdea = {sourceSubvalueId: '0', idea}
+
+    await wrapper.vm.moveDraggedIdea(targetSubvalue)
+
+    expect(api.put).toHaveBeenCalledWith('/value/7/subvalue/0/idea/idea-1/move', {
+      target_subvalue_id: '1',
+    })
+    expect(wrapper.emitted('moved')).toEqual([[{
+      sourceSubvalueId: '0', targetSubvalueId: '1', idea,
+    }]])
+  })
+
+  it('Ideas does not move a dragged idea dropped in its source subvalue', async () => {
+    const idea = {id: 'idea-1', name: 'Walk', description: ''}
+    const subvalue = {id: '0', name: 'default', ideas: [idea]}
+    const wrapper = mount(Ideas, {props: {valueId: 7, subvalues: [subvalue]}})
+    wrapper.vm.draggedIdea = {sourceSubvalueId: '0', idea}
+
+    await wrapper.vm.moveDraggedIdea(subvalue)
+
+    expect(api.put).not.toHaveBeenCalled()
+    expect(wrapper.emitted('moved')).toBeUndefined()
+  })
+
   it('Ideas deletes a subvalue and notifies its parent', async () => {
     const subvalue = {id: '1', name: 'Fitness', ideas: []}
     api.delete.mockResolvedValue(undefined)

@@ -228,6 +228,25 @@ class SubvalueIdea(Resource):
             return create_exception_response(e)
 
 
+@value.route('/<id>/subvalue/<subvalue_id>/idea/<idea_id>/move')
+@value.param('id', 'Value identifier')
+@value.param('subvalue_id', 'Source subvalue identifier')
+@value.param('idea_id', 'Idea identifier')
+class MoveSubvalueIdea(Resource):
+    @value.doc(security="Bearer")
+    @authenticated
+    @value.expect(api.model('SubvalueIdeaMove', {
+        'target_subvalue_id': non_blank_string('target subvalue'),
+    }))
+    @value.response(200, 'Moved')
+    def put(self, id, subvalue_id, idea_id):
+        try:
+            idea = Service().move_subvalue_idea(id, subvalue_id, api.payload['target_subvalue_id'], idea_id)
+            return create_response(idea, 200)
+        except Exception as e:
+            return create_exception_response(e)
+
+
 @key_result.route('')
 class KeyResults(Resource):
     @value.doc(security="Bearer")

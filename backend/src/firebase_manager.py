@@ -83,6 +83,23 @@ def update_idea(value_id: str, subvalue_id: str, idea_key: str, name: str, descr
     })
 
 
+def move_idea_to_subvalue(value_id: str, source_subvalue_id: str, target_subvalue_id: str, idea_key: str):
+    source_path = f'{_ideas_path(value_id, source_subvalue_id)}/{idea_key}'
+    idea = db.reference(source_path).get()
+    if idea is None:
+        raise ValueError('idea not found')
+    if str(source_subvalue_id) != str(target_subvalue_id):
+        db.reference().update({
+            f'{_ideas_path(value_id, target_subvalue_id)}/{idea_key}': idea,
+            source_path: None,
+        })
+    return {
+        'id': str(idea_key),
+        'name': idea.get('name', '') if isinstance(idea, dict) else str(idea),
+        'description': idea.get('description', '') if isinstance(idea, dict) else '',
+    }
+
+
 def delete_idea_from_subvalue(value_id: str, subvalue_id: str, idea_key: str):
     db.reference(f'{_ideas_path(value_id, subvalue_id)}/{idea_key}').delete()
 

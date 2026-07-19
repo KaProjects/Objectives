@@ -12,7 +12,7 @@ const props = defineProps({
     default: () => [],
   },
 })
-const emit = defineEmits(['created', 'updated', 'subvalue-updated', 'subvalue-deleted', 'create-objective', 'deleted'])
+const emit = defineEmits(['created', 'updated', 'moved', 'subvalue-updated', 'subvalue-deleted', 'create-objective', 'deleted'])
 
 const selectedIdeaId = ref(null)
 const ideaPendingDeletionId = ref(null)
@@ -20,6 +20,8 @@ const openAddIdeaDialogId = ref(null)
 const editingIdeaId = ref(null)
 const editingSubvalueId = ref(null)
 const subvaluePendingDeletionId = ref(null)
+const draggedIdea = ref(null)
+const dragOverSubvalueId = ref(null)
 const draftIdea = ref({name: '', description: ''})
 const ideaEditor = ref(null)
 const isSubmitting = ref(false)
@@ -116,11 +118,59 @@ async function deleteSubvalue(subvalue) {
   }
 }
 
+function startDragging(event, subvalue, idea) {
+  if (isSubmitting.value) {
+    event.preventDefault()
+    return
+  }
+  draggedIdea.value = {sourceSubvalueId: subvalue.id, idea}
+  event.dataTransfer.effectAllowed = 'move'
+  event.dataTransfer.setData('text/plain', idea.id)
+}
+
+function endDragging() {
+  draggedIdea.value = null
+  dragOverSubvalueId.value = null
+}
+
+function markDragOver(subvalue) {
+  if (draggedIdea.value?.sourceSubvalueId !== subvalue.id) {
+    dragOverSubvalueId.value = subvalue.id
+  }
+}
+
+async function moveDraggedIdea(targetSubvalue) {
+  const dragged = draggedIdea.value
+  endDragging()
+  if (!dragged || dragged.sourceSubvalueId === targetSubvalue.id) return
+
+  isSubmitting.value = true
+  submissionError.value = null
+  try {
+    const movedIdea = await api.put(
+        '/value/' + props.valueId + '/subvalue/' + dragged.sourceSubvalueId + '/idea/' + dragged.idea.id + '/move',
+        {target_subvalue_id: targetSubvalue.id},
+    )
+    emit('moved', {
+      sourceSubvalueId: dragged.sourceSubvalueId,
+      targetSubvalueId: targetSubvalue.id,
+      idea: movedIdea,
+    })
+  } catch (error) {
+    submissionError.value = error.message
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
 </script>
 
 <template>
   <div class="ideaLists">
-    <v-card v-for="subvalue in subvalues" :key="subvalue.id" width="300" elevation="3" shaped class="subvalueList">
+    <v-card v-for="subvalue in subvalues" :key="subvalue.id" width="300" elevation="3" shaped class="subvalueList"
+            :class="{dragOver: dragOverSubvalueId === subvalue.id}"
+            @dragover.prevent="markDragOver(subvalue)"
+            @drop.prevent="moveDraggedIdea(subvalue)">
       <v-card-title class="subvalueListHeader">
         <Editable v-if="subvalue.id !== '0'" class="subvalueNameEditor" :value="subvalue.name" label="Name" hide-details
                   :cancel-editing="subvaluePendingDeletionId === subvalue.id"
@@ -163,7 +213,11 @@ async function deleteSubvalue(subvalue) {
                      @mouseover="selectedIdeaId = subvalue.id + ':' + idea.id"
                      @mouseleave="selectedIdeaId = null">
           <v-list-item-content>
-            <div v-if="editingIdeaId !== ideaKey(subvalue, idea)" class="idea" :class="{shortIdea: !idea.description}"
+            <div v-if="editingIdeaId !== ideaKey(subvalue, idea)" class="idea"
+                 :class="{shortIdea: !idea.description, draggingIdea: draggedIdea?.idea.id === idea.id && draggedIdea?.sourceSubvalueId === subvalue.id}"
+                 :draggable="!isSubmitting"
+                 @dragstart="startDragging($event, subvalue, idea)"
+                 @dragend="endDragging"
                  @click="startEditing(subvalue, idea)">
               <div class="ideaContent">
                 <div class="ideaName">{{ idea.name }}</div>
@@ -222,6 +276,12 @@ async function deleteSubvalue(subvalue) {
   flex: 0 0 300px;
   flex-direction: column;
   max-height: calc(100vh - 82px);
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.subvalueList.dragOver {
+  box-shadow: 0 0 0 2px rgb(var(--v-theme-primary));
+  transform: translateY(-2px);
 }
 
 .subvalueIdeas {
@@ -260,6 +320,12 @@ async function deleteSubvalue(subvalue) {
   display: flex;
   padding: 8px 0;
   position: relative;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.idea.draggingIdea {
+  opacity: 0.45;
+  transform: scale(0.98);
 }
 
 .ideaItem:first-child .idea {

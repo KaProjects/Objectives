@@ -68,6 +68,9 @@ class Service:
         self.firebase.update_idea(value_id, subvalue_id, idea_id, name, description)
         return {'id': idea_id, 'name': name, 'description': description}
 
+    def move_subvalue_idea(self, value_id: str, source_subvalue_id: str, target_subvalue_id: str, idea_id: str):
+        return self.firebase.move_idea_to_subvalue(value_id, source_subvalue_id, target_subvalue_id, idea_id)
+
     def create_key_result(self, name, description, objective_id, s="", m="", a="", r="", t=""):
         today = date.today().isoformat()
         with self.database_manager.open() as database:

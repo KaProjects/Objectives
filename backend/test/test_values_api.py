@@ -144,6 +144,25 @@ class TestValuesApi(unittest.TestCase):
             'description': 'Twenty minutes after work.',
         }, message)
 
+    def test_move_idea_to_another_subvalue(self):
+        status, idea, message = post_request('/value/4/subvalue/0/idea', json.dumps({
+            'name': 'Temporary idea',
+            'description': '',
+        }))
+        self.assertEqual(status, 201, message)
+
+        status, moved_idea, message = put_request('/value/4/subvalue/0/idea/' + idea['id'] + '/move', json.dumps({
+            'target_subvalue_id': '1',
+        }))
+        self.assertEqual(status, 200, message)
+        self.assertEqual(moved_idea, idea, message)
+
+        status, subvalues, message = get_request('/value/4/subvalue')
+        default_subvalue = next(subvalue for subvalue in subvalues if subvalue['id'] == '0')
+        target_subvalue = next(subvalue for subvalue in subvalues if subvalue['id'] == '1')
+        self.assertNotIn(idea, default_subvalue['ideas'], message)
+        self.assertIn(idea, target_subvalue['ideas'], message)
+
     def test_get_value_check_tasks_count(self):
         status, value, message = get_request("/value/5")
         self.assertEqual(status, 200, message)

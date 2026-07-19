@@ -80,6 +80,14 @@ function updateIdea({subvalueId, idea}) {
   if (existingIdea) Object.assign(existingIdea, idea)
 }
 
+function moveIdea({sourceSubvalueId, targetSubvalueId, idea}) {
+  const sourceSubvalue = subvalues.value.find((item) => item.id === sourceSubvalueId)
+  const targetSubvalue = subvalues.value.find((item) => item.id === targetSubvalueId)
+  if (!sourceSubvalue || !targetSubvalue) return
+  sourceSubvalue.ideas = sourceSubvalue.ideas.filter((item) => item.id !== idea.id)
+  targetSubvalue.ideas.push(idea)
+}
+
 function addSubvalue(subvalue) {
   subvalues.value.push(subvalue)
 }
@@ -201,6 +209,7 @@ watch(openAddObjDialog, (open) => {
              :subvalues="subvalues"
              @created="addIdea"
              @updated="updateIdea"
+             @moved="moveIdea"
              @subvalue-updated="updateSubvalue"
              @subvalue-deleted="removeSubvalue"
              @create-objective="createObjectiveFromIdea"
