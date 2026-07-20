@@ -84,7 +84,17 @@ insert into Tasks(id, kr_id, state, value) values
   (8, 7, 'active', 'Draft the case study outline'),
   (9, 10, 'active', 'Confirm the automated monthly transfer'),
   (10, 12, 'active', 'Suggest a weekend walk'),
-  (11, 13, 'active', 'Choose the next book');
+  (11, 13, 'active', 'Choose the next book'),
+  (12, 1, 'active', 'Set the bedroom lights to dim at 21:30'),
+  (13, 1, 'active', 'Prepare tomorrow’s clothes before bed'),
+  (14, 1, 'active', 'Stop checking work messages after 21:00'),
+  (15, 1, 'active', 'Write down the next day’s top priority'),
+  (16, 1, 'active', 'Charge the phone outside the bedroom'),
+  (17, 1, 'active', 'Make a cup of caffeine-free tea'),
+  (18, 1, 'active', 'Read ten pages of a book before sleep'),
+  (19, 1, 'active', 'Open the window for ten minutes before bed'),
+  (20, 1, 'active', 'Record bedtime in the sleep log'),
+  (21, 1, 'active', 'Set an alarm for a consistent wake-up time');
 
 insert into ObjectiveIdeas(id, objective_id, value) values
   (1, 1, 'Try a short evening stretching routine'),

@@ -346,6 +346,16 @@ watch(openAddObjDialog, (open) => {
   overflow-x: scroll;
 }
 
+.activeObjectives {
+  gap: 4px;
+  margin-left: 2px;
+  margin-right: 5px;
+}
+
+.activeObjectives :deep(.obj) {
+  margin-left: 0;
+}
+
 .doneTimeline {
   margin: 0 0 0 100px;
   max-width: 760px;
