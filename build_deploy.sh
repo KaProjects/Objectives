@@ -39,6 +39,58 @@ show_cursor() {
   fi
 }
 
+children_of() {
+  local parent_pid="$1"
+
+  if command -v pgrep >/dev/null 2>&1; then
+    pgrep -P "$parent_pid" 2>/dev/null || true
+  else
+    ps -eo pid=,ppid= 2>/dev/null \
+      | awk -v parent_pid="$parent_pid" '$2 == parent_pid { print $1 }'
+  fi
+}
+
+collect_process_tree() {
+  local root_pid="$1"
+  local child_pid
+
+  for child_pid in $(children_of "$root_pid"); do
+    collect_process_tree "$child_pid"
+  done
+  printf '%s\n' "$root_pid"
+}
+
+terminate_process_tree() {
+  local root_pid="$1"
+  local process_ids
+  local process_id
+  local attempt
+  local processes_alive
+
+  [[ -n "$root_pid" ]] || return
+  process_ids="$(collect_process_tree "$root_pid")"
+
+  for process_id in $process_ids; do
+    kill -TERM "$process_id" 2>/dev/null || true
+  done
+
+  for ((attempt = 0; attempt < 20; attempt++)); do
+    processes_alive=0
+    for process_id in $process_ids; do
+      if kill -0 "$process_id" 2>/dev/null; then
+        processes_alive=1
+        break
+      fi
+    done
+    [[ $processes_alive -eq 0 ]] && return
+    sleep 0.1
+  done
+
+  for process_id in $process_ids; do
+    kill -KILL "$process_id" 2>/dev/null || true
+  done
+}
+
 cleanup() {
   show_cursor
   rm -rf "$LOG_DIR"
@@ -46,8 +98,8 @@ cleanup() {
 
 stop_children() {
   trap - INT TERM
-  [[ -n "$backend_pid" ]] && kill "$backend_pid" 2>/dev/null || true
-  [[ -n "$frontend_pid" ]] && kill "$frontend_pid" 2>/dev/null || true
+  terminate_process_tree "$backend_pid"
+  terminate_process_tree "$frontend_pid"
   [[ -n "$backend_pid" ]] && wait "$backend_pid" 2>/dev/null || true
   [[ -n "$frontend_pid" ]] && wait "$frontend_pid" 2>/dev/null || true
   exit 130
@@ -80,8 +132,8 @@ terminal_width() {
 
 render_dashboard() {
   local width
-  local backend_title='BACKEND'
-  local frontend_title='FRONTEND'
+  local backend_title='BACKEND [RUNNING]'
+  local frontend_title='FRONTEND [RUNNING]'
   local backend_failed=0
   local frontend_failed=0
   local red=''
@@ -101,13 +153,21 @@ render_dashboard() {
   backend_width=$(((width - separator_width) / 2))
   frontend_width=$((width - separator_width - backend_width))
 
-  if [[ -n "$backend_status" && $backend_status -ne 0 ]]; then
-    backend_title='BACKEND [FAILED]'
-    backend_failed=1
+  if [[ -n "$backend_status" ]]; then
+    if [[ $backend_status -eq 0 ]]; then
+      backend_title='BACKEND [FINISHED]'
+    else
+      backend_title='BACKEND [FAILED]'
+      backend_failed=1
+    fi
   fi
-  if [[ -n "$frontend_status" && $frontend_status -ne 0 ]]; then
-    frontend_title='FRONTEND [FAILED]'
-    frontend_failed=1
+  if [[ -n "$frontend_status" ]]; then
+    if [[ $frontend_status -eq 0 ]]; then
+      frontend_title='FRONTEND [FINISHED]'
+    else
+      frontend_title='FRONTEND [FAILED]'
+      frontend_failed=1
+    fi
   fi
   if [[ -t 1 ]]; then
     red=$'\033[31m'
