@@ -29,6 +29,12 @@ const showKeyResultsTopFade = ref(false)
 const showKeyResultsBottomFade = ref(false)
 let keyResultsResizeObserver
 
+const keyResultStatus = Object.freeze({
+  [KEY_RESULT_STATE.ACTIVE]: {label: 'Active', icon: 'mdi-progress-clock'},
+  [KEY_RESULT_STATE.COMPLETED]: {label: 'Completed', icon: 'mdi-check-bold'},
+  [KEY_RESULT_STATE.FAILED]: {label: 'Failed', icon: 'mdi-close-thick'},
+})
+
 function updateKeyResultsFades() {
   const list = keyResultsList.value
   if (!list) return
@@ -123,26 +129,40 @@ async function deleteKeyResult(keyResult) {
       <div ref="keyResultsList" class="keyResultsList" @scroll="updateKeyResultsFades">
         <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
                      :key="key_result.id"
-                     class="kr" :class="key_result.state"
+                     class="kr"
+                     :class="[key_result.state, {krPlaque: objective.state === OBJECTIVE_STATE.ACTIVE}]"
                      @click="openKeyResult(key_result, objective.state)">
-        <v-list-item-content>
+          <div v-if="objective.state === OBJECTIVE_STATE.ACTIVE" class="krLayout">
+            <div class="krStatusMark" aria-hidden="true">
+              <v-icon :icon="keyResultStatus[key_result.state].icon"/>
+            </div>
 
-          <div class="krTitle">
-            <v-list-item-title class="inLine">{{ key_result.name }}</v-list-item-title>
-            <v-icon icon="mdi-check-bold"
-                    v-if="key_result.state === KEY_RESULT_STATE.COMPLETED"/>
-            <v-icon icon="mdi-close-thick"
-                    v-if="key_result.state === KEY_RESULT_STATE.FAILED"/>
-          </div>
+            <div class="krContent">
+              <div class="krHeader">
+                <v-list-item-title class="krName">{{ key_result.name }}</v-list-item-title>
+                <span v-if="key_result.state !== KEY_RESULT_STATE.ACTIVE" class="krStateLabel">
+                  {{ keyResultStatus[key_result.state].label }}
+                </span>
+              </div>
 
-          <div class="krInfo" v-if="key_result.state === KEY_RESULT_STATE.ACTIVE">
-            <div class="krInfoChild" style="right: 0;">{{ formatDate(key_result.date_reviewed) }}</div>
-            <div class="krInfoChild" style="left: 0;">
-              {{ key_result.resolved_tasks_count }}/{{ key_result.all_tasks_count }}
+              <div v-if="key_result.state === KEY_RESULT_STATE.ACTIVE" class="krMeta">
+                <span class="krMetaItem">
+                  <v-icon icon="mdi-checkbox-marked-circle-outline" size="12"/>
+                  {{ key_result.resolved_tasks_count ?? 0 }}/{{ key_result.all_tasks_count ?? 0 }}
+                </span>
+                <span class="krMetaItem">
+                  <v-icon icon="mdi-calendar-clock-outline" size="12"/>
+                  {{ formatDate(key_result.date_reviewed) }}
+                </span>
+              </div>
             </div>
           </div>
 
-        </v-list-item-content>
+          <div v-else class="standardKrContent">
+            <v-list-item-title class="standardKrName">{{ key_result.name }}</v-list-item-title>
+            <v-icon v-if="key_result.state === KEY_RESULT_STATE.COMPLETED" icon="mdi-check-bold"/>
+            <v-icon v-else-if="key_result.state === KEY_RESULT_STATE.FAILED" icon="mdi-close-thick"/>
+          </div>
         </v-list-item>
       </div>
     </div>
@@ -165,10 +185,6 @@ async function deleteKeyResult(keyResult) {
   min-height: 60px;
 }
 
-.kr:hover {
-  border-width: 2px;
-}
-
 .kr.completed {
   color: #017901;
 }
@@ -181,19 +197,160 @@ async function deleteKeyResult(keyResult) {
   color: #000000;
 }
 
-.inLine {
+.kr:not(.krPlaque):hover {
+  border-width: 2px;
+}
+
+.krPlaque {
+  --kr-dark: #245c82;
+  --kr-light: #3c82aa;
+  align-items: center;
+  background: linear-gradient(105deg, var(--kr-dark), var(--kr-light));
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 9px;
+  box-shadow:
+    0 2px 4px rgba(16, 24, 40, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+  color: #ffffff;
+  cursor: pointer;
+  flex: 0 0 auto;
+  height: 60px;
+  min-height: 60px;
+  overflow: hidden;
+  padding: 0 9px;
+  transition: filter 120ms ease, transform 120ms ease;
+}
+
+.krPlaque :deep(.v-list-item__content) {
+  height: 100%;
+  min-width: 0;
+}
+
+.krLayout {
+  align-items: center;
+  display: flex;
+  gap: 9px;
+  height: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+.krPlaque:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.krPlaque:active {
+  filter: brightness(0.96);
+  transform: translateY(0);
+}
+
+.krPlaque.active {
+  color: #ffffff;
+  --kr-dark: #245c82;
+  --kr-light: #3c82aa;
+}
+
+.krPlaque.completed {
+  color: #ffffff;
+  --kr-dark: #176b49;
+  --kr-light: #269566;
+}
+
+.krPlaque.failed {
+  color: #ffffff;
+  --kr-dark: #8f2539;
+  --kr-light: #c34259;
+}
+
+.krStatusMark {
+  align-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.94);
+  border-radius: 50%;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 0 0 2px rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex: 0 0 31px;
+  height: 31px;
+  justify-content: center;
+  width: 31px;
+}
+
+.krStatusMark :deep(.v-icon) {
+  font-size: 19px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+}
+
+.krContent {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 0;
+}
+
+.krHeader {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.krName {
+  color: inherit;
+  flex: 1 1 auto;
+  font-size: 0.84rem;
+  font-weight: 650;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.krTitle {
+.krStateLabel {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 999px;
+  flex: 0 0 auto;
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  padding: 4px 5px 3px;
+  text-transform: uppercase;
+}
+
+.krMeta {
+  align-items: center;
+  display: flex;
+  font-size: 0.62rem;
+  justify-content: space-between;
+  margin-top: 4px;
+  opacity: 0.9;
+}
+
+.krMetaItem {
+  align-items: center;
+  display: inline-flex;
+  gap: 3px;
+}
+
+.standardKrContent {
   align-items: center;
   display: flex;
   gap: 4px;
   min-width: 0;
+}
+
+.standardKrName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .obj {
@@ -212,8 +369,10 @@ async function deleteKeyResult(keyResult) {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  gap: 1px;
   min-height: 0;
   overflow-y: auto;
+  padding: 2px;
 }
 
 .keyResultsListWrapper {
@@ -268,14 +427,6 @@ async function deleteKeyResult(keyResult) {
   --key-results-fade: #e0eddf;
   background: #e0eddf;
   border-left: 4px solid #5f8c61;
-}
-
-.obj.failed > div > .kr {
-  color: #262626;
-}
-
-.obj.achieved > div > .kr {
-  color: #262626;
 }
 
 .objectiveStamp {
@@ -359,15 +510,13 @@ async function deleteKeyResult(keyResult) {
   }
 }
 
-.krInfo {
-  margin-top: 20px;
-  margin-bottom: 10px;
-  position: relative;
-}
+@media (prefers-reduced-motion: reduce) {
+  .krPlaque {
+    transition: none;
+  }
 
-.krInfoChild {
-  font-size: 10px;
-  position: absolute;
-  bottom: 0;
+  .krPlaque:hover {
+    transform: none;
+  }
 }
 </style>

@@ -349,6 +349,44 @@ describe('frontend components', () => {
         .toEqual([3, 2, 1, 4])
   })
 
+  it('renders distinct active, completed, and failed Key Result plaques', () => {
+    const keyResults = [
+      {id: 1, name: 'In progress', state: 'active', resolved_tasks_count: 1, all_tasks_count: 3},
+      {id: 2, name: 'Finished result', state: 'completed'},
+      {id: 3, name: 'Missed result', state: 'failed'},
+    ]
+    const wrapper = shallowMount(Objective, {
+      props: {objective: {...objective, key_results: keyResults}},
+      global: {
+        stubs: {
+          ObjectiveDialog: true,
+          KeyResultDialog: true,
+          AddKeyResultDialog: true,
+        },
+      },
+    })
+
+    expect(wrapper.findAll('.krPlaque')).toHaveLength(3)
+    expect(wrapper.findAll('.krStatusMark')).toHaveLength(3)
+    expect(wrapper.find('.kr.active .krStateLabel').exists()).toBe(false)
+    expect(wrapper.find('.kr.completed .krStateLabel').text()).toBe('Completed')
+    expect(wrapper.find('.kr.failed .krStateLabel').text()).toBe('Failed')
+    expect(wrapper.vm.keyResultStatus).toEqual({
+      active: {label: 'Active', icon: 'mdi-progress-clock'},
+      completed: {label: 'Completed', icon: 'mdi-check-bold'},
+      failed: {label: 'Failed', icon: 'mdi-close-thick'},
+    })
+    wrapper.unmount()
+
+    const historicalWrapper = shallowMount(Objective, {
+      props: {objective: {...objective, state: 'achieved', key_results: keyResults}},
+    })
+    expect(historicalWrapper.findAll('.krPlaque')).toHaveLength(0)
+    expect(historicalWrapper.findAll('.krStatusMark')).toHaveLength(0)
+    expect(historicalWrapper.findAll('.standardKrContent')).toHaveLength(3)
+    historicalWrapper.unmount()
+  })
+
   it('ObjectiveDialog loads ideas for its objective and emits close', async () => {
     api.get.mockResolvedValue([{id: 3, value: 'Idea'}])
     const wrapper = shallowMount(ObjectiveDialog, {
