@@ -26,13 +26,15 @@ const pendingMove = ref(null)
 const openIdeaActionsMenuId = ref(null)
 const ideaLists = ref(null)
 const ideaListElements = new Map()
-const ideaListFades = ref({})
+const dirtyIdeaListIds = new Set()
+const rollingIdeaItems = new Map()
 const activeSubvalueIndex = ref(0)
 const draftIdea = ref({name: '', description: ''})
 const ideaEditor = ref(null)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
 let ideaListsResizeObserver
+let ideaListsAnimationFrame = null
 
 async function deleteIdea(subvalue, idea) {
   if (isSubmitting.value) return
@@ -63,40 +65,131 @@ function updateActiveSubvalueIndex() {
 }
 
 function registerIdeaList(subvalueId, wrapper) {
-  if (wrapper) ideaListElements.set(subvalueId, wrapper.querySelector('.subvalueIdeas'))
-  else ideaListElements.delete(subvalueId)
+  const previousList = ideaListElements.get(subvalueId)
+  const list = wrapper?.querySelector('.subvalueIdeas') ?? null
+  if (previousList === list) return
+
+  if (previousList) ideaListsResizeObserver?.unobserve(previousList)
+
+  if (!list) {
+    clearIdeaListRoll(subvalueId)
+    dirtyIdeaListIds.delete(subvalueId)
+    ideaListElements.delete(subvalueId)
+    return
+  }
+
+  ideaListElements.set(subvalueId, list)
+  ideaListsResizeObserver?.observe(list)
+  nextTick(() => scheduleIdeaListRoll(subvalueId))
 }
 
-function updateIdeaListFades(subvalueId) {
+function clearRollingIdeaItem(item, className) {
+  if (!item) return
+
+  item.classList.remove(className)
+  item.style.removeProperty('--roll-angle')
+}
+
+function setRollingIdeaItem(subvalueId, edge, item, angle) {
+  const className = edge === 'top' ? 'rollingTop' : 'rollingBottom'
+  const state = rollingIdeaItems.get(subvalueId) ?? {top: null, bottom: null}
+  const previousItem = state[edge]
+
+  if (previousItem !== item) clearRollingIdeaItem(previousItem, className)
+  if (item) {
+    item.classList.add(className)
+    item.style.setProperty('--roll-angle', `${angle}deg`)
+  }
+
+  state[edge] = item
+  rollingIdeaItems.set(subvalueId, state)
+}
+
+function clearIdeaListRoll(subvalueId) {
+  const state = rollingIdeaItems.get(subvalueId)
+  clearRollingIdeaItem(state?.top, 'rollingTop')
+  clearRollingIdeaItem(state?.bottom, 'rollingBottom')
+  rollingIdeaItems.delete(subvalueId)
+}
+
+function updateIdeaListRoll(subvalueId) {
   const list = ideaListElements.get(subvalueId)
   if (!list) return
 
-  const nextFadeState = {
-    above: list.scrollTop > 1,
-    below: list.scrollTop + list.clientHeight < list.scrollHeight - 1,
-  }
-  const currentFadeState = ideaListFades.value[subvalueId]
-  if (currentFadeState?.above === nextFadeState.above && currentFadeState?.below === nextFadeState.below) return
+  const viewportTop = list.scrollTop
+  const viewportBottom = viewportTop + list.clientHeight
+  let topItem = null
+  let topAngle = 0
+  let bottomItem = null
+  let bottomAngle = 0
 
-  ideaListFades.value = {...ideaListFades.value, [subvalueId]: nextFadeState}
+  for (const item of list.children) {
+    const itemHeight = item.offsetHeight
+    if (itemHeight <= 0) continue
+
+    const itemTop = item.offsetTop
+    const itemBottom = itemTop + itemHeight
+
+    if (!topItem && itemTop < viewportTop && itemBottom > viewportTop) {
+      const progress = Math.min((viewportTop - itemTop) / itemHeight, 1)
+      topItem = item
+      topAngle = progress * 68
+    }
+
+    if (itemTop < viewportBottom && itemBottom > viewportBottom) {
+      const visiblePart = viewportBottom - itemTop
+      const progress = 1 - Math.min(Math.max(visiblePart / itemHeight, 0), 1)
+      bottomItem = item
+      bottomAngle = progress * -68
+      break
+    }
+
+    if (itemTop >= viewportBottom) break
+  }
+
+  setRollingIdeaItem(subvalueId, 'top', topItem, topAngle)
+  setRollingIdeaItem(subvalueId, 'bottom', bottomItem === topItem ? null : bottomItem, bottomAngle)
 }
 
-function updateAllIdeaListFades() {
-  props.subvalues.forEach((subvalue) => updateIdeaListFades(subvalue.id))
+function scheduleIdeaListRoll(subvalueId) {
+  dirtyIdeaListIds.add(subvalueId)
+  if (ideaListsAnimationFrame !== null) return
+  if (typeof requestAnimationFrame === 'undefined') {
+    flushIdeaListRolls()
+    return
+  }
+
+  ideaListsAnimationFrame = requestAnimationFrame(flushIdeaListRolls)
+}
+
+function flushIdeaListRolls() {
+  ideaListsAnimationFrame = null
+  const subvalueIds = [...dirtyIdeaListIds]
+  dirtyIdeaListIds.clear()
+  subvalueIds.forEach(updateIdeaListRoll)
+}
+
+function updateAllIdeaListRolls() {
+  props.subvalues.forEach((subvalue) => scheduleIdeaListRoll(subvalue.id))
 }
 
 onMounted(() => {
   nextTick(() => {
-    updateAllIdeaListFades()
+    updateAllIdeaListRolls()
     if (typeof ResizeObserver === 'undefined') return
-    ideaListsResizeObserver = new ResizeObserver(updateAllIdeaListFades)
+    ideaListsResizeObserver = new ResizeObserver(updateAllIdeaListRolls)
     ideaListElements.forEach((list) => ideaListsResizeObserver.observe(list))
   })
 })
 
-onBeforeUnmount(() => ideaListsResizeObserver?.disconnect())
+onBeforeUnmount(() => {
+  ideaListsResizeObserver?.disconnect()
+  if (ideaListsAnimationFrame !== null) cancelAnimationFrame(ideaListsAnimationFrame)
+  rollingIdeaItems.forEach((_, subvalueId) => clearIdeaListRoll(subvalueId))
+})
 
-watch(() => props.subvalues, () => nextTick(updateAllIdeaListFades), {deep: true})
+watch(() => props.subvalues, () => nextTick(updateAllIdeaListRolls), {deep: true})
+watch([editingIdeaId, () => draftIdea.value.description], () => nextTick(updateAllIdeaListRolls))
 
 async function startEditing(subvalue, idea) {
   if (isSubmitting.value || editingIdeaId.value === ideaKey(subvalue, idea)) return
@@ -315,12 +408,8 @@ async function moveIdea(source, targetSubvalue) {
       <v-btn v-else-if="pendingMove" class="cancelIdeaMove" variant="text" size="small" @click="cancelMove">
         Cancel move
       </v-btn>
-      <div :ref="(element) => registerIdeaList(subvalue.id, element)" class="subvalueIdeasWrapper"
-           :class="{
-             hasIdeasAbove: ideaListFades[subvalue.id]?.above,
-             hasIdeasBelow: ideaListFades[subvalue.id]?.below,
-           }">
-      <v-list class="subvalueIdeas" @scroll="updateIdeaListFades(subvalue.id)">
+      <div :ref="(element) => registerIdeaList(subvalue.id, element)" class="subvalueIdeasWrapper">
+      <v-list class="subvalueIdeas" @scroll="scheduleIdeaListRoll(subvalue.id)">
         <v-list-item v-for="idea in subvalue.ideas" :key="idea.id" class="ideaItem">
           <v-list-item-content>
             <div v-if="editingIdeaId !== ideaKey(subvalue, idea)" class="idea"
@@ -462,6 +551,10 @@ async function moveIdea(source, targetSubvalue) {
   overflow-y: auto;
   padding-bottom: 16px;
   padding-top: 0;
+  perspective: 380px;
+  perspective-origin: center;
+  position: relative;
+  z-index: 1;
 }
 
 .subvalueIdeasWrapper {
@@ -469,34 +562,6 @@ async function moveIdea(source, targetSubvalue) {
   flex: 1 1 auto;
   min-height: 0;
   position: relative;
-}
-
-.subvalueIdeasWrapper::before,
-.subvalueIdeasWrapper::after {
-  content: '';
-  height: 24px;
-  left: 0;
-  opacity: 0;
-  pointer-events: none;
-  position: absolute;
-  right: 0;
-  transition: opacity 120ms ease;
-  z-index: 1;
-}
-
-.subvalueIdeasWrapper::before {
-  background: linear-gradient(to bottom, rgb(var(--v-theme-surface)), transparent);
-  top: 0;
-}
-
-.subvalueIdeasWrapper::after {
-  background: linear-gradient(to top, rgb(var(--v-theme-surface)), transparent);
-  bottom: 0;
-}
-
-.subvalueIdeasWrapper.hasIdeasAbove::before,
-.subvalueIdeasWrapper.hasIdeasBelow::after {
-  opacity: 1;
 }
 
 .subvalueListHeader {
@@ -597,8 +662,8 @@ async function moveIdea(source, targetSubvalue) {
 }
 
 @media (max-width: 600px) {
-  .subvalueIdeas {
-    padding-bottom: 56px;
+  .subvalueIdeasWrapper {
+    margin-bottom: 40px;
   }
 
   .carouselPager {
@@ -651,9 +716,23 @@ async function moveIdea(source, targetSubvalue) {
 }
 
 .ideaItem {
+  backface-visibility: hidden;
   min-height: 0 !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
+  transform-style: preserve-3d;
+}
+
+.ideaItem.rollingTop {
+  transform: rotateX(var(--roll-angle));
+  transform-origin: center bottom;
+  will-change: transform;
+}
+
+.ideaItem.rollingBottom {
+  transform: rotateX(var(--roll-angle));
+  transform-origin: center top;
+  will-change: transform;
 }
 
 .deleteIdea {
@@ -662,5 +741,12 @@ async function moveIdea(source, targetSubvalue) {
 
 .createObjectiveFromIdea {
   color: rgba(var(--v-theme-on-surface), 0.65);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ideaItem.rollingTop,
+  .ideaItem.rollingBottom {
+    transform: none;
+  }
 }
 </style>
