@@ -27,7 +27,12 @@ insert into Objectives(id, value_id, state, name, description, date_created, dat
   (17, 1, 'achieved', 'Reduce weekday caffeine', 'Replace the afternoon coffee with tea or water.', '2024-01-10', '2024-03-20'),
   (18, 1, 'failed', 'Run a marathon in autumn', 'The plan did not leave enough time to build mileage safely.', '2024-06-01', '2024-10-05'),
   (19, 1, 'achieved', 'Eat vegetables with lunch every weekday', 'Make vegetables the default part of weekday lunches.', '2025-02-01', '2025-04-30'),
-  (20, 1, 'failed', 'Never use a screen after 20:00', 'The absolute rule did not work with occasional evening plans.', '2025-09-01', '2025-10-15');
+  (20, 1, 'failed', 'Never use a screen after 20:00', 'The absolute rule did not work with occasional evening plans.', '2025-09-01', '2025-10-15'),
+  (21, 1, 'active', 'Improve daily hydration', 'Make drinking water the default throughout the workday.', '2026-07-20', ''),
+  (22, 1, 'active', 'Build a sustainable morning routine', 'Start the day with a calm, repeatable sequence that supports energy and focus.', '2026-07-18', ''),
+  (23, 1, 'active', 'Reduce recurring neck tension', 'Use short movement breaks and improve the desk setup.', '2026-07-16', ''),
+  (24, 1, 'active', 'Cook more varied healthy lunches', 'Collect a small rotation of quick lunches that are easy to prepare.', '2026-07-14', ''),
+  (25, 1, 'active', 'Protect a consistent recovery day', 'Keep one lower-intensity day each week for rest and recovery.', '2026-07-11', '');
 
 insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values
   (1, 1, 'active', 'Average at least 7.5 hours of sleep', 'Track sleep on work nights and adjust the evening routine.', 'true', 'Weekly average is at least 7.5 hours', 'Keep a consistent 23:00 bedtime', 'true', '2026-07-10', '2026-07-01', '2026-07-16'),
@@ -51,7 +56,22 @@ insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t
   (19, 12, 'failed', 'Complete a 30 km long run', 'The mileage increase was too aggressive.', 'true', 'One 30 km run is completed comfortably', 'Increase distance gradually', 'true', '2024-09-30', '2024-06-01', '2024-10-05'),
   (20, 13, 'completed', 'Prepare vegetables for five weekday lunches', 'A simple Sunday preparation routine made lunch easier.', 'true', 'Five lunches include prepared vegetables each week', 'Use frozen vegetables when needed', 'true', '2025-04-30', '2025-02-01', '2025-04-30'),
   (21, 13, 'completed', 'Try six new vegetable-based recipes', 'The recipe list now has several reliable favourites.', 'true', 'Six recipes are cooked and rated', 'Cook one recipe each weekend', 'true', '2025-04-30', '2025-02-01', '2025-04-22'),
-  (22, 14, 'failed', 'Keep every evening screen-free after 20:00', 'The rule was not flexible enough for real life.', 'true', 'Thirty consecutive screen-free evenings', 'Allow exceptions for planned events', 'true', '2025-10-01', '2025-09-01', '2025-10-15');
+  (22, 14, 'failed', 'Keep every evening screen-free after 20:00', 'The rule was not flexible enough for real life.', 'true', 'Thirty consecutive screen-free evenings', 'Allow exceptions for planned events', 'true', '2025-10-01', '2025-09-01', '2025-10-15'),
+  (23, 21, 'active', 'Drink a glass of water after waking', 'Start hydration before coffee or breakfast.', 'true', 'Complete this on five weekdays each week', 'Keep a glass beside the bed', 'true', '2026-08-15', '2026-07-20', '2026-07-20'),
+  (24, 21, 'active', 'Keep a water bottle at the desk', 'Make water immediately available during focused work.', 'true', 'Bottle is filled and present on every workday', 'Choose a one-litre bottle', 'true', '2026-08-15', '2026-07-20', '2026-07-20'),
+  (25, 21, 'active', 'Finish two litres of water daily', 'Use the bottle as a simple visual measure.', 'true', 'Reach two litres on five days per week', 'Track refills instead of every sip', 'true', '2026-08-31', '2026-07-20', '2026-07-20'),
+  (26, 21, 'active', 'Drink water before each meal', 'Use meals as natural hydration reminders.', 'true', 'Complete before breakfast, lunch, and dinner', 'Keep water on the table', 'true', '2026-08-15', '2026-07-20', '2026-07-20'),
+  (27, 21, 'active', 'Replace one sweet drink each day', 'Choose water or unsweetened tea instead.', 'true', 'Replace at least five sweet drinks each week', 'Prepare cold tea in advance', 'true', '2026-08-31', '2026-07-20', '2026-07-20'),
+  (28, 21, 'active', 'Have water ready before exercise', 'Prepare a bottle as part of changing for activity.', 'true', 'Bring water to every planned session', 'Leave a spare bottle in the gym bag', 'true', '2026-08-15', '2026-07-20', '2026-07-20'),
+  (29, 21, 'active', 'Refill the bottle after lunch', 'Avoid relying on thirst during the afternoon.', 'true', 'Refill before returning to afternoon work', 'Set a lunch-end reminder', 'true', '2026-08-15', '2026-07-20', '2026-07-20'),
+  (30, 21, 'active', 'Track hydration for two weeks', 'Learn which parts of the day need a better cue.', 'true', 'Log intake for fourteen consecutive days', 'Use a short phone note', 'true', '2026-08-03', '2026-07-20', '2026-07-20'),
+  (31, 21, 'active', 'Add electrolytes after long workouts', 'Use them only after longer or hotter sessions.', 'true', 'Use an electrolyte drink after every 90-minute session', 'Keep packets with workout supplies', 'true', '2026-08-31', '2026-07-20', '2026-07-20'),
+  (32, 21, 'active', 'Notice afternoon energy levels', 'Relate hydration habits to the usual afternoon slump.', 'true', 'Record a brief 15:00 energy rating on ten workdays', 'Use a one-to-five scale', 'true', '2026-08-07', '2026-07-20', '2026-07-20'),
+  (33, 21, 'active', 'Choose water when eating out', 'Keep the habit practical in social settings.', 'true', 'Order water first at four meals out', 'Ask for a carafe at the table', 'true', '2026-08-31', '2026-07-20', '2026-07-20'),
+  (34, 21, 'active', 'Prepare a reusable travel bottle', 'Avoid losing the routine on days away from home.', 'true', 'Carry water on every commute for two weeks', 'Keep the bottle beside keys', 'true', '2026-08-10', '2026-07-20', '2026-07-20'),
+  (35, 21, 'active', 'Avoid caffeine after midday', 'Reduce the chance of using coffee instead of rest and water.', 'true', 'No caffeinated drinks after 12:00 on five weekdays', 'Switch to herbal tea', 'true', '2026-08-31', '2026-07-20', '2026-07-20'),
+  (36, 21, 'active', 'Review hydration weekly', 'Adjust cues based on what was missed that week.', 'true', 'Complete a five-minute review every Sunday', 'Use the hydration notes', 'true', '2026-08-31', '2026-07-20', '2026-07-20'),
+  (37, 21, 'active', 'Keep water by the bed overnight', 'Make it easy to drink if waking thirsty.', 'true', 'Water is prepared beside the bed each evening', 'Use a covered glass', 'true', '2026-08-15', '2026-07-20', '2026-07-20');
 
 insert into Tasks(id, kr_id, state, value) values
   (1, 1, 'finished', 'Set a 22:30 evening reminder'),
@@ -69,4 +89,14 @@ insert into Tasks(id, kr_id, state, value) values
 insert into ObjectiveIdeas(id, objective_id, value) values
   (1, 1, 'Try a short evening stretching routine'),
   (2, 4, 'Add a before-and-after section to each case study'),
-  (3, 7, 'Create a shared list of low-effort activity ideas');
+  (3, 7, 'Create a shared list of low-effort activity ideas'),
+  (4, 21, 'Keep a jug of chilled water in the fridge'),
+  (5, 21, 'Try sparkling water with lemon as an afternoon alternative'),
+  (6, 21, 'Create a simple bottle-refill checklist for workdays'),
+  (7, 21, 'Put a water reminder beside the coffee machine'),
+  (8, 21, 'Find a travel bottle that fits the backpack side pocket'),
+  (9, 21, 'Prepare unsweetened iced tea for warm days'),
+  (10, 21, 'Add a water break to the calendar between meetings'),
+  (11, 21, 'Keep an extra bottle in the car'),
+  (12, 21, 'Test whether drinking before lunch reduces afternoon tiredness'),
+  (13, 21, 'Make a short list of hydrating snacks for hot days');

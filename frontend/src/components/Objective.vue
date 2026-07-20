@@ -1,5 +1,5 @@
 <script setup>
-import {ref} from 'vue'
+import {nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {compareDates, formatDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
@@ -24,6 +24,29 @@ const selectedObj = ref(null)
 const openKrDialog = ref(false)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
+const keyResultsList = ref(null)
+const showKeyResultsTopFade = ref(false)
+const showKeyResultsBottomFade = ref(false)
+let keyResultsResizeObserver
+
+function updateKeyResultsFades() {
+  const list = keyResultsList.value
+  if (!list) return
+
+  showKeyResultsTopFade.value = list.scrollTop > 1
+  showKeyResultsBottomFade.value = list.scrollTop + list.clientHeight < list.scrollHeight - 1
+}
+
+onMounted(() => {
+  nextTick(updateKeyResultsFades)
+  if (typeof ResizeObserver === 'undefined' || !keyResultsList.value) return
+  keyResultsResizeObserver = new ResizeObserver(updateKeyResultsFades)
+  keyResultsResizeObserver.observe(keyResultsList.value)
+})
+
+onBeforeUnmount(() => keyResultsResizeObserver?.disconnect())
+
+watch(() => props.objective.key_results.length, () => nextTick(updateKeyResultsFades))
 
 function compareKeyResults(a, b) {
   const activeComparison = Number(b.state === KEY_RESULT_STATE.ACTIVE) - Number(a.state === KEY_RESULT_STATE.ACTIVE)
@@ -95,11 +118,13 @@ async function deleteKeyResult(keyResult) {
       <div style="margin: -5px auto;">{{ objective.ideas_count }}</div>
     </div>
 
-    <div style="display: grid; overflow-x:scroll; max-height: 650px">
-      <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
-                   :key="key_result.id"
-                   class="kr" :class="key_result.state"
-                   @click="openKeyResult(key_result, objective.state)">
+    <div class="keyResultsListWrapper"
+         :class="{hasKeyResultsAbove: showKeyResultsTopFade, hasKeyResultsBelow: showKeyResultsBottomFade}">
+      <div ref="keyResultsList" class="keyResultsList" @scroll="updateKeyResultsFades">
+        <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
+                     :key="key_result.id"
+                     class="kr" :class="key_result.state"
+                     @click="openKeyResult(key_result, objective.state)">
         <v-list-item-content>
 
           <div class="krTitle">
@@ -118,7 +143,8 @@ async function deleteKeyResult(keyResult) {
           </div>
 
         </v-list-item-content>
-      </v-list-item>
+        </v-list-item>
+      </div>
     </div>
 
     <v-card-actions v-if="objective.state === OBJECTIVE_STATE.ACTIVE">
@@ -134,6 +160,9 @@ async function deleteKeyResult(keyResult) {
 <style scoped>
 .kr {
   border: 1px solid #2c3e50;
+  flex: 0 0 auto;
+  height: 60px;
+  min-height: 60px;
 }
 
 .kr:hover {
@@ -168,6 +197,9 @@ async function deleteKeyResult(keyResult) {
 }
 
 .obj {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 90px);
   min-width: 300px;
   position: relative;
   vertical-align: top;
@@ -176,17 +208,64 @@ async function deleteKeyResult(keyResult) {
   color: #000000;
 }
 
+.keyResultsList {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.keyResultsListWrapper {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
+.keyResultsListWrapper::before,
+.keyResultsListWrapper::after {
+  content: '';
+  height: 24px;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  transition: opacity 120ms ease;
+  z-index: 1;
+}
+
+.keyResultsListWrapper::before {
+  background: linear-gradient(to bottom, var(--key-results-fade), transparent);
+  top: 0;
+}
+
+.keyResultsListWrapper::after {
+  background: linear-gradient(to top, var(--key-results-fade), transparent);
+  bottom: 0;
+}
+
+.keyResultsListWrapper.hasKeyResultsAbove::before,
+.keyResultsListWrapper.hasKeyResultsBelow::after {
+  opacity: 1;
+}
+
 .obj.active {
+  --key-results-fade: #dce8f1;
   background: #dce8f1;
   border-left: 4px solid #5f88a6;
 }
 
 .obj.failed {
+  --key-results-fade: #f2e1e1;
   background: #f2e1e1;
   border-left: 4px solid #ad5757;
 }
 
 .obj.achieved {
+  --key-results-fade: #e0eddf;
   background: #e0eddf;
   border-left: 4px solid #5f8c61;
 }
