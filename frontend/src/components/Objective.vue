@@ -25,9 +25,10 @@ const openKrDialog = ref(false)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
 const keyResultsList = ref(null)
-const showKeyResultsTopFade = ref(false)
-const showKeyResultsBottomFade = ref(false)
 let keyResultsResizeObserver
+let keyResultsAnimationFrame = null
+let rollingTopItem = null
+let rollingBottomItem = null
 
 const keyResultStatus = Object.freeze({
   [KEY_RESULT_STATE.ACTIVE]: {label: 'Active', icon: 'mdi-progress-clock'},
@@ -35,24 +36,86 @@ const keyResultStatus = Object.freeze({
   [KEY_RESULT_STATE.FAILED]: {label: 'Failed', icon: 'mdi-close-thick'},
 })
 
-function updateKeyResultsFades() {
+function clearRollingItem(item, className) {
+  if (!item) return
+
+  item.classList.remove(className)
+  item.style.removeProperty('--roll-angle')
+}
+
+function setRollingItem(item, className, angle) {
+  item.classList.add(className)
+  item.style.setProperty('--roll-angle', `${angle}deg`)
+}
+
+function updateKeyResultsRoll() {
   const list = keyResultsList.value
   if (!list) return
 
-  showKeyResultsTopFade.value = list.scrollTop > 1
-  showKeyResultsBottomFade.value = list.scrollTop + list.clientHeight < list.scrollHeight - 1
+  clearRollingItem(rollingTopItem, 'rollingTop')
+  clearRollingItem(rollingBottomItem, 'rollingBottom')
+  rollingTopItem = null
+  rollingBottomItem = null
+
+  const items = list.children
+  if (items.length === 0) return
+
+  const viewportTop = list.scrollTop
+  const viewportBottom = viewportTop + list.clientHeight
+  const firstItem = items[0]
+  const itemHeight = firstItem.offsetHeight
+  const contentTop = firstItem.offsetTop
+  const itemPitch = items.length > 1 ? items[1].offsetTop - contentTop : itemHeight + 1
+  if (itemHeight <= 0 || itemPitch <= 0) return
+
+  const topIndex = Math.max(0, Math.min(items.length - 1, Math.floor((viewportTop - contentTop) / itemPitch)))
+  const topItem = items[topIndex]
+  const topItemTop = contentTop + topIndex * itemPitch
+  const topProgress = Math.min(Math.max((viewportTop - topItemTop) / itemHeight, 0), 1)
+  if (topProgress > 0) {
+    rollingTopItem = topItem
+    setRollingItem(topItem, 'rollingTop', topProgress * 68)
+  }
+
+  const bottomIndex = Math.max(0, Math.min(items.length - 1, Math.floor((viewportBottom - contentTop) / itemPitch)))
+  const bottomItem = items[bottomIndex]
+  const bottomItemTop = contentTop + bottomIndex * itemPitch
+  const visibleBottomPart = viewportBottom - bottomItemTop
+  const bottomProgress = 1 - Math.min(Math.max(visibleBottomPart / itemHeight, 0), 1)
+  if (bottomProgress > 0 && bottomItem !== rollingTopItem) {
+    rollingBottomItem = bottomItem
+    setRollingItem(bottomItem, 'rollingBottom', bottomProgress * -68)
+  }
+}
+
+function scheduleKeyResultsRoll() {
+  if (keyResultsAnimationFrame !== null) return
+  if (typeof requestAnimationFrame === 'undefined') {
+    updateKeyResultsRoll()
+    return
+  }
+
+  keyResultsAnimationFrame = requestAnimationFrame(() => {
+    keyResultsAnimationFrame = null
+    updateKeyResultsRoll()
+  })
 }
 
 onMounted(() => {
-  nextTick(updateKeyResultsFades)
+  nextTick(updateKeyResultsRoll)
   if (typeof ResizeObserver === 'undefined' || !keyResultsList.value) return
-  keyResultsResizeObserver = new ResizeObserver(updateKeyResultsFades)
+  keyResultsResizeObserver = new ResizeObserver(scheduleKeyResultsRoll)
   keyResultsResizeObserver.observe(keyResultsList.value)
 })
 
-onBeforeUnmount(() => keyResultsResizeObserver?.disconnect())
+onBeforeUnmount(() => {
+  keyResultsResizeObserver?.disconnect()
+  if (keyResultsAnimationFrame !== null) cancelAnimationFrame(keyResultsAnimationFrame)
+  clearRollingItem(rollingTopItem, 'rollingTop')
+  clearRollingItem(rollingBottomItem, 'rollingBottom')
+})
 
-watch(() => props.objective.key_results.length, () => nextTick(updateKeyResultsFades))
+watch(() => props.objective.key_results.length, () => nextTick(updateKeyResultsRoll))
 
 function compareKeyResults(a, b) {
   const activeComparison = Number(b.state === KEY_RESULT_STATE.ACTIVE) - Number(a.state === KEY_RESULT_STATE.ACTIVE)
@@ -127,9 +190,8 @@ async function deleteKeyResult(keyResult) {
     </div>
 
     <div v-if="objective.key_results.length > 0"
-         class="keyResultsListWrapper"
-         :class="{hasKeyResultsAbove: showKeyResultsTopFade, hasKeyResultsBelow: showKeyResultsBottomFade}">
-      <div ref="keyResultsList" class="keyResultsList" @scroll="updateKeyResultsFades">
+         class="keyResultsListWrapper">
+      <div ref="keyResultsList" class="keyResultsList" @scroll="scheduleKeyResultsRoll">
         <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
                      :key="key_result.id"
                      class="kr"
@@ -182,10 +244,12 @@ async function deleteKeyResult(keyResult) {
 </template>
 <style scoped>
 .kr {
+  backface-visibility: hidden;
   border: 1px solid #2c3e50;
   flex: 0 0 auto;
   height: 60px;
   min-height: 60px;
+  transform-style: preserve-3d;
 }
 
 .kr.completed {
@@ -222,7 +286,7 @@ async function deleteKeyResult(keyResult) {
   min-height: 60px;
   overflow: hidden;
   padding: 0 9px;
-  transition: filter 120ms ease, transform 120ms ease;
+  transition: filter 120ms ease;
 }
 
 .krPlaque :deep(.v-list-item__content) {
@@ -390,6 +454,10 @@ async function deleteKeyResult(keyResult) {
   min-height: 0;
   overflow-y: auto;
   padding: 2px;
+  perspective: 380px;
+  perspective-origin: center;
+  position: relative;
+  z-index: 1;
 }
 
 .keyResultsListWrapper {
@@ -400,36 +468,19 @@ async function deleteKeyResult(keyResult) {
   position: relative;
 }
 
-.keyResultsListWrapper::before,
-.keyResultsListWrapper::after {
-  content: '';
-  height: 24px;
-  left: 0;
-  opacity: 0;
-  pointer-events: none;
-  position: absolute;
-  right: 0;
-  transition: opacity 120ms ease;
-  z-index: 1;
+.kr.rollingTop {
+  transform: rotateX(var(--roll-angle));
+  transform-origin: center bottom;
+  will-change: transform;
 }
 
-.keyResultsListWrapper::before {
-  background: linear-gradient(to bottom, var(--key-results-fade), transparent);
-  top: 0;
-}
-
-.keyResultsListWrapper::after {
-  background: linear-gradient(to top, var(--key-results-fade), transparent);
-  bottom: 0;
-}
-
-.keyResultsListWrapper.hasKeyResultsAbove::before,
-.keyResultsListWrapper.hasKeyResultsBelow::after {
-  opacity: 1;
+.kr.rollingBottom {
+  transform: rotateX(var(--roll-angle));
+  transform-origin: center top;
+  will-change: transform;
 }
 
 .obj.active {
-  --key-results-fade: #cfdfE9;
   background: #dce8f1;
   border: 1px solid #7899ae;
 }
@@ -477,13 +528,11 @@ async function deleteKeyResult(keyResult) {
 }
 
 .obj.failed {
-  --key-results-fade: #f2e1e1;
   background: #f2e1e1;
   border-left: 4px solid #ad5757;
 }
 
 .obj.achieved {
-  --key-results-fade: #e0eddf;
   background: #e0eddf;
   border-left: 4px solid #5f8c61;
 }
@@ -575,6 +624,11 @@ async function deleteKeyResult(keyResult) {
   }
 
   .krPlaque:hover {
+    transform: none;
+  }
+
+  .kr.rollingTop,
+  .kr.rollingBottom {
     transform: none;
   }
 }
