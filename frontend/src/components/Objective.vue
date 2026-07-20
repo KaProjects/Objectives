@@ -95,7 +95,7 @@ async function deleteKeyResult(keyResult) {
 }
 </script>
 <template>
-  <v-card class="obj" :class="objective.state" width="300" elevation="3" shaped :key="objective.id">
+  <v-card class="obj" :class="objective.state" width="330" elevation="3" shaped :key="objective.id">
     <ObjectiveDialog :obj="selectedObj" v-model="openObjDialog" @close="openObjDialog = false"
                      @deleted="emit('deleted', $event)" @updated="emit('updated', $event)"
                      @state-changed="emit('state-changed', $event)"
@@ -105,8 +105,10 @@ async function deleteKeyResult(keyResult) {
                      @updated="emit('key-result-updated', {objectiveId: objective.id, keyResult: $event})"
                      @deleted="deleteKeyResult"/>
 
-    <v-card-title>{{ objective.name }}</v-card-title>
-    <v-card-text v-html="string_to_html(objective.description)"/>
+    <div class="objHeader">
+      <v-card-title>{{ objective.name }}</v-card-title>
+      <v-card-text v-html="string_to_html(objective.description)"/>
+    </div>
 
     <img v-if="objective.state === OBJECTIVE_STATE.ACHIEVED"
          :src="achievementStamp"
@@ -124,7 +126,8 @@ async function deleteKeyResult(keyResult) {
       <div style="margin: -5px auto;">{{ objective.ideas_count }}</div>
     </div>
 
-    <div class="keyResultsListWrapper"
+    <div v-if="objective.key_results.length > 0"
+         class="keyResultsListWrapper"
          :class="{hasKeyResultsAbove: showKeyResultsTopFade, hasKeyResultsBelow: showKeyResultsBottomFade}">
       <div ref="keyResultsList" class="keyResultsList" @scroll="updateKeyResultsFades">
         <v-list-item v-for="key_result in objective.key_results.slice().sort(compareKeyResults)"
@@ -354,15 +357,29 @@ async function deleteKeyResult(keyResult) {
 }
 
 .obj {
+  border-radius: 10px !important;
+  box-shadow:
+    0 2px 4px rgba(16, 24, 40, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - 90px);
-  min-width: 300px;
+  min-width: 330px;
   position: relative;
   vertical-align: top;
   margin-bottom: auto;
   margin-left: 1px;
   color: #000000;
+  overflow: hidden;
+}
+
+.objHeader {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.objHeader :deep(.v-card-title) {
+  font-weight: 650;
 }
 
 .keyResultsList {
@@ -412,9 +429,51 @@ async function deleteKeyResult(keyResult) {
 }
 
 .obj.active {
-  --key-results-fade: #dce8f1;
+  --key-results-fade: #cfdfE9;
   background: #dce8f1;
-  border-left: 4px solid #5f88a6;
+  border: 1px solid #7899ae;
+}
+
+.obj.active .objHeader {
+  background: linear-gradient(105deg, #e5eff5, #c9dce8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1px 0 rgba(55, 91, 114, 0.16),
+    0 1px 2px rgba(16, 24, 40, 0.12);
+  color: #213846;
+}
+
+.obj.active .objHeader :deep(a) {
+  color: inherit;
+}
+
+.obj.active .keyResultsListWrapper {
+  background: linear-gradient(145deg, #d7e5ed, #c8dbe7);
+  border-bottom: 1px solid rgba(71, 108, 132, 0.18);
+  border-radius: 7px;
+  border-top: 1px solid rgba(71, 108, 132, 0.18);
+  box-shadow:
+    inset 0 1px 2px rgba(37, 74, 97, 0.12),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+  margin: 4px 4px 0;
+}
+
+.obj.active :deep(.v-card-actions) {
+  background: linear-gradient(105deg, #dce9f1, #c8dce8);
+  border-top: 1px solid rgba(71, 108, 132, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.obj.active :deep(.v-card-actions .v-btn) {
+  background: rgba(95, 136, 166, 0.12);
+  border: 1px solid rgba(71, 108, 132, 0.24);
+  box-shadow: none;
+}
+
+.obj.active :deep(.v-card-actions .v-icon),
+.obj.active .objEdit,
+.obj.active .objIdeas {
+  color: #213846 !important;
 }
 
 .obj.failed {
