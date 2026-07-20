@@ -437,6 +437,51 @@ watch(openAddObjDialog, (open) => {
 }
 
 @media (max-width: 600px) {
+  .activeObjectives {
+    gap: 0;
+    margin-left: 0;
+    margin-right: 0;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .activeObjectives::-webkit-scrollbar {
+    display: none;
+  }
+
+  .activeObjectives :deep(.obj) {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    width: 100% !important;
+  }
+
+  .ideasView {
+    overflow-x: hidden;
+  }
+
+  .ideasView :deep(.ideaLists) {
+    gap: 0;
+    min-width: 0;
+    overflow-x: auto;
+    padding: 0;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    width: 100%;
+  }
+
+  .ideasView :deep(.ideaLists::-webkit-scrollbar) {
+    display: none;
+  }
+
+  .ideasView :deep(.subvalueList) {
+    flex: 0 0 100%;
+    height: calc(100dvh - 82px);
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    width: 100% !important;
+  }
+
   .doneTimeline {
     margin-left: 0;
     padding-left: 0;

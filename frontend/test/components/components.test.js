@@ -207,6 +207,25 @@ describe('frontend components', () => {
     expect(wrapper.emitted('moved')).toBeUndefined()
   })
 
+  it('Ideas moves a selected touch idea after choosing a destination list', async () => {
+    const idea = {id: 'idea-1', name: 'Walk', description: ''}
+    const sourceSubvalue = {id: '0', name: 'default', ideas: [idea]}
+    const targetSubvalue = {id: '1', name: 'Fitness', ideas: []}
+    api.put.mockResolvedValue(idea)
+    const wrapper = mount(Ideas, {props: {valueId: 7, subvalues: [sourceSubvalue, targetSubvalue]}})
+
+    wrapper.vm.startMove(sourceSubvalue, idea)
+    await wrapper.vm.movePendingIdea(targetSubvalue)
+
+    expect(api.put).toHaveBeenCalledWith('/value/7/subvalue/0/idea/idea-1/move', {
+      target_subvalue_id: '1',
+    })
+    expect(wrapper.vm.pendingMove).toBeNull()
+    expect(wrapper.emitted('moved')).toEqual([[{
+      sourceSubvalueId: '0', targetSubvalueId: '1', idea,
+    }]])
+  })
+
   it('Ideas deletes a subvalue and notifies its parent', async () => {
     const subvalue = {id: '1', name: 'Fitness', ideas: []}
     api.delete.mockResolvedValue(undefined)

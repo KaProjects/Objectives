@@ -7,6 +7,7 @@ config.global.stubs = {
   'v-card-text': {template: '<div><slot /></div>'},
   'v-card-actions': {template: '<div><slot /></div>'},
   'v-dialog': {template: '<div><slot /><slot name="activator" :props="{}" /></div>'},
+  'v-menu': {template: '<div><slot /><slot name="activator" :props="{}" /></div>'},
   'v-btn': {template: '<button><slot /></button>'},
   'v-icon': {template: '<i><slot /></i>'},
   'v-text-field': {props: ['modelValue'], template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'},

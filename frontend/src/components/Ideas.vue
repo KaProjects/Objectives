@@ -22,6 +22,8 @@ const editingSubvalueId = ref(null)
 const subvaluePendingDeletionId = ref(null)
 const draggedIdea = ref(null)
 const dragOverSubvalueId = ref(null)
+const pendingMove = ref(null)
+const openIdeaActionsMenuId = ref(null)
 const draftIdea = ref({name: '', description: ''})
 const ideaEditor = ref(null)
 const isSubmitting = ref(false)
@@ -144,20 +146,67 @@ async function moveDraggedIdea(targetSubvalue) {
   endDragging()
   if (!dragged || dragged.sourceSubvalueId === targetSubvalue.id) return
 
+  await moveIdea(dragged, targetSubvalue)
+}
+
+function startMove(subvalue, idea) {
+  if (isSubmitting.value) return
+  pendingMove.value = {sourceSubvalueId: subvalue.id, idea}
+}
+
+function cancelMove() {
+  pendingMove.value = null
+}
+
+function closeIdeaActionsMenu() {
+  openIdeaActionsMenuId.value = null
+}
+
+function createObjectiveFromIdea(subvalue, idea) {
+  closeIdeaActionsMenu()
+  emit('create-objective', {subvalueId: subvalue.id, idea})
+}
+
+function selectIdeaForMove(subvalue, idea) {
+  closeIdeaActionsMenu()
+  startMove(subvalue, idea)
+}
+
+function requestIdeaDeletion(subvalue, idea) {
+  closeIdeaActionsMenu()
+  ideaPendingDeletionId.value = ideaKey(subvalue, idea)
+}
+
+async function movePendingIdea(targetSubvalue) {
+  const pending = pendingMove.value
+  if (!pending) return
+  if (pending.sourceSubvalueId === targetSubvalue.id) {
+    cancelMove()
+    return
+  }
+
+  if (await moveIdea(pending, targetSubvalue)) cancelMove()
+}
+
+async function moveIdea(source, targetSubvalue) {
+  if (isSubmitting.value) return false
+
   isSubmitting.value = true
   submissionError.value = null
   try {
     const movedIdea = await api.put(
-        '/value/' + props.valueId + '/subvalue/' + dragged.sourceSubvalueId + '/idea/' + dragged.idea.id + '/move',
+        '/value/' + props.valueId + '/subvalue/' + source.sourceSubvalueId + '/idea/' + source.idea.id + '/move',
         {target_subvalue_id: targetSubvalue.id},
     )
     emit('moved', {
-      sourceSubvalueId: dragged.sourceSubvalueId,
+      sourceSubvalueId: source.sourceSubvalueId,
       targetSubvalueId: targetSubvalue.id,
       idea: movedIdea,
     })
+    return true
   } catch (error) {
     submissionError.value = error.message
+    return false
   } finally {
     isSubmitting.value = false
   }
@@ -208,11 +257,22 @@ async function moveDraggedIdea(targetSubvalue) {
           </DialogCard>
         </v-dialog>
       </v-card-title>
+      <v-btn v-if="pendingMove && pendingMove.sourceSubvalueId !== subvalue.id" class="moveIdeaHere"
+             variant="tonal" size="small" @click="movePendingIdea(subvalue)">
+        Move here
+      </v-btn>
+      <v-btn v-else-if="pendingMove" class="cancelIdeaMove" variant="text" size="small" @click="cancelMove">
+        Cancel move
+      </v-btn>
       <v-list class="subvalueIdeas">
         <v-list-item v-for="idea in subvalue.ideas" :key="idea.id" class="ideaItem">
           <v-list-item-content>
             <div v-if="editingIdeaId !== ideaKey(subvalue, idea)" class="idea"
-                 :class="{shortIdea: !idea.description, draggingIdea: draggedIdea?.idea.id === idea.id && draggedIdea?.sourceSubvalueId === subvalue.id}"
+                 :class="{
+                   shortIdea: !idea.description,
+                   draggingIdea: draggedIdea?.idea.id === idea.id && draggedIdea?.sourceSubvalueId === subvalue.id,
+                   movingIdea: pendingMove?.idea.id === idea.id && pendingMove?.sourceSubvalueId === subvalue.id,
+                 }"
                  :draggable="!isSubmitting"
                  @dragstart="startDragging($event, subvalue, idea)"
                  @dragend="endDragging"
@@ -223,10 +283,30 @@ async function moveDraggedIdea(targetSubvalue) {
               </div>
 
               <div class="ideaActions">
-                <v-icon class="createObjectiveFromIdea" icon="mdi-flag-plus-outline" size="18"
-                        @click.stop="emit('create-objective', {subvalueId: subvalue.id, idea})"/>
-                <v-icon class="deleteIdea" icon="mdi-delete" size="18"
-                        @click.stop="ideaPendingDeletionId = ideaKey(subvalue, idea)"/>
+                <div class="desktopIdeaActions">
+                  <v-icon class="createObjectiveFromIdea" icon="mdi-flag-plus-outline" size="18"
+                          @click.stop="emit('create-objective', {subvalueId: subvalue.id, idea})"/>
+                  <v-icon class="moveIdea" icon="mdi-arrow-right-bold-circle-outline" size="18"
+                          @click.stop="startMove(subvalue, idea)"/>
+                  <v-icon class="deleteIdea" icon="mdi-delete" size="18"
+                          @click.stop="ideaPendingDeletionId = ideaKey(subvalue, idea)"/>
+                </div>
+                <v-menu
+                    :model-value="openIdeaActionsMenuId === ideaKey(subvalue, idea)"
+                    @update:model-value="openIdeaActionsMenuId = $event ? ideaKey(subvalue, idea) : null"
+                >
+                  <template #activator="{props: menuProps}">
+                    <v-icon class="mobileIdeaActionsTrigger" icon="mdi-dots-vertical" v-bind="menuProps"/>
+                  </template>
+                  <v-list class="mobileIdeaActionsMenu" density="compact">
+                    <v-list-item prepend-icon="mdi-flag-plus-outline" title="Create Objective"
+                                 @click="createObjectiveFromIdea(subvalue, idea)"/>
+                    <v-list-item prepend-icon="mdi-arrow-right-bold-circle-outline" title="Move to…"
+                                 @click="selectIdeaForMove(subvalue, idea)"/>
+                    <v-list-item class="deleteIdeaMenuItem" prepend-icon="mdi-delete" title="Delete"
+                                 @click="requestIdeaDeletion(subvalue, idea)"/>
+                  </v-list>
+                </v-menu>
               </div>
               <v-dialog
                   :model-value="ideaPendingDeletionId === ideaKey(subvalue, idea)"
@@ -265,7 +345,7 @@ async function moveDraggedIdea(targetSubvalue) {
   gap: 12px;
   box-sizing: border-box;
   min-width: 100%;
-  padding: 0 12px 12px;
+  padding: 3px 12px 12px;
   width: max-content;
 }
 
@@ -326,6 +406,10 @@ async function moveDraggedIdea(targetSubvalue) {
   transform: scale(0.98);
 }
 
+.idea.movingIdea {
+  background: rgba(var(--v-theme-primary), 0.12);
+}
+
 .ideaItem:first-child .idea {
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.12);
 }
@@ -354,25 +438,71 @@ async function moveDraggedIdea(targetSubvalue) {
 }
 
 .ideaActions {
-  display: none;
+  display: flex;
+  position: absolute;
+  right: 0;
+  top: 4px;
+  visibility: hidden;
+}
+
+.desktopIdeaActions {
+  display: flex;
   flex-direction: column;
-  flex: 0 0 18px;
   gap: 4px;
-  margin-left: 8px;
+}
+
+.mobileIdeaActionsTrigger {
+  display: none;
+}
+
+.deleteIdeaMenuItem {
+  color: rgb(var(--v-theme-error));
+}
+
+.moveIdeaHere,
+.cancelIdeaMove,
+.moveIdea {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .moveIdeaHere,
+  .cancelIdeaMove {
+    display: inline-flex;
+  }
 }
 
 .idea:hover .ideaActions {
-  display: flex;
+  visibility: visible;
 }
 
 .shortIdea .ideaActions {
-  flex-basis: 40px;
+  top: 8px;
+}
+
+.shortIdea .desktopIdeaActions {
   flex-direction: row;
 }
 
 @media (max-width: 600px) {
   .ideaActions {
-    display: flex;
+    visibility: visible;
+  }
+
+  .desktopIdeaActions {
+    display: none;
+  }
+
+  .mobileIdeaActionsTrigger {
+    display: inline-flex;
+    font-size: 26px !important;
+    height: 36px;
+    transform: translateY(-5px);
+    width: 36px;
+  }
+
+  .shortIdea .ideaActions {
+    flex-basis: 36px;
   }
 }
 
