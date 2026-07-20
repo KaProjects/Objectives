@@ -113,6 +113,7 @@ function handleFocusOut(event) {
 
 .text {
   flex: 15;
+  min-width: 0;
 }
 
 .edit.compact :deep(.v-input__details) {

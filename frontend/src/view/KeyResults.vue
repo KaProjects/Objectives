@@ -149,7 +149,14 @@ onMounted(loadKeyResults)
   justify-content: space-between;
 }
 
+.cardHeader :deep(.v-card-title) {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .deadlineAlert {
+  flex: 0 0 auto;
   font-size: 2rem;
   height: 2rem;
   margin-right: 1rem;
@@ -159,5 +166,11 @@ onMounted(loadKeyResults)
 .emptyState {
   color: rgb(var(--v-theme-on-surface-variant));
   text-align: center;
+}
+
+@media (max-width: 600px) {
+  .backButton {
+    display: none;
+  }
 }
 </style>

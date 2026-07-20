@@ -176,7 +176,7 @@ function deleteObjective() {
       <Editable :value="draftObjective.name" :editable="obj.state === OBJECTIVE_STATE.ACTIVE" hide-details
                 :submit="(value) => updateObjective('name', value)" label="Name">
         <template #display="{startEditing}">
-          <v-card-title @click="startEditing" class="text-h5 grey lighten-2">
+          <v-card-title @click="startEditing" class="dialogTitle text-h5 grey lighten-2">
             {{ obj.name }}
           </v-card-title>
         </template>
@@ -332,6 +332,15 @@ function deleteObjective() {
 </template>
 
 <style scoped>
+.dialogTitle {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
 .idea {
   align-items: start;
   background-color: rgb(var(--v-theme-surface));

@@ -62,12 +62,13 @@ onMounted(() => {
                   :key="value.id"
                   @click.stop="openValue(value)">
             <v-card-text>
-              <div style="display: flex; justify-content: space-around">
-                <div class="text-h4 text--primary">
+              <div class="valueHeader">
+                <div class="valueName text-h4 text--primary">
                   {{ value.name }}
                 </div>
-                <div style="display: flex; justify-content: flex-end">
-                  Active: {{ value.active_count }} Achievements: {{ value.achievements_count }}
+                <div class="valueCounts">
+                  <span>Active: {{ value.active_count }}</span>
+                  <span>Achievements: {{ value.achievements_count }}</span>
                 </div>
               </div>
               <div class="text--primary">
@@ -120,6 +121,21 @@ onMounted(() => {
   background-color: #96c6ef;
 }
 
+.valueHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.valueCounts {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.valueCounts span {
+  white-space: nowrap;
+}
+
 .centerButton {
   margin-left: auto;
   margin-right: auto;
@@ -134,6 +150,26 @@ onMounted(() => {
 .addValue:hover {
   background-color: #96c6ef;
   color: #181818;
+}
+
+@media (max-width: 600px) {
+  .valueName {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  .valueCounts {
+    align-items: flex-end;
+    background-color: inherit;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 0;
+    margin-left: auto;
+    position: relative;
+    z-index: 1;
+  }
 }
 
 </style>

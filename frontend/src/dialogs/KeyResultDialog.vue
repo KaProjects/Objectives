@@ -190,7 +190,7 @@ function deleteKeyResult() {
 
       <Editable :value="draftKeyResult.name" :editable="canEdit()" :submit="(value) => update('name', value)" label="Name" hide-details>
         <template #display="{startEditing}">
-          <v-card-title @click="startEditing" class="text-h5 grey lighten-2">
+          <v-card-title @click="startEditing" class="dialogTitle text-h5 grey lighten-2">
             {{ kr.name }}
           </v-card-title>
         </template>
@@ -399,6 +399,15 @@ function deleteKeyResult() {
 </template>
 
 <style scoped>
+.dialogTitle {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
 .task {
   align-items: start;
   background-color: rgb(var(--v-theme-surface));

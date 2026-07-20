@@ -108,11 +108,13 @@ async function deleteKeyResult(keyResult) {
                    @click="openKeyResult(key_result, objective.state)">
         <v-list-item-content>
 
-          <v-list-item-title class="inLine">{{ key_result.name }}</v-list-item-title>
-          <v-icon style="vertical-align: top;" icon="mdi-check-bold"
-                  v-if="key_result.state === KEY_RESULT_STATE.COMPLETED"/>
-          <v-icon style="vertical-align: top;" icon="mdi-close-thick"
-                  v-if="key_result.state === KEY_RESULT_STATE.FAILED"/>
+          <div class="krTitle">
+            <v-list-item-title class="inLine">{{ key_result.name }}</v-list-item-title>
+            <v-icon icon="mdi-check-bold"
+                    v-if="key_result.state === KEY_RESULT_STATE.COMPLETED"/>
+            <v-icon icon="mdi-close-thick"
+                    v-if="key_result.state === KEY_RESULT_STATE.FAILED"/>
+          </div>
 
           <div class="krInfo" v-if="key_result.state === KEY_RESULT_STATE.ACTIVE">
             <div class="krInfoChild" style="right: 0;">{{ formatDate(key_result.date_reviewed) }}</div>
@@ -157,7 +159,18 @@ async function deleteKeyResult(keyResult) {
 }
 
 .inLine {
-  display: inline-block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.krTitle {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  min-width: 0;
 }
 
 .obj {
