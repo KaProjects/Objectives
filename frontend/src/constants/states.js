@@ -18,6 +18,6 @@ export const TASK_STATE = Object.freeze({
 
 export const OBJECTIVE_TAB = Object.freeze({
   ACTIVE: 'active',
-  INACTIVE: 'inactive',
+  DONE: 'done',
   IDEAS: 'ideas',
 })

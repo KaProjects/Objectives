@@ -18,7 +18,7 @@ describe('Value view', () => {
     api.get.mockImplementation((path) => path.endsWith('/subvalue')
         ? Promise.resolve([{id: '0', name: 'Default', ideas: []}])
         : Promise.resolve({id: 1, name: 'Health', objectives: []}))
-    await router.push('/values/1')
+    await router.push('/value/1')
     const wrapper = shallowMount(Value, {global: {plugins: [router]}})
     await flushPromises()
     wrapper.vm.addObjective({id: 2, name: 'Walk', state: 'active'})
@@ -32,7 +32,7 @@ describe('Value view', () => {
     api.get.mockImplementation((path) => path.endsWith('/subvalue')
         ? Promise.resolve([{id: '0', name: 'Default', ideas: []}])
         : Promise.resolve({id: 1, name: 'Health', objectives: []}))
-    await router.push('/values/1')
+    await router.push('/value/1')
     const wrapper = shallowMount(Value, {global: {plugins: [router]}})
     await flushPromises()
 
@@ -52,7 +52,7 @@ describe('Value view', () => {
         ? Promise.resolve([{id: '0', name: 'Default', ideas: [{id: 'idea-1', name: 'Walk', description: ''}]}])
         : Promise.resolve({id: 1, name: 'Health', objectives: []}))
     api.delete.mockResolvedValue(undefined)
-    await router.push('/values/1')
+    await router.push('/value/1')
     const wrapper = shallowMount(Value, {global: {plugins: [router]}})
     await flushPromises()
     wrapper.vm.createObjectiveFromIdea({
@@ -80,12 +80,30 @@ describe('Value view', () => {
             {id: 5, state: 'achieved', date_finished: '2026-07-10'},
           ],
         }))
-    await router.push('/values/1')
+    await router.push('/value/1')
     const wrapper = shallowMount(Value, {global: {plugins: [router]}})
     await flushPromises()
 
     expect(wrapper.vm.doneObjectiveTimeline.map((group) => group.finishedDate)).toEqual(['2026-07-10', '2026-03-01', null])
     expect(wrapper.vm.doneObjectiveTimeline[0].objectives.map((objective) => objective.id)).toEqual([2, 5])
     expect(wrapper.vm.doneObjectiveTimeline.map((group) => group.showYear)).toEqual([true, false, false])
+  })
+
+  it('keeps the selected tab in the URL and restores it from the URL', async () => {
+    api.get.mockImplementation((path) => path.endsWith('/subvalue')
+        ? Promise.resolve([])
+        : Promise.resolve({id: 1, name: 'Health', objectives: []}))
+    await router.push('/value/1/ideas')
+    const wrapper = shallowMount(Value, {global: {plugins: [router]}})
+    await flushPromises()
+
+    expect(wrapper.vm.tab).toBe('ideas')
+    wrapper.vm.tab = 'done'
+    await flushPromises()
+    expect(router.currentRoute.value.params.tab).toBe('done')
+
+    await router.push('/value/1/active')
+    await flushPromises()
+    expect(wrapper.vm.tab).toBe('active')
   })
 })

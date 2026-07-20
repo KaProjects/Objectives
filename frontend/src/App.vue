@@ -23,7 +23,7 @@ function addValue() {
 }
 
 function openValue(value) {
-  router.push({name: 'value', params: {valueId: value.id}})
+  router.push({name: 'value', params: {valueId: value.id, tab: 'active'}})
 }
 
 function openKeyResults() {

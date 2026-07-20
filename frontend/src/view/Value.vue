@@ -22,6 +22,10 @@ const openAddSubvalueDialog = ref(false)
 const subvalues = ref([])
 const isSubmitting = ref(false)
 
+function normalizeTab(tab) {
+  return Object.values(OBJECTIVE_TAB).includes(tab) ? tab : OBJECTIVE_TAB.ACTIVE
+}
+
 async function loadData() {
   try {
     const [loadedValue, loadedSubvalues] = await Promise.all([
@@ -155,7 +159,7 @@ function returnToValues() {
 }
 
 function selectTab(state) {
-  tab.value = state === OBJECTIVE_STATE.ACTIVE ? OBJECTIVE_TAB.ACTIVE : OBJECTIVE_TAB.INACTIVE
+  tab.value = state === OBJECTIVE_STATE.ACTIVE ? OBJECTIVE_TAB.ACTIVE : OBJECTIVE_TAB.DONE
 }
 
 function updateObjective(updatedObjective) {
@@ -195,6 +199,24 @@ async function deleteObjective(objective) {
 }
 
 watch(valueId, loadData, {immediate: true})
+watch(() => route.params.tab, (routeTab) => {
+  const selectedTab = normalizeTab(routeTab)
+  if (routeTab !== selectedTab) {
+    router.replace({
+      name: 'value',
+      params: {valueId: valueId.value, tab: selectedTab},
+    })
+    return
+  }
+  tab.value = selectedTab
+}, {immediate: true})
+watch(tab, (selectedTab) => {
+  if (route.params.tab === selectedTab) return
+  router.push({
+    name: 'value',
+    params: {valueId: valueId.value, tab: selectedTab},
+  })
+})
 watch(openAddObjDialog, (open) => {
   if (!open) {
     objectiveDraft.value = null
@@ -215,7 +237,7 @@ watch(openAddObjDialog, (open) => {
       <div class="tabs">
         <v-tabs v-model="tab" bg-color="primary">
           <v-tab :value="OBJECTIVE_TAB.ACTIVE">Active</v-tab>
-          <v-tab :value="OBJECTIVE_TAB.INACTIVE">Done</v-tab>
+          <v-tab :value="OBJECTIVE_TAB.DONE">Done</v-tab>
           <v-tab :value="OBJECTIVE_TAB.IDEAS">Ideas</v-tab>
         </v-tabs>
       </div>
@@ -258,7 +280,7 @@ watch(openAddObjDialog, (open) => {
                  @key-result-deleted="removeKeyResult"/>
     </div>
 
-    <section v-else-if="tab === OBJECTIVE_TAB.INACTIVE" class="doneTimeline">
+    <section v-else-if="tab === OBJECTIVE_TAB.DONE" class="doneTimeline">
       <div v-for="group in doneObjectiveTimeline" :key="group.finishedDate ?? 'unknown'" class="timelineEvent">
         <template v-if="group.showYear">
           <div class="timelineYear">{{ group.year }}</div>

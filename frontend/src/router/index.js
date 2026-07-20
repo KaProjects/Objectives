@@ -8,7 +8,11 @@ export default createRouter({
   history: createWebHistory(),
   routes: [
     {path: '/', name: 'values', component: ValuesListRoute},
-    {path: '/values/:valueId', name: 'value', component: Value},
+    {
+      path: '/value/:valueId',
+      redirect: (to) => ({name: 'value', params: {valueId: to.params.valueId, tab: 'active'}}),
+    },
+    {path: '/value/:valueId/:tab', name: 'value', component: Value},
     {path: '/key-results', name: 'key-results', component: KeyResults},
   ],
 })
