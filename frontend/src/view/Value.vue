@@ -21,6 +21,8 @@ const ideaToDeleteAfterObjective = ref(null)
 const openAddSubvalueDialog = ref(false)
 const subvalues = ref([])
 const isSubmitting = ref(false)
+const activeObjectivesCarousel = ref(null)
+const activeObjectiveIndex = ref(0)
 
 function normalizeTab(tab) {
   return Object.values(OBJECTIVE_TAB).includes(tab) ? tab : OBJECTIVE_TAB.ACTIVE
@@ -48,6 +50,17 @@ function filterObjectives(objectives, isActive) {
   if (objectives === undefined) return objectives
   return objectives.filter((objective) => isActive ? objective.state === OBJECTIVE_STATE.ACTIVE : objective.state !== OBJECTIVE_STATE.ACTIVE)
       .slice().sort(compareObjectives)
+}
+
+const activeObjectives = computed(() => filterObjectives(value.value.objectives ?? [], true) ?? [])
+
+function updateActiveObjectiveIndex() {
+  const carousel = activeObjectivesCarousel.value
+  if (!carousel || carousel.clientWidth === 0) return
+  activeObjectiveIndex.value = Math.min(
+      activeObjectives.value.length - 1,
+      Math.max(0, Math.round(carousel.scrollLeft / carousel.clientWidth)),
+  )
 }
 
 const doneObjectiveTimeline = computed(() => {
@@ -199,6 +212,7 @@ async function deleteObjective(objective) {
 }
 
 watch(valueId, loadData, {immediate: true})
+watch(valueId, () => activeObjectiveIndex.value = 0)
 watch(() => route.params.tab, (routeTab) => {
   const selectedTab = normalizeTab(routeTab)
   if (routeTab !== selectedTab) {
@@ -268,16 +282,22 @@ watch(openAddObjDialog, (open) => {
         @created="addObjective"
     />
 
-    <div v-if="tab === OBJECTIVE_TAB.ACTIVE" class="activeObjectives">
-      <Objective v-for="objective in filterObjectives(value.objectives, true)"
-                 :key="objective.id"
-                 :objective="objective"
-                 @deleted="deleteObjective"
-                 @state-changed="selectTab"
-                 @updated="updateObjective"
-                 @key-result-created="addKeyResult"
-                 @key-result-updated="updateKeyResult"
-                 @key-result-deleted="removeKeyResult"/>
+    <div v-if="tab === OBJECTIVE_TAB.ACTIVE" class="activeObjectivesCarousel">
+      <div ref="activeObjectivesCarousel" class="activeObjectives" @scroll="updateActiveObjectiveIndex">
+        <Objective v-for="objective in activeObjectives"
+                   :key="objective.id"
+                   :objective="objective"
+                   @deleted="deleteObjective"
+                   @state-changed="selectTab"
+                   @updated="updateObjective"
+                   @key-result-created="addKeyResult"
+                   @key-result-updated="updateKeyResult"
+                   @key-result-deleted="removeKeyResult"/>
+      </div>
+      <div v-if="activeObjectives.length > 1" class="carouselPager" aria-label="Objective card position">
+        <span v-for="(_, index) in activeObjectives" :key="index" class="carouselPagerDot"
+              :class="{active: index === activeObjectiveIndex}"/>
+      </div>
     </div>
 
     <section v-else-if="tab === OBJECTIVE_TAB.DONE" class="doneTimeline">
@@ -344,6 +364,38 @@ watch(openAddObjDialog, (open) => {
 .ideasView {
   display: flex;
   overflow-x: scroll;
+}
+
+.activeObjectivesCarousel {
+  position: relative;
+}
+
+.carouselPager {
+  align-items: center;
+  background: color-mix(in srgb, var(--v-theme-surface) 82%, transparent);
+  border-radius: 999px;
+  bottom: 24px;
+  display: none;
+  gap: 5px;
+  left: 50%;
+  padding: 5px 8px;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.carouselPagerDot {
+  background: color-mix(in srgb, var(--v-theme-on-surface) 35%, transparent);
+  border-radius: 999px;
+  height: 6px;
+  transition: background 160ms ease, width 160ms ease;
+  width: 6px;
+}
+
+.carouselPagerDot.active {
+  background: var(--v-theme-primary);
+  width: 16px;
 }
 
 .activeObjectives {
@@ -437,6 +489,11 @@ watch(openAddObjDialog, (open) => {
 }
 
 @media (max-width: 600px) {
+  .carouselPager {
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    display: flex;
+  }
+
   .activeObjectives {
     gap: 0;
     margin-left: 0;
@@ -451,6 +508,7 @@ watch(openAddObjDialog, (open) => {
 
   .activeObjectives :deep(.obj) {
     flex: 0 0 100%;
+    max-height: calc(100dvh - 96px);
     scroll-snap-align: start;
     scroll-snap-stop: always;
     width: 100% !important;
@@ -476,7 +534,7 @@ watch(openAddObjDialog, (open) => {
 
   .ideasView :deep(.subvalueList) {
     flex: 0 0 100%;
-    height: calc(100dvh - 82px);
+    height: calc(100dvh - 96px);
     scroll-snap-align: start;
     scroll-snap-stop: always;
     width: 100% !important;

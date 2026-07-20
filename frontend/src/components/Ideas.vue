@@ -1,5 +1,5 @@
 <script setup>
-import {nextTick, ref} from 'vue'
+import {nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {api} from '@/services/apiClient'
 import DialogCard from '@/dialogs/DialogCard.vue'
 import AddIdeaDialog from '@/dialogs/AddIdeaDialog.vue'
@@ -24,10 +24,15 @@ const draggedIdea = ref(null)
 const dragOverSubvalueId = ref(null)
 const pendingMove = ref(null)
 const openIdeaActionsMenuId = ref(null)
+const ideaLists = ref(null)
+const ideaListElements = new Map()
+const ideaListFades = ref({})
+const activeSubvalueIndex = ref(0)
 const draftIdea = ref({name: '', description: ''})
 const ideaEditor = ref(null)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
+let ideaListsResizeObserver
 
 async function deleteIdea(subvalue, idea) {
   if (isSubmitting.value) return
@@ -47,6 +52,51 @@ async function deleteIdea(subvalue, idea) {
 function ideaKey(subvalue, idea) {
   return subvalue.id + ':' + idea.id
 }
+
+function updateActiveSubvalueIndex() {
+  const carousel = ideaLists.value
+  if (!carousel || carousel.clientWidth === 0) return
+  activeSubvalueIndex.value = Math.min(
+      props.subvalues.length - 1,
+      Math.max(0, Math.round(carousel.scrollLeft / carousel.clientWidth)),
+  )
+}
+
+function registerIdeaList(subvalueId, wrapper) {
+  if (wrapper) ideaListElements.set(subvalueId, wrapper.querySelector('.subvalueIdeas'))
+  else ideaListElements.delete(subvalueId)
+}
+
+function updateIdeaListFades(subvalueId) {
+  const list = ideaListElements.get(subvalueId)
+  if (!list) return
+
+  const nextFadeState = {
+    above: list.scrollTop > 1,
+    below: list.scrollTop + list.clientHeight < list.scrollHeight - 1,
+  }
+  const currentFadeState = ideaListFades.value[subvalueId]
+  if (currentFadeState?.above === nextFadeState.above && currentFadeState?.below === nextFadeState.below) return
+
+  ideaListFades.value = {...ideaListFades.value, [subvalueId]: nextFadeState}
+}
+
+function updateAllIdeaListFades() {
+  props.subvalues.forEach((subvalue) => updateIdeaListFades(subvalue.id))
+}
+
+onMounted(() => {
+  nextTick(() => {
+    updateAllIdeaListFades()
+    if (typeof ResizeObserver === 'undefined') return
+    ideaListsResizeObserver = new ResizeObserver(updateAllIdeaListFades)
+    ideaListElements.forEach((list) => ideaListsResizeObserver.observe(list))
+  })
+})
+
+onBeforeUnmount(() => ideaListsResizeObserver?.disconnect())
+
+watch(() => props.subvalues, () => nextTick(updateAllIdeaListFades), {deep: true})
 
 async function startEditing(subvalue, idea) {
   if (isSubmitting.value || editingIdeaId.value === ideaKey(subvalue, idea)) return
@@ -215,8 +265,9 @@ async function moveIdea(source, targetSubvalue) {
 </script>
 
 <template>
-  <div class="ideaLists">
-    <v-card v-for="subvalue in subvalues" :key="subvalue.id" width="300" elevation="3" shaped class="subvalueList"
+  <div class="ideaCarousel">
+    <div ref="ideaLists" class="ideaLists" @scroll="updateActiveSubvalueIndex">
+      <v-card v-for="subvalue in subvalues" :key="subvalue.id" width="300" elevation="3" shaped class="subvalueList"
             :class="{dragOver: dragOverSubvalueId === subvalue.id}"
             @dragover.prevent="markDragOver(subvalue)"
             @drop.prevent="moveDraggedIdea(subvalue)">
@@ -264,7 +315,12 @@ async function moveIdea(source, targetSubvalue) {
       <v-btn v-else-if="pendingMove" class="cancelIdeaMove" variant="text" size="small" @click="cancelMove">
         Cancel move
       </v-btn>
-      <v-list class="subvalueIdeas">
+      <div :ref="(element) => registerIdeaList(subvalue.id, element)" class="subvalueIdeasWrapper"
+           :class="{
+             hasIdeasAbove: ideaListFades[subvalue.id]?.above,
+             hasIdeasBelow: ideaListFades[subvalue.id]?.below,
+           }">
+      <v-list class="subvalueIdeas" @scroll="updateIdeaListFades(subvalue.id)">
         <v-list-item v-for="idea in subvalue.ideas" :key="idea.id" class="ideaItem">
           <v-list-item-content>
             <div v-if="editingIdeaId !== ideaKey(subvalue, idea)" class="idea"
@@ -334,7 +390,13 @@ async function moveIdea(source, targetSubvalue) {
           </v-list-item-content>
         </v-list-item>
       </v-list>
-    </v-card>
+      </div>
+      </v-card>
+    </div>
+    <div v-if="subvalues.length > 1" class="carouselPager" aria-label="Subvalue card position">
+      <span v-for="(_, index) in subvalues" :key="index" class="carouselPagerDot"
+            :class="{active: index === activeSubvalueIndex}"/>
+    </div>
   </div>
 </template>
 
@@ -347,6 +409,38 @@ async function moveIdea(source, targetSubvalue) {
   min-width: 100%;
   padding: 3px 12px 12px;
   width: max-content;
+}
+
+.ideaCarousel {
+  position: relative;
+}
+
+.carouselPager {
+  align-items: center;
+  background: color-mix(in srgb, var(--v-theme-surface) 82%, transparent);
+  border-radius: 999px;
+  bottom: 24px;
+  display: none;
+  gap: 5px;
+  left: 50%;
+  padding: 5px 8px;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.carouselPagerDot {
+  background: color-mix(in srgb, var(--v-theme-on-surface) 35%, transparent);
+  border-radius: 999px;
+  height: 6px;
+  transition: background 160ms ease, width 160ms ease;
+  width: 6px;
+}
+
+.carouselPagerDot.active {
+  background: var(--v-theme-primary);
+  width: 16px;
 }
 
 .subvalueList {
@@ -363,16 +457,53 @@ async function moveIdea(source, targetSubvalue) {
 }
 
 .subvalueIdeas {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   padding-bottom: 16px;
+  padding-top: 0;
+}
+
+.subvalueIdeasWrapper {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+}
+
+.subvalueIdeasWrapper::before,
+.subvalueIdeasWrapper::after {
+  content: '';
+  height: 24px;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  transition: opacity 120ms ease;
+  z-index: 1;
+}
+
+.subvalueIdeasWrapper::before {
+  background: linear-gradient(to bottom, rgb(var(--v-theme-surface)), transparent);
+  top: 0;
+}
+
+.subvalueIdeasWrapper::after {
+  background: linear-gradient(to top, rgb(var(--v-theme-surface)), transparent);
+  bottom: 0;
+}
+
+.subvalueIdeasWrapper.hasIdeasAbove::before,
+.subvalueIdeasWrapper.hasIdeasBelow::after {
+  opacity: 1;
 }
 
 .subvalueListHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: 4px;
 }
 
 .subvalueName {
@@ -466,6 +597,15 @@ async function moveIdea(source, targetSubvalue) {
 }
 
 @media (max-width: 600px) {
+  .subvalueIdeas {
+    padding-bottom: 56px;
+  }
+
+  .carouselPager {
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    display: flex;
+  }
+
   .moveIdeaHere,
   .cancelIdeaMove {
     display: inline-flex;
