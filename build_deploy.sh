@@ -9,6 +9,12 @@ if [[ "$MODE" != "dev" && "$MODE" != "prod" ]]; then
   exit 2
 fi
 
+USE_TTY_PROGRESS=0
+if command -v script >/dev/null 2>&1 \
+    && script -q /dev/null true </dev/null >/dev/null 2>&1; then
+  USE_TTY_PROGRESS=1
+fi
+
 TERMINAL_SIZE="$(stty size < /dev/tty 2>/dev/null || true)"
 TERMINAL_ROWS="${TERMINAL_SIZE%% *}"
 if [[ ! "$TERMINAL_ROWS" =~ ^[0-9]+$ ]] || [[ $TERMINAL_ROWS -lt 12 ]]; then
@@ -166,13 +172,21 @@ render_dashboard() {
 
 (
   cd "$ROOT_DIR/backend" || exit 1
-  script -q /dev/null env BUILDKIT_PROGRESS=tty ./build_deploy.sh "$MODE"
+  if [[ $USE_TTY_PROGRESS -eq 1 ]]; then
+    script -q /dev/null env BUILDKIT_PROGRESS=tty ./build_deploy.sh "$MODE"
+  else
+    BUILDKIT_PROGRESS=plain ./build_deploy.sh "$MODE"
+  fi
 ) >"$BACKEND_LOG" 2>&1 &
 backend_pid=$!
 
 (
   cd "$ROOT_DIR/frontend" || exit 1
-  script -q /dev/null env BUILDKIT_PROGRESS=tty ./build_deploy.sh "$MODE"
+  if [[ $USE_TTY_PROGRESS -eq 1 ]]; then
+    script -q /dev/null env BUILDKIT_PROGRESS=tty ./build_deploy.sh "$MODE"
+  else
+    BUILDKIT_PROGRESS=plain ./build_deploy.sh "$MODE"
+  fi
 ) >"$FRONTEND_LOG" 2>&1 &
 frontend_pid=$!
 
