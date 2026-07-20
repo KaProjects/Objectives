@@ -1,10 +1,11 @@
 import json
 import unittest
 
+from support import ApiTestCase
 from utils import get_request, post_request, put_request, today, delete_request, assert_method_not_allowed
 
 
-class TestObjectivesApi(unittest.TestCase):
+class TestObjectivesApi(ApiTestCase):
 
     def test_create_objective(self):
         before_status, before_value, before_message = get_request("/value/4")

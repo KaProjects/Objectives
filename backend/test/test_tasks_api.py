@@ -1,10 +1,11 @@
 import json
 import unittest
 
+from support import ApiTestCase
 from utils import get_request, post_request, put_request, today, delete_request, assert_method_not_allowed
 
 
-class TestTasksApi(unittest.TestCase):
+class TestTasksApi(ApiTestCase):
 
     def test_create_task(self):
         status, before_value, message = get_request("/value/4")
@@ -28,9 +29,9 @@ class TestTasksApi(unittest.TestCase):
         self.assertEqual(len(before_key_result["tasks"]) + 1, len(after_key_result["tasks"]),
                          before_message + '\n' + after_message)
         after_kr_task = next(t for t in after_key_result["tasks"] if t["id"] == new_task["id"])
-        self.assertEqual(new_task["kr_id"], new_task["kr_id"], str(new_task) + '\n' + str(after_kr_task))
-        self.assertEqual(new_task["value"], new_task["value"], str(new_task) + '\n' + str(after_kr_task))
-        self.assertEqual(new_task["state"], new_task["state"], str(new_task) + '\n' + str(after_kr_task))
+        self.assertEqual(new_task["kr_id"], after_kr_task["kr_id"], str(new_task) + '\n' + str(after_kr_task))
+        self.assertEqual(new_task["value"], after_kr_task["value"], str(new_task) + '\n' + str(after_kr_task))
+        self.assertEqual(new_task["state"], after_kr_task["state"], str(new_task) + '\n' + str(after_kr_task))
 
         self.assertEqual(after_key_result["date_reviewed"], today(), after_message)
 

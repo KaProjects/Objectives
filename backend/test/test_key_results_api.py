@@ -1,10 +1,11 @@
 import json
 import unittest
 
+from support import ApiTestCase
 from utils import get_request, post_request, put_request, today, delete_request, assert_method_not_allowed
 
 
-class TestKeyResultsApi(unittest.TestCase):
+class TestKeyResultsApi(ApiTestCase):
 
     def test_get_key_result_overview(self):
         status, key_results, message = get_request('/key_result/overview')

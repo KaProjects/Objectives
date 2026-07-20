@@ -1,10 +1,11 @@
 import json
 import unittest
 
+from support import ApiTestCase
 from utils import delete_request, get_request, post_request, put_request, assert_bad_url
 
 
-class TestValuesApi(unittest.TestCase):
+class TestValuesApi(ApiTestCase):
 
     def test_get_value(self):
         status, value, message = get_request("/value/1")
