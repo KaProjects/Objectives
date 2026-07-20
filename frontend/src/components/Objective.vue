@@ -16,7 +16,6 @@ const props = defineProps({
 const emit = defineEmits(['deleted', 'state-changed', 'updated', 'key-result-created', 'key-result-updated', 'key-result-deleted'])
 
 const objective = props.objective
-const focused = ref(false)
 const openObjDialog = ref(false)
 const openAddKrDialog = ref(false)
 const selectedKr = ref(null)
@@ -67,10 +66,7 @@ async function deleteKeyResult(keyResult) {
 }
 </script>
 <template>
-  <v-card class="obj" :class="objective.state" width="300" elevation="3" shaped :key="objective.id"
-          @mouseover="focused = true"
-          @mouseleave="focused = false"
-  >
+  <v-card class="obj" :class="objective.state" width="300" elevation="3" shaped :key="objective.id">
     <ObjectiveDialog :obj="selectedObj" v-model="openObjDialog" @close="openObjDialog = false"
                      @deleted="emit('deleted', $event)" @updated="emit('updated', $event)"
                      @state-changed="emit('state-changed', $event)"
@@ -92,11 +88,9 @@ async function deleteKeyResult(keyResult) {
          alt="Fail"
          class="failureStamp">
 
-    <v-icon class="objEdit" icon="mdi-pencil-circle-outline" large
-            v-if="focused"
-            @click="openObjective()"/>
+    <v-icon class="objEdit" icon="mdi-pencil-circle-outline" large @click="openObjective()"/>
 
-    <div class="objIdeas" v-if="objective.ideas_count > 0">
+    <div class="objIdeas" v-if="objective.state === OBJECTIVE_STATE.ACTIVE && objective.ideas_count > 0">
       <v-icon icon="mdi-lightbulb-variant-outline" size="15" style="margin: 0 auto;"/>
       <div style="margin: -5px auto;">{{ objective.ideas_count }}</div>
     </div>
@@ -261,28 +255,16 @@ async function deleteKeyResult(keyResult) {
   transform: rotate(10deg);
 }
 
-.obj.achieved .objEdit,
-.obj.failed .objEdit {
-  right: 120px;
-}
-
-.obj.achieved .objIdeas,
-.obj.failed .objIdeas {
-  right: 125px;
-}
-
-.obj.achieved .objEdit {
-  right: 97px;
-}
-
-.obj.achieved .objIdeas {
-  right: 102px;
-}
-
 .objEdit {
+  display: none;
   position: absolute;
   right: 0;
   top: 0;
+  z-index: 1;
+}
+
+.obj:hover .objEdit {
+  display: block;
 }
 
 .objIdeas {
@@ -290,6 +272,12 @@ async function deleteKeyResult(keyResult) {
   position: absolute;
   right: 5px;
   top: 30px;
+}
+
+@media (max-width: 600px) {
+  .objEdit {
+    display: block;
+  }
 }
 
 .krInfo {

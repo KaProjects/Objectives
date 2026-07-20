@@ -209,9 +209,7 @@ async function moveDraggedIdea(targetSubvalue) {
         </v-dialog>
       </v-card-title>
       <v-list class="subvalueIdeas">
-        <v-list-item v-for="idea in subvalue.ideas" :key="idea.id" class="ideaItem"
-                     @mouseover="selectedIdeaId = subvalue.id + ':' + idea.id"
-                     @mouseleave="selectedIdeaId = null">
+        <v-list-item v-for="idea in subvalue.ideas" :key="idea.id" class="ideaItem">
           <v-list-item-content>
             <div v-if="editingIdeaId !== ideaKey(subvalue, idea)" class="idea"
                  :class="{shortIdea: !idea.description, draggingIdea: draggedIdea?.idea.id === idea.id && draggedIdea?.sourceSubvalueId === subvalue.id}"
@@ -224,7 +222,7 @@ async function moveDraggedIdea(targetSubvalue) {
                 <div v-if="idea.description" class="ideaDescription">{{ idea.description }}</div>
               </div>
 
-              <div v-if="selectedIdeaId === subvalue.id + ':' + idea.id" class="ideaActions">
+              <div class="ideaActions">
                 <v-icon class="createObjectiveFromIdea" icon="mdi-flag-plus-outline" size="18"
                         @click.stop="emit('create-objective', {subvalueId: subvalue.id, idea})"/>
                 <v-icon class="deleteIdea" icon="mdi-delete" size="18"
@@ -356,16 +354,26 @@ async function moveDraggedIdea(targetSubvalue) {
 }
 
 .ideaActions {
-  display: flex;
+  display: none;
   flex-direction: column;
   flex: 0 0 18px;
   gap: 4px;
   margin-left: 8px;
 }
 
+.idea:hover .ideaActions {
+  display: flex;
+}
+
 .shortIdea .ideaActions {
   flex-basis: 40px;
   flex-direction: row;
+}
+
+@media (max-width: 600px) {
+  .ideaActions {
+    display: flex;
+  }
 }
 
 .ideaEditor {

@@ -282,9 +282,7 @@ function deleteKeyResult() {
       <div v-for="task in kr.tasks.slice().sort(compareTasks)" :key="task.id">
         <Editable :value="task.value" :editable="canEdit()" :submit="(value) => updateTaskValue(task, value)" label="Task" hide-details>
           <template #display="{startEditing}">
-            <div class="task"
-             @mouseover="selectedTaskId = task.id"
-             @mouseleave="selectedTaskId = null">
+            <div class="task">
               <div class="taskMain smart">
                 <div class="taskState" :class="task.state">
                   <v-icon class="smartIcon" icon="mdi-close-box-outline" size="18" v-if="task.state === TASK_STATE.FAILED"/>
@@ -296,13 +294,13 @@ function deleteKeyResult() {
 
               <div class="taskActions">
           <v-icon icon="mdi-checkbox-blank-outline" size="18"
-                  v-if="selectedTaskId === task.id && task.state !== TASK_STATE.ACTIVE && kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+                  v-if="task.state !== TASK_STATE.ACTIVE && canEdit()"
                   @click="updateTaskState(task, TASK_STATE.ACTIVE)"/>
           <v-icon icon="mdi-checkbox-marked-outline" size="18"
-                  v-if="selectedTaskId === task.id && task.state !== TASK_STATE.FINISHED && kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+                  v-if="task.state !== TASK_STATE.FINISHED && canEdit()"
                   @click="updateTaskState(task, TASK_STATE.FINISHED)"/>
           <v-icon icon="mdi-close-box-outline" size="18"
-                  v-if="selectedTaskId === task.id && task.state !== TASK_STATE.FAILED && kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+                  v-if="task.state !== TASK_STATE.FAILED && canEdit()"
                   @click="updateTaskState(task, TASK_STATE.FAILED)"/>
 
           <v-dialog
@@ -312,7 +310,7 @@ function deleteKeyResult() {
           >
             <template v-slot:activator="{ props }">
               <v-icon icon="mdi-delete-forever" size="18" v-bind="props"
-                      v-if="selectedTaskId === task.id && kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"/>
+                      v-if="canEdit()"/>
             </template>
 
             <v-card>
@@ -441,9 +439,19 @@ function deleteKeyResult() {
 }
 
 .taskActions {
-  display: flex;
+  display: none;
   gap: 4px;
   margin: 3px;
+}
+
+.task:hover .taskActions {
+  display: flex;
+}
+
+@media (max-width: 600px) {
+  .taskActions {
+    display: flex;
+  }
 }
 
 .smart {

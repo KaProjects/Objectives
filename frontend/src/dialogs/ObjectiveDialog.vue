@@ -217,13 +217,11 @@ function deleteObjective() {
         <Editable :value="idea.value" :editable="obj.state === OBJECTIVE_STATE.ACTIVE" hide-details
                   :submit="(value) => updateIdeaValue(idea, value)" label="Idea">
           <template #display="{startEditing}">
-            <div class="idea"
-             @mouseover="selectedIdeaId = idea.id"
-             @mouseleave="selectedIdeaId = null">
+            <div class="idea">
           <v-icon class="ideaIcon" icon="mdi-lightbulb-variant-outline" size="18"/>
           <div class="ideaValue" v-html="string_to_html(idea.value)" @click="startEditing"/>
 
-          <div v-if="selectedIdeaId === idea.id && obj.state === OBJECTIVE_STATE.ACTIVE" class="ideaActions">
+          <div v-if="obj.state === OBJECTIVE_STATE.ACTIVE" class="ideaActions">
             <v-icon class="ideaCreateKeyResultIcon" icon="mdi-flag-plus-outline" size="18"
                     @click.stop="createKeyResultFromIdea(idea)"/>
 
@@ -370,8 +368,18 @@ function deleteObjective() {
 
 .ideaActions {
   align-items: center;
-  display: flex;
+  display: none;
   gap: 4px;
+}
+
+.idea:hover .ideaActions {
+  display: flex;
+}
+
+@media (max-width: 600px) {
+  .ideaActions {
+    display: flex;
+  }
 }
 
 .objectiveDetails {
