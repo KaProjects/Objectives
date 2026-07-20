@@ -77,8 +77,22 @@ export function isDueOrOverdue(value, today = new Date()) {
   const deadline = parseIsoDate(value)
   if (deadline === null) return false
 
-  const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60_000)
+  const localToday = localIsoDate(today)
+  return deadline <= localToday
+}
+
+function localIsoDate(date) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
       .toISOString()
       .slice(0, 10)
-  return deadline <= localToday
+}
+
+export function isDeadlineClose(value, today = new Date()) {
+  const deadline = parseIsoDate(value)
+  if (deadline === null) return false
+
+  const localToday = localIsoDate(today)
+  const closeDeadline = new Date(`${localToday}T00:00:00Z`)
+  closeDeadline.setUTCDate(closeDeadline.getUTCDate() + 28)
+  return deadline > localToday && deadline <= closeDeadline.toISOString().slice(0, 10)
 }

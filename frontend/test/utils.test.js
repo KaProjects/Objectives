@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {compareDates, formatDate, isDueOrOverdue, parseIsoDate, sortKeyResultsByDeadline, string_to_html} from '@/utils'
+import {compareDates, formatDate, isDeadlineClose, isDueOrOverdue, parseIsoDate, sortKeyResultsByDeadline, string_to_html} from '@/utils'
 
 describe('utility helpers', () => {
   it('sorts dates from oldest to newest', () => {
@@ -46,5 +46,13 @@ describe('utility helpers', () => {
     expect(isDueOrOverdue('2026-07-19', today)).toBe(true)
     expect(isDueOrOverdue('2026-07-20', today)).toBe(false)
     expect(isDueOrOverdue('soon', today)).toBe(false)
+  })
+
+  it('marks deadlines in the next four weeks as close', () => {
+    const januaryThirtyFirst = new Date('2026-01-31T12:00:00+01:00')
+
+    expect(isDeadlineClose('2026-02-28', januaryThirtyFirst)).toBe(true)
+    expect(isDeadlineClose('2026-03-01', januaryThirtyFirst)).toBe(false)
+    expect(isDeadlineClose('2026-01-31', januaryThirtyFirst)).toBe(false)
   })
 })

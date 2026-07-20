@@ -26,7 +26,8 @@ describe('Key Results overview', () => {
     expect(wrapper.vm.keyResults.map((keyResult) => keyResult.id)).toEqual([3, 2, 1])
     expect(wrapper.text()).toContain('Health / Energy')
     expect(wrapper.text()).toContain('Deadline: Not set')
-    expect(wrapper.findAll('.deadlineAlert')).toHaveLength(1)
+    expect(wrapper.findAll('.deadlineAlert')).toHaveLength(2)
+    expect(wrapper.find('.missingDeadline').text()).toBe('Deadline: Not set')
   })
 
   it('opens the existing Key Result dialog with full Key Result data', async () => {

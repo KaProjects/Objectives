@@ -3,7 +3,7 @@ import {onMounted, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {setError} from '@/state/appState'
 import {api} from '@/services/apiClient'
-import {formatDate, isDueOrOverdue, parseIsoDate, sortKeyResultsByDeadline} from '@/utils'
+import {formatDate, isDeadlineClose, isDueOrOverdue, parseIsoDate, sortKeyResultsByDeadline} from '@/utils'
 import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
 import {KEY_RESULT_STATE} from '@/constants/states'
 
@@ -27,6 +27,14 @@ function deadline(keyResult) {
 
 function deadlineNeedsAttention(keyResult) {
   return isDueOrOverdue(keyResult.t)
+}
+
+function deadlineIsClose(keyResult) {
+  return isDeadlineClose(keyResult.t)
+}
+
+function deadlineIsMissing(keyResult) {
+  return deadline(keyResult) === null
 }
 
 async function openKeyResult(keyResult) {
@@ -79,13 +87,16 @@ onMounted(loadKeyResults)
       <v-btn class="backButton" variant="tonal" rounded="lg" @click="returnToValues">
         <v-icon icon="mdi-arrow-left"/>
       </v-btn>
-      <h1>Active Key Results Overview</h1>
+      <h1>Active KRs Overview</h1>
     </header>
 
     <section class="keyResultsList">
       <v-card v-for="keyResult in keyResults"
               :key="keyResult.id"
-              :class="{'keyResultCard--due': deadlineNeedsAttention(keyResult)}"
+              :class="{
+                'keyResultCard--due': deadlineNeedsAttention(keyResult) || deadlineIsMissing(keyResult),
+                'keyResultCard--close': deadlineIsClose(keyResult),
+              }"
               class="keyResultCard"
               elevation="6"
               @click="openKeyResult(keyResult)">
@@ -96,10 +107,22 @@ onMounted(loadKeyResults)
                   color="error"
                   icon="mdi-alert-circle"
                   aria-label="Deadline is due or overdue"/>
+          <v-icon v-else-if="deadlineIsMissing(keyResult)"
+                  class="deadlineAlert"
+                  color="error"
+                  icon="mdi-alert-circle"
+                  aria-label="Deadline is not set"/>
+          <v-icon v-else-if="deadlineIsClose(keyResult)"
+                  class="deadlineAlert"
+                  color="warning"
+                  icon="mdi-alert-outline"
+                  aria-label="Deadline is within four weeks"/>
         </div>
         <v-card-subtitle>{{ keyResult.value_name }} / {{ keyResult.objective_name }}</v-card-subtitle>
         <v-card-text>
-          Deadline: {{ deadline(keyResult) ? formatDate(deadline(keyResult)) : 'Not set' }}
+          <span :class="{'missingDeadline': deadlineIsMissing(keyResult)}">
+            Deadline: {{ deadline(keyResult) ? formatDate(deadline(keyResult)) : 'Not set' }}
+          </span>
         </v-card-text>
       </v-card>
 
@@ -143,6 +166,11 @@ onMounted(loadKeyResults)
   border: 1px solid rgba(var(--v-theme-error), 0.5);
 }
 
+.keyResultCard--close {
+  background-color: rgba(var(--v-theme-warning), 0.08);
+  border: 1px solid rgba(var(--v-theme-warning), 0.5);
+}
+
 .cardHeader {
   align-items: center;
   display: flex;
@@ -161,6 +189,11 @@ onMounted(loadKeyResults)
   height: 2rem;
   margin-right: 1rem;
   width: 2rem;
+}
+
+.missingDeadline {
+  color: rgb(var(--v-theme-error));
+  font-weight: 600;
 }
 
 .emptyState {
