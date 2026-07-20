@@ -62,16 +62,31 @@ const doneObjectiveTimeline = computed(() => {
 
   datedObjectives.sort((left, right) => -compareDates(left.finishedDate, right.finishedDate))
   let previousYear = null
-  const timeline = datedObjectives.map((objective) => {
+  const timeline = []
+  for (const objective of datedObjectives) {
+    const lastGroup = timeline.at(-1)
+    if (lastGroup?.finishedDate === objective.finishedDate) {
+      lastGroup.objectives.push(objective)
+      continue
+    }
+
     const year = objective.finishedDate.slice(0, 4)
-    const timelineObjective = {...objective, year, showYear: year !== previousYear}
+    timeline.push({
+      finishedDate: objective.finishedDate,
+      year,
+      showYear: year !== previousYear,
+      objectives: [objective],
+    })
     previousYear = year
-    return timelineObjective
-  })
+  }
 
   return [
     ...timeline,
-    ...objectivesWithoutFinishedDate.map((objective) => ({...objective, finishedDate: null, showYear: false})),
+    ...(objectivesWithoutFinishedDate.length === 0 ? [] : [{
+      finishedDate: null,
+      showYear: false,
+      objectives: objectivesWithoutFinishedDate,
+    }]),
   ]
 })
 
@@ -244,24 +259,31 @@ watch(openAddObjDialog, (open) => {
     </div>
 
     <section v-else-if="tab === OBJECTIVE_TAB.INACTIVE" class="doneTimeline">
-      <div v-for="objective in doneObjectiveTimeline" :key="objective.id" class="timelineEvent">
-        <div v-if="objective.showYear" class="timelineYear">{{ objective.year }}</div>
+      <div v-for="group in doneObjectiveTimeline" :key="group.finishedDate ?? 'unknown'" class="timelineEvent">
+        <template v-if="group.showYear">
+          <div class="timelineYear">{{ group.year }}</div>
+          <v-divider class="timelineYearDivider"/>
+        </template>
         <div class="timelineDate">
-          <template v-if="objective.finishedDate">
-            <span class="timelineMonth">{{ new Intl.DateTimeFormat('en-GB', {month: 'short', timeZone: 'UTC'}).format(new Date(`${objective.finishedDate}T00:00:00Z`)) }}</span>
-            <span class="timelineDay">{{ objective.finishedDate.slice(8, 10) }}</span>
+          <template v-if="group.finishedDate">
+            <span class="timelineMonth">{{ new Intl.DateTimeFormat('en-GB', {month: 'short', timeZone: 'UTC'}).format(new Date(`${group.finishedDate}T00:00:00Z`)) }}</span>
+            <span class="timelineDay">{{ group.finishedDate.slice(8, 10) }}</span>
           </template>
           <span v-else class="timelineUnknownDate">Unknown</span>
         </div>
         <div class="timelineRail"/>
-        <Objective class="timelineObjective"
-                   :objective="objective"
-                   @deleted="deleteObjective"
-                   @state-changed="selectTab"
-                   @updated="updateObjective"
-                   @key-result-created="addKeyResult"
-                   @key-result-updated="updateKeyResult"
-                   @key-result-deleted="removeKeyResult"/>
+        <div class="timelineObjectives">
+          <Objective v-for="objective in group.objectives"
+                     :key="objective.id"
+                     class="timelineObjective"
+                     :objective="objective"
+                     @deleted="deleteObjective"
+                     @state-changed="selectTab"
+                     @updated="updateObjective"
+                     @key-result-created="addKeyResult"
+                     @key-result-updated="updateKeyResult"
+                     @key-result-deleted="removeKeyResult"/>
+        </div>
       </div>
     </section>
 
@@ -319,7 +341,13 @@ watch(openAddObjDialog, (open) => {
   font-size: 1.35rem;
   font-weight: 700;
   grid-column: 1 / -1;
-  margin: 0.75rem 0 0.5rem;
+  margin: 0.75rem 0 0.25rem 20px;
+}
+
+.timelineYearDivider {
+  grid-column: 1 / -1;
+  margin: 0 0 0.75rem;
+  opacity: 0.65;
 }
 
 .timelineDate {
@@ -349,6 +377,7 @@ watch(openAddObjDialog, (open) => {
 }
 
 .timelineRail {
+  grid-column: 2;
   min-height: 100%;
   position: relative;
 }
@@ -369,9 +398,25 @@ watch(openAddObjDialog, (open) => {
   width: 100% !important;
 }
 
+.timelineObjectives {
+  display: grid;
+  grid-column: 3;
+  min-width: 0;
+}
+
 @media (max-width: 600px) {
   .doneTimeline {
     margin-left: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .timelineEvent {
+    grid-template-columns: 44px 5px minmax(0, 1fr);
+  }
+
+  .timelineDate {
+    padding-right: 0.25rem;
   }
 
   .appbar {

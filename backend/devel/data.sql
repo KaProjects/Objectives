@@ -20,7 +20,7 @@ insert into Objectives(id, value_id, state, name, description, date_created, dat
   (10, 1, 'achieved', 'Cook dinner at home on weekdays', 'Plan simple meals and reduce last-minute takeaway decisions.', '2026-02-01', '2026-03-31'),
   (11, 1, 'achieved', 'Complete a month of daily mobility work', 'Ten minutes of mobility after the morning routine.', '2026-03-01', '2026-04-02'),
   (12, 1, 'failed', 'Avoid all sugar for a month', 'The goal was too restrictive and not sustainable.', '2026-01-10', '2026-01-24'),
-  (13, 1, 'failed', 'Train six days every week', 'The training volume left too little recovery time.', '2026-03-15', '2026-04-05'),
+  (13, 1, 'failed', 'Train six days every week', 'The training volume left too little recovery time.', '2026-03-15', '2026-04-18'),
   (14, 1, 'failed', 'Meditate for an hour every day', 'The starting commitment was unrealistic for the schedule.', '2026-04-01', '2026-04-18'),
   (15, 1, 'achieved', 'Build a regular walking habit', 'A first successful attempt at making movement part of the week.', '2023-04-01', '2023-06-30'),
   (16, 1, 'failed', 'Do yoga every morning for 90 days', 'The routine was too ambitious for travel and busy mornings.', '2023-08-01', '2023-09-12'),

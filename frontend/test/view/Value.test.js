@@ -77,13 +77,15 @@ describe('Value view', () => {
             {id: 2, state: 'failed', date_finished: '2026-07-10'},
             {id: 3, state: 'achieved', date_finished: 'not a date'},
             {id: 4, state: 'active', date_finished: ''},
+            {id: 5, state: 'achieved', date_finished: '2026-07-10'},
           ],
         }))
     await router.push('/values/1')
     const wrapper = shallowMount(Value, {global: {plugins: [router]}})
     await flushPromises()
 
-    expect(wrapper.vm.doneObjectiveTimeline.map((objective) => objective.id)).toEqual([2, 1, 3])
-    expect(wrapper.vm.doneObjectiveTimeline.map((objective) => objective.showYear)).toEqual([true, false, false])
+    expect(wrapper.vm.doneObjectiveTimeline.map((group) => group.finishedDate)).toEqual(['2026-07-10', '2026-03-01', null])
+    expect(wrapper.vm.doneObjectiveTimeline[0].objectives.map((objective) => objective.id)).toEqual([2, 5])
+    expect(wrapper.vm.doneObjectiveTimeline.map((group) => group.showYear)).toEqual([true, false, false])
   })
 })
