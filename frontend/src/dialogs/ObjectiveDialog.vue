@@ -213,43 +213,45 @@ function deleteObjective() {
 
       <v-divider></v-divider>
 
-      <div v-for="idea in ideas" :key="idea.id">
-        <Editable :value="idea.value" :editable="obj.state === OBJECTIVE_STATE.ACTIVE" hide-details
-                  :submit="(value) => updateIdeaValue(idea, value)" label="Idea">
-          <template #display="{startEditing}">
-            <div class="idea">
-          <v-icon class="ideaIcon" icon="mdi-lightbulb-variant-outline" size="18"/>
-          <div class="ideaValue" v-html="string_to_html(idea.value)" @click="startEditing"/>
+      <div class="ideasList">
+        <div v-for="idea in ideas" :key="idea.id">
+          <Editable :value="idea.value" :editable="obj.state === OBJECTIVE_STATE.ACTIVE" hide-details
+                    :submit="(value) => updateIdeaValue(idea, value)" label="Idea">
+            <template #display="{startEditing}">
+              <div class="idea">
+                <v-icon class="ideaIcon" icon="mdi-lightbulb-variant-outline" size="18"/>
+                <div class="ideaValue" v-html="string_to_html(idea.value)" @click="startEditing"/>
 
-          <div v-if="obj.state === OBJECTIVE_STATE.ACTIVE" class="ideaActions">
-            <v-icon class="ideaCreateKeyResultIcon" icon="mdi-flag-plus-outline" size="18"
-                    @click.stop="createKeyResultFromIdea(idea)"/>
+                <div v-if="obj.state === OBJECTIVE_STATE.ACTIVE" class="ideaActions">
+                  <v-icon class="ideaCreateKeyResultIcon" icon="mdi-flag-plus-outline" size="18"
+                          @click.stop="createKeyResultFromIdea(idea)"/>
 
-            <v-dialog
-                :model-value="ideaPendingDeletionId === idea.id"
-                @update:model-value="ideaPendingDeletionId = $event ? idea.id : null"
-                width="300"
-            >
-              <template v-slot:activator="{ props }">
-                <v-icon class="ideaDeleteIcon" icon="mdi-delete-forever" size="18" v-bind="props"/>
-              </template>
+                  <v-dialog
+                      :model-value="ideaPendingDeletionId === idea.id"
+                      @update:model-value="ideaPendingDeletionId = $event ? idea.id : null"
+                      width="300"
+                  >
+                    <template v-slot:activator="{ props }">
+                      <v-icon class="ideaDeleteIcon" icon="mdi-delete-forever" size="18" v-bind="props"/>
+                    </template>
 
-              <v-card>
-                <v-card-title class="text-h5 grey lighten-2">
-                  Delete Idea?
-                </v-card-title>
-                <v-card-text>
-                  {{ idea.value }}
-                </v-card-text>
-                <v-card-actions>
-                  <v-btn block :disabled="isSubmitting" @click="deleteIdea(idea)">Confirm</v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-dialog>
-          </div>
-            </div>
-          </template>
-        </Editable>
+                    <v-card>
+                      <v-card-title class="text-h5 grey lighten-2">
+                        Delete Idea?
+                      </v-card-title>
+                      <v-card-text>
+                        {{ idea.value }}
+                      </v-card-text>
+                      <v-card-actions>
+                        <v-btn block :disabled="isSubmitting" @click="deleteIdea(idea)">Confirm</v-btn>
+                      </v-card-actions>
+                    </v-card>
+                  </v-dialog>
+                </div>
+              </div>
+            </template>
+          </Editable>
+        </div>
       </div>
 
       <Editable value="" :submit="addIdea" label="Add Idea" hide-details>
@@ -337,6 +339,11 @@ function deleteObjective() {
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+}
+
+.ideasList {
+  max-height: min(360px, calc(100dvh - 360px));
+  overflow-y: auto;
 }
 
 .idea {
