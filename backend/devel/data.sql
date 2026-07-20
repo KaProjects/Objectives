@@ -5,7 +5,8 @@ insert into PValues(id, name, description) values
   (2, 'Career', 'Building useful skills and doing meaningful work.'),
   (3, 'Finances', 'A stable foundation and deliberate investing.'),
   (4, 'Relationships', 'Time and attention for the people who matter.'),
-  (5, 'Personal growth', 'Learning, creativity, and reflection.');
+  (5, 'Personal growth', 'Learning, creativity, and reflection.'),
+  (6, 'Zabava a Volny Cas', 'Leisure, recreation, and time to enjoy.');
 
 insert into Objectives(id, value_id, state, name, description, date_created, date_finished) values
   (1, 1, 'active', 'Feel energetic throughout the week', 'Build a routine that supports good sleep, regular movement, and focused work.', '2026-07-01', ''),

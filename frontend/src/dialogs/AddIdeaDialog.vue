@@ -5,7 +5,7 @@ import DialogCard from '@/dialogs/DialogCard.vue'
 
 const props = defineProps({
   modelValue: Boolean,
-  valueId: Number,
+  valueId: [String, Number],
   subvalueId: [String, Number],
 })
 const emit = defineEmits(['update:modelValue', 'created'])

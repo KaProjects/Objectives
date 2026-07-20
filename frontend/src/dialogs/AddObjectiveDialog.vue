@@ -5,7 +5,7 @@ import DialogCard from '@/dialogs/DialogCard.vue'
 
 const props = defineProps({
   modelValue: Boolean,
-  valueId: Number,
+  valueId: [String, Number],
   initialObjective: {type: Object, default: null},
   showActivator: {type: Boolean, default: true},
 })

@@ -126,6 +126,15 @@
           }
         }
       }
+    },
+    "6": {
+      "name": "Zabava a Volny Cas",
+      "subvalues": {
+        "0": {
+          "name": "default",
+          "ideas": {}
+        }
+      }
     }
   }
 }

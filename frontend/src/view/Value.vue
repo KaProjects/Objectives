@@ -342,6 +342,7 @@ watch(openAddObjDialog, (open) => {
              @create-objective="createObjectiveFromIdea"
              @deleted="removeIdea"/>
     </div>
+
   </div>
 </template>
 
@@ -558,13 +559,18 @@ watch(openAddObjDialog, (open) => {
     display: grid;
     width: 100%;
     grid-template-areas:
-      "title add"
-      "tabs tabs";
-    grid-template-columns: minmax(0, 1fr) auto;
+      "back title add"
+      "tabs tabs tabs";
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
   .backButton {
-    display: none;
+    grid-area: back;
+    margin-left: 4px;
+    margin-right: 4px;
+    min-width: 36px;
+    padding: 0;
+    width: 36px;
   }
 
   .title {
@@ -595,7 +601,13 @@ watch(openAddObjDialog, (open) => {
   .addAction {
     grid-area: add;
     justify-self: end;
-    margin-right: 10px;
+    margin-right: 4px;
+  }
+
+  .addAction :deep(.v-btn) {
+    min-width: 36px;
+    padding-inline: 8px;
+    width: 36px;
   }
 }
 </style>
