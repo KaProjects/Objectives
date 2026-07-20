@@ -14,7 +14,6 @@ const props = defineProps({
 })
 const emit = defineEmits(['created', 'updated', 'moved', 'subvalue-updated', 'subvalue-deleted', 'create-objective', 'deleted'])
 
-const selectedIdeaId = ref(null)
 const ideaPendingDeletionId = ref(null)
 const openAddIdeaDialogId = ref(null)
 const editingIdeaId = ref(null)

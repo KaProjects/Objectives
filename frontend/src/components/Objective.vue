@@ -170,7 +170,7 @@ async function deleteKeyResult(keyResult) {
 
     <div class="objHeader">
       <v-card-title>{{ objective.name }}</v-card-title>
-      <v-card-text v-html="string_to_html(objective.description)"/>
+      <div class="v-card-text" v-html="string_to_html(objective.description)"/>
     </div>
 
     <img v-if="objective.state === OBJECTIVE_STATE.ACHIEVED"

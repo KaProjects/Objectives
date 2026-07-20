@@ -1,7 +1,7 @@
 <script setup>
 import {computed, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-import {appState, setError} from '@/state/appState'
+import {setError} from '@/state/appState'
 import Objective from '@/components/Objective.vue'
 import {compareDates, parseIsoDate} from '@/utils'
 import {api} from '@/services/apiClient'

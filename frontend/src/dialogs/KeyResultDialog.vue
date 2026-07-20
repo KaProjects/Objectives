@@ -3,7 +3,6 @@ import {computed, ref, watch} from 'vue'
 import Editable from '@/components/Editable.vue'
 import {formatDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
-import {setError} from '@/state/appState'
 import {KEY_RESULT_STATE, OBJECTIVE_STATE, TASK_STATE} from '@/constants/states'
 import DialogCard from '@/dialogs/DialogCard.vue'
 import AddTaskDialog from '@/dialogs/AddTaskDialog.vue'
@@ -18,12 +17,11 @@ const isOpen = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
 })
-const kr = ref(null)
-const kr_parent = ref(null)
+const keyResult = ref(null)
+const keyResultParent = ref(null)
 const draftKeyResult = ref({
   name: '', description: '', specific: '', measurable: '', attainable: '', relevant: '', timeBound: '',
 })
-const selectedTaskId = ref(null)
 const taskPendingDeletionId = ref(null)
 const statePendingConfirmation = ref(null)
 const confirmDeleteKrDialog = ref(false)
@@ -32,8 +30,8 @@ const isSubmitting = ref(false)
 const submissionError = ref(null)
 
 watch(() => props.kr, (value) => {
-  kr.value = value ? {...value, tasks: value.tasks.map((task) => ({...task}))} : null
-  kr_parent.value = props.kr_parent ? {...props.kr_parent} : null
+  keyResult.value = value ? {...value, tasks: value.tasks.map((task) => ({...task}))} : null
+  keyResultParent.value = props.kr_parent ? {...props.kr_parent} : null
   if (!value) return
   draftKeyResult.value = {
     name: value.name, description: value.description, specific: value.s, measurable: value.m,
@@ -53,7 +51,7 @@ async function withSubmissionLock(action) {
 }
 
 function canEdit() {
-  return kr.value.state === KEY_RESULT_STATE.ACTIVE && kr_parent.value.obj_state === OBJECTIVE_STATE.ACTIVE
+  return keyResult.value.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.value.obj_state === OBJECTIVE_STATE.ACTIVE
 }
 
 function compareTasks(a, b) {
@@ -70,10 +68,10 @@ async function updateKeyResult() {
         s: draftKeyResult.value.specific, m: draftKeyResult.value.measurable,
         a: draftKeyResult.value.attainable, r: draftKeyResult.value.relevant, t: draftKeyResult.value.timeBound,
       }
-      const body = await api.put('/key_result/' + kr.value.id, updated)
-      Object.assign(kr.value, updated, {date_reviewed: body});
-      Object.assign(kr_parent.value, updated, {date_reviewed: body})
-      emit('updated', {...kr_parent.value})
+      const body = await api.put('/key_result/' + keyResult.value.id, updated)
+      Object.assign(keyResult.value, updated, {date_reviewed: body});
+      Object.assign(keyResultParent.value, updated, {date_reviewed: body})
+      emit('updated', {...keyResultParent.value})
       return true
     } catch (error) {
       submissionError.value = error.message
@@ -91,22 +89,22 @@ async function update(field, value) {
 }
 
 async function retrieveKeyResultReviewDate() {
-  const body = await api.get('/key_result/' + kr.value.id);
-  kr.value.date_reviewed = body.date_reviewed;
-  kr_parent.value.date_reviewed = body.date_reviewed
+  const body = await api.get('/key_result/' + keyResult.value.id);
+  keyResult.value.date_reviewed = body.date_reviewed;
+  keyResultParent.value.date_reviewed = body.date_reviewed
 }
 
 async function updateTaskValue(task, value) {
   return withSubmissionLock(async () => {
     try {
       const body = await api.put('/task/' + task.id, {
-        kr_id: kr.value.id,
+        kr_id: keyResult.value.id,
         value,
         state: task.state
       });
       task.value = body.value;
       await retrieveKeyResultReviewDate();
-      emit('updated', {...kr_parent.value});
+      emit('updated', {...keyResultParent.value});
       return true
     } catch (error) {
       submissionError.value = error.message
@@ -121,11 +119,11 @@ function closeDialog() {
 }
 
 async function addCreatedTasks(tasks) {
-  kr.value.tasks.push(...tasks)
-  kr_parent.value.all_tasks_count += tasks.length
+  keyResult.value.tasks.push(...tasks)
+  keyResultParent.value.all_tasks_count += tasks.length
   try {
     await retrieveKeyResultReviewDate()
-    emit('updated', {...kr_parent.value})
+    emit('updated', {...keyResultParent.value})
   } catch (error) {
     submissionError.value = error.message
   }
@@ -134,12 +132,12 @@ async function addCreatedTasks(tasks) {
 async function updateTaskState(task, state) {
   return withSubmissionLock(async () => {
     try {
-      const body = await api.put('/task/' + task.id, {kr_id: kr.value.id, value: task.value, state});
-      if (task.state === TASK_STATE.ACTIVE && body.state !== TASK_STATE.ACTIVE) kr_parent.value.resolved_tasks_count += 1;
-      if (task.state !== TASK_STATE.ACTIVE && body.state === TASK_STATE.ACTIVE) kr_parent.value.resolved_tasks_count -= 1;
+      const body = await api.put('/task/' + task.id, {kr_id: keyResult.value.id, value: task.value, state});
+      if (task.state === TASK_STATE.ACTIVE && body.state !== TASK_STATE.ACTIVE) keyResultParent.value.resolved_tasks_count += 1;
+      if (task.state !== TASK_STATE.ACTIVE && body.state === TASK_STATE.ACTIVE) keyResultParent.value.resolved_tasks_count -= 1;
       task.state = body.state;
       await retrieveKeyResultReviewDate();
-      emit('updated', {...kr_parent.value})
+      emit('updated', {...keyResultParent.value})
     } catch (error) {
       submissionError.value = error.message
     }
@@ -151,11 +149,11 @@ async function deleteTask(task) {
     try {
       await api.delete('/task/' + task.id);
       taskPendingDeletionId.value = null;
-      kr.value.tasks.splice(kr.value.tasks.indexOf(task), 1);
-      kr_parent.value.all_tasks_count -= 1;
-      if (task.state !== TASK_STATE.ACTIVE) kr_parent.value.resolved_tasks_count -= 1;
+      keyResult.value.tasks.splice(keyResult.value.tasks.indexOf(task), 1);
+      keyResultParent.value.all_tasks_count -= 1;
+      if (task.state !== TASK_STATE.ACTIVE) keyResultParent.value.resolved_tasks_count -= 1;
       await retrieveKeyResultReviewDate();
-      emit('updated', {...kr_parent.value})
+      emit('updated', {...keyResultParent.value})
     } catch (error) {
       submissionError.value = error.message
     }
@@ -165,11 +163,11 @@ async function deleteTask(task) {
 async function updateKeyResultState(state) {
   return withSubmissionLock(async () => {
     try {
-      const body = await api.put('/key_result/' + kr.value.id + '/state', {state});
-      kr.value.state = body;
-      kr_parent.value.state = body;
+      const body = await api.put('/key_result/' + keyResult.value.id + '/state', {state});
+      keyResult.value.state = body;
+      keyResultParent.value.state = body;
       await retrieveKeyResultReviewDate();
-      emit('updated', {...kr_parent.value});
+      emit('updated', {...keyResultParent.value});
       statePendingConfirmation.value = null
     } catch (error) {
       submissionError.value = error.message
@@ -178,7 +176,7 @@ async function updateKeyResultState(state) {
 }
 
 function deleteKeyResult() {
-  emit('deleted', kr_parent.value);
+  emit('deleted', keyResultParent.value);
   confirmDeleteKrDialog.value = false;
   closeDialog()
 }
@@ -191,7 +189,7 @@ function deleteKeyResult() {
       <Editable :value="draftKeyResult.name" :editable="canEdit()" :submit="(value) => update('name', value)" label="Name" hide-details>
         <template #display="{startEditing}">
           <v-card-title @click="startEditing" class="dialogTitle text-h5 grey lighten-2">
-            {{ kr.name }}
+            {{ keyResult.name }}
           </v-card-title>
         </template>
       </Editable>
@@ -199,14 +197,14 @@ function deleteKeyResult() {
       <Editable :value="draftKeyResult.description" :editable="canEdit()" textarea hide-details
                 :submit="(value) => update('description', value)" label="Description">
         <template #display="{startEditing}">
-          <v-card-text v-html="string_to_html(kr.description)" @click="startEditing"/>
+          <div class="v-card-text" v-html="string_to_html(keyResult.description)" @click="startEditing"/>
         </template>
       </Editable>
       <div class="keyResultDetails">
-        <span>created: {{ formatDate(kr.date_created) }}</span>
-        <span v-if="kr.state === KEY_RESULT_STATE.ACTIVE">reviewed: {{ formatDate(kr.date_reviewed) }}</span>
-        <span v-if="kr.state === KEY_RESULT_STATE.FAILED">failed: {{ formatDate(kr.date_reviewed) }}</span>
-        <span v-if="kr.state === KEY_RESULT_STATE.COMPLETED">completed: {{ formatDate(kr.date_reviewed) }}</span>
+        <span>created: {{ formatDate(keyResult.date_created) }}</span>
+        <span v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE">reviewed: {{ formatDate(keyResult.date_reviewed) }}</span>
+        <span v-if="keyResult.state === KEY_RESULT_STATE.FAILED">failed: {{ formatDate(keyResult.date_reviewed) }}</span>
+        <span v-if="keyResult.state === KEY_RESULT_STATE.COMPLETED">completed: {{ formatDate(keyResult.date_reviewed) }}</span>
         <span class="detailsSpacer"/>
         <v-dialog v-model="confirmDeleteKrDialog" width="300">
           <template v-slot:activator="{ props }">
@@ -226,7 +224,7 @@ function deleteKeyResult() {
 
       <v-divider></v-divider>
 
-      <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE && kr.s && kr.r"
+      <div v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE && keyResult.s && keyResult.r"
            class="smartMarks">
         <div class="smartMark">
           <v-icon icon="mdi-check-bold" size="14"/>
@@ -239,11 +237,11 @@ function deleteKeyResult() {
       <Editable :value="draftKeyResult.measurable" :editable="canEdit()" :submit="(value) => update('measurable', value)" textarea hide-details
                 label="Acceptance Criteria">
         <template #display="{startEditing}">
-          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+          <div v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE"
            @click="startEditing"
            class="smart smartRow">
         <v-icon class="smartIcon" icon="mdi-format-list-checks" size="18"/>
-        <div class="smartValue">{{ kr.m }}</div>
+        <div class="smartValue">{{ keyResult.m }}</div>
       </div>
         </template>
       </Editable>
@@ -253,11 +251,11 @@ function deleteKeyResult() {
       <Editable :value="draftKeyResult.attainable" :editable="canEdit()" :submit="(value) => update('attainable', value)" textarea hide-details
                 label="Completion Risks">
         <template #display="{startEditing}">
-          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+          <div v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE"
            @click="startEditing"
            class="smart smartRow smartRiskRow">
         <v-icon class="smartIcon" icon="mdi-alert-outline" size="18"/>
-        <div class="smartValue">{{ kr.a }}</div>
+        <div class="smartValue">{{ keyResult.a }}</div>
       </div>
         </template>
       </Editable>
@@ -267,11 +265,11 @@ function deleteKeyResult() {
       <Editable :value="draftKeyResult.timeBound" :editable="canEdit()" :submit="(value) => update('timeBound', value)" hide-details
                 label="Deadline">
         <template #display="{startEditing}">
-          <div v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+          <div v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE"
            @click="startEditing"
            class="smart smartRow">
         <v-icon class="smartIcon" icon="mdi-calendar" size="18"/>
-        <div class="smartValue">{{ kr.t }}</div>
+        <div class="smartValue">{{ keyResult.t }}</div>
       </div>
         </template>
       </Editable>
@@ -279,7 +277,7 @@ function deleteKeyResult() {
       <v-divider></v-divider>
 
       <div class="tasks">
-      <div v-for="task in kr.tasks.slice().sort(compareTasks)" :key="task.id">
+      <div v-for="task in keyResult.tasks.slice().sort(compareTasks)" :key="task.id">
         <Editable :value="task.value" :editable="canEdit()" :submit="(value) => updateTaskValue(task, value)" label="Task" hide-details>
           <template #display="{startEditing}">
             <div class="task">
@@ -332,11 +330,11 @@ function deleteKeyResult() {
       </div>
       </div>
 
-      <v-btn v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE"
+      <v-btn v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE"
              block class="dialogAdd" color="secondary" @click="openAddTaskDialog = true">
         Add Task
       </v-btn>
-      <AddTaskDialog v-if="kr" v-model="openAddTaskDialog" :key-result-id="kr.id" @created="addCreatedTasks"/>
+      <AddTaskDialog v-if="keyResult" v-model="openAddTaskDialog" :key-result-id="keyResult.id" @created="addCreatedTasks"/>
 
     </DialogCard>
 
@@ -344,7 +342,7 @@ function deleteKeyResult() {
       <v-dialog :model-value="statePendingConfirmation === KEY_RESULT_STATE.FAILED"
                 @update:model-value="statePendingConfirmation = $event ? KEY_RESULT_STATE.FAILED : null"
                 width="300"
-                v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE">
+                v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
           <v-btn class="dialogFail" style="width: 50%;" color="red" v-bind="props">fail</v-btn>
         </template>
@@ -360,7 +358,7 @@ function deleteKeyResult() {
       <v-dialog :model-value="statePendingConfirmation === KEY_RESULT_STATE.COMPLETED"
                 @update:model-value="statePendingConfirmation = $event ? KEY_RESULT_STATE.COMPLETED : null"
                 width="300"
-                v-if="kr.state === KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE">
+                v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
           <v-btn class="dialogSuccess" style="width: 50%;" color="green" v-bind="props">complete</v-btn>
         </template>
@@ -376,7 +374,7 @@ function deleteKeyResult() {
       <v-dialog :model-value="statePendingConfirmation === KEY_RESULT_STATE.ACTIVE"
                 @update:model-value="statePendingConfirmation = $event ? KEY_RESULT_STATE.ACTIVE : null"
                 width="300"
-                v-if="kr.state !== KEY_RESULT_STATE.ACTIVE && kr_parent.obj_state === OBJECTIVE_STATE.ACTIVE">
+                v-if="keyResult.state !== KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE">
         <template v-slot:activator="{ props }">
           <v-btn class="dialogActivate" style="width: 100%;" color="blue" v-bind="props">activate</v-btn>
         </template>

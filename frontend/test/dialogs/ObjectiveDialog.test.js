@@ -66,7 +66,7 @@ describe('ObjectiveDialog', () => {
     await wrapper.vm.updateObjective('name', 'Updated exercise')
 
     expect(wrapper.vm.draftObjective.name).toBe('Exercise')
-    expect(wrapper.vm.obj.name).toBe('Exercise')
+    expect(wrapper.vm.objective.name).toBe('Exercise')
     expect(wrapper.vm.submissionError).toBe('Network unavailable')
     expect(wrapper.emitted('updated')).toBeUndefined()
   })

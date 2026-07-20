@@ -1,4 +1,4 @@
-import {appState, setError} from '@/state/appState'
+import {appState} from '@/state/appState'
 
 export class ApiError extends Error {
   constructor(status, message) {

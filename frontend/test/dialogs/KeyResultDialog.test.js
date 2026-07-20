@@ -98,7 +98,7 @@ describe('KeyResultDialog', () => {
         kr_parent: {...keyResult, obj_state: 'active'},
       },
     })
-    await wrapper.vm.updateTaskValue(wrapper.vm.kr.tasks[0], 'Updated task')
+    await wrapper.vm.updateTaskValue(wrapper.vm.keyResult.tasks[0], 'Updated task')
 
     expect(wrapper.emitted('updated')).toBeUndefined()
   })

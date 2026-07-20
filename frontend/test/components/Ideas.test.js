@@ -127,9 +127,6 @@ describe('Ideas', () => {
     const subvalue = {id: '1', name: 'Fitness', ideas: [idea]}
     const wrapper = mount(Ideas, {props: {valueId: 7, subvalues: [subvalue]}})
 
-    wrapper.vm.selectedIdeaId = '1:idea-1'
-    await wrapper.vm.$nextTick()
-
     await wrapper.find('.createObjectiveFromIdea').trigger('click')
 
     expect(wrapper.emitted('create-objective')).toEqual([[{

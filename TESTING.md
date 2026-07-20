@@ -127,9 +127,8 @@ npm run build
 npm run test:e2e
 ```
 
-The initial ESLint adoption records 24 existing source warnings as technical
-debt. `npm run lint` uses that number as a ceiling: removing warnings is safe,
-while introducing an additional warning fails the command.
+ESLint is configured with a zero-warning policy, so `npm run lint` fails when
+either an error or warning is introduced.
 
 The Playwright tests start Vite automatically and mock the backend at the
 browser network boundary. A running backend and production credentials are not

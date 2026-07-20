@@ -2,19 +2,19 @@ import DOMPurify from 'dompurify'
 
 export function string_to_html(string = '') {
   string = String(string)
-  let urls = string.match(/https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)/g)
+  let urls = string.match(/https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_+.~#?&/=]*)/g)
   if (urls !== null) {
     for (let url of urls) {
       let text;
-      const subUrl = url.split("\/\/")[1]
+      const subUrl = url.split("//")[1]
       if (url.includes("docs.google.com")) {
-        text = "google-" + subUrl.split("\/")[1]
+        text = "google-" + subUrl.split("/")[1]
       } else if (url.includes("trello.com")) {
-        text = "trello-" + subUrl.split("\/").pop()
+        text = "trello-" + subUrl.split("/").pop()
       } else if (url.includes("github.com")) {
-        text = "gh-" + subUrl.split("\/")[1] + "-" + subUrl.split("\/")[2]
+        text = "gh-" + subUrl.split("/")[1] + "-" + subUrl.split("/")[2]
       } else {
-        text = url.split("\/\/")[1].split("\/")[0]
+        text = url.split("//")[1].split("/")[0]
       }
       string = string.replace(url, "<a href=\"" + url + "\" target=\"_blank\" rel=\"noopener noreferrer\">" + text + "</a>")
     }
