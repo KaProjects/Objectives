@@ -40,21 +40,28 @@ cleanup_mysql() {
 
 trap cleanup_mysql EXIT INT TERM
 
+node_is_supported() {
+  local executable="$1"
+
+  "$executable" -e '
+    const major = Number(process.versions.node.split(".")[0])
+    process.exit(major >= 24 ? 0 : 1)
+  ' >/dev/null 2>&1
+}
+
 select_compatible_node() {
-  local current_major candidate candidate_major
+  local candidate
 
   if command -v node >/dev/null 2>&1; then
     ORIGINAL_NODE_VERSION="$(node --version 2>/dev/null || true)"
-    current_major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || printf '0')"
-    if [[ "$current_major" =~ ^[0-9]+$ ]] && [[ $current_major -ge 18 ]]; then
+    if node_is_supported "$(command -v node)"; then
       return 0
     fi
   fi
 
   for candidate in "$HOME"/.nvm/versions/node/v*/bin/node /opt/homebrew/bin/node /usr/local/bin/node; do
     [[ -x "$candidate" ]] || continue
-    candidate_major="$($candidate -p 'process.versions.node.split(".")[0]' 2>/dev/null || printf '0')"
-    if [[ "$candidate_major" =~ ^[0-9]+$ ]] && [[ $candidate_major -ge 18 ]]; then
+    if node_is_supported "$candidate"; then
       export PATH="$(dirname "$candidate"):$PATH"
       printf 'Using %s from %s (active %s is unsupported).\n' \
         "$(node --version)" "$(dirname "$candidate")" "${ORIGINAL_NODE_VERSION:-Node.js not found}"
@@ -183,17 +190,14 @@ backend_mysql_tests() {
 }
 
 require_frontend_environment() {
-  local node_major
-
   if ! command -v node >/dev/null 2>&1; then
-    printf 'Node.js is missing. Install Node.js 18 or newer (Node.js 22 LTS is recommended).\n'
+    printf 'Node.js is missing. Install Node.js 24 or newer.\n'
     return 127
   fi
 
-  node_major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || printf '0')"
-  if [[ ! "$node_major" =~ ^[0-9]+$ ]] || [[ $node_major -lt 18 ]]; then
-    printf 'Frontend checks require Node.js 18 or newer; current version: %s.\n' "$(node --version)"
-    printf 'Node.js 22 LTS is recommended. If you use nvm, run: nvm use 22\n'
+  if ! node_is_supported "$(command -v node)"; then
+    printf 'Frontend checks require Node.js 24 or newer; current version: %s.\n' "$(node --version)"
+    printf 'If you use nvm, run: nvm install 24 && nvm use 24\n'
     return 127
   fi
 

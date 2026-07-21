@@ -104,8 +104,8 @@ docker stop objectives-test-mysql
 
 ## Frontend setup
 
-Frontend linting and browser tests require Node.js 18 or newer. Node.js 22 LTS
-is recommended. When the active Node.js is too old, `check.sh` automatically
+Frontend linting and browser tests require Node.js 24 or newer. The version is
+also recorded in `frontend/.nvmrc`. When the active Node.js is too old, `verify.sh` automatically
 uses a compatible installation from nvm when one is already installed.
 
 ```sh

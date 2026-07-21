@@ -1,11 +1,11 @@
 # build stage
-FROM node:lts-alpine AS build-stage
+FROM node:24-alpine AS build-stage
 WORKDIR /app
 COPY package*.json ./
 
 ARG VITE_BACKEND_URL='http://127.0.0.1:8080'
 
-RUN npm install
+RUN npm ci
 COPY . .
 RUN npm run build
 
