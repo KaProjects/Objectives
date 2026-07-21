@@ -516,7 +516,7 @@ watch(openAddObjDialog, (open) => {
   }
 
   .carouselPager {
-    bottom: calc(24px + env(safe-area-inset-bottom));
+    bottom: calc(14px + env(safe-area-inset-bottom));
     display: flex;
   }
 
