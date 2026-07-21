@@ -10,6 +10,8 @@ const {api} = vi.hoisted(() => ({
 vi.mock('@/services/apiClient', () => ({api}))
 
 import Ideas from '@/components/Ideas.vue'
+import IdeaItem from '@/components/ideas/IdeaItem.vue'
+import SubvalueCard from '@/components/ideas/SubvalueCard.vue'
 import AddIdeaDialog from '@/dialogs/AddIdeaDialog.vue'
 
 describe('Ideas', () => {
@@ -49,6 +51,7 @@ describe('Ideas', () => {
       },
     })
     const lists = wrapper.findAll('.subvalueIdeas').map((list) => list.element)
+    const cards = wrapper.findAllComponents(SubvalueCard)
 
     function setListGeometry(list, scrollTop, clientHeight, rows) {
       Object.defineProperties(list, {
@@ -74,8 +77,8 @@ describe('Ideas', () => {
       {top: 82, height: 40},
     ])
 
-    wrapper.vm.updateIdeaListRoll('0')
-    wrapper.vm.updateIdeaListRoll('1')
+    cards[0].vm.updateIdeaListRoll()
+    cards[1].vm.updateIdeaListRoll()
 
     expect(lists[0].children[0].classList.contains('rollingTop')).toBe(true)
     expect(lists[0].children[1].classList.contains('rollingBottom')).toBe(true)
@@ -87,7 +90,7 @@ describe('Ideas', () => {
       {top: 41, height: 40},
       {top: 82, height: 40},
     ])
-    wrapper.vm.updateIdeaListRoll('1')
+    cards[1].vm.updateIdeaListRoll()
 
     expect(lists[0].children[0].classList.contains('rollingTop')).toBe(true)
     expect(lists[0].children[1].classList.contains('rollingBottom')).toBe(true)
@@ -112,9 +115,10 @@ describe('Ideas', () => {
     api.put.mockResolvedValue(updatedIdea)
     const wrapper = mount(Ideas, {props: {valueId: 7, subvalues: [subvalue]}})
 
-    await wrapper.vm.startEditing(subvalue, idea)
-    wrapper.vm.draftIdea = {name: 'Run', description: 'Twenty minutes'}
-    await wrapper.vm.saveIdea(subvalue, idea)
+    const ideaItem = wrapper.findComponent(IdeaItem)
+    await ideaItem.vm.startEditing()
+    ideaItem.vm.draftIdea = {name: 'Run', description: 'Twenty minutes'}
+    await ideaItem.vm.saveIdea()
 
     expect(api.put).toHaveBeenCalledWith('/value/7/subvalue/1/idea/idea-1', {
       name: 'Run', description: 'Twenty minutes',
@@ -139,7 +143,7 @@ describe('Ideas', () => {
     api.put.mockResolvedValue({id: '1', name: 'Training'})
     const wrapper = mount(Ideas, {props: {valueId: 7, subvalues: [subvalue]}})
 
-    await wrapper.vm.updateSubvalue(subvalue, 'Training')
+    await wrapper.findComponent(SubvalueCard).vm.updateSubvalue('Training')
 
     expect(api.put).toHaveBeenCalledWith('/value/7/subvalue/1', {name: 'Training'})
     expect(wrapper.emitted('subvalue-updated')).toEqual([[{id: '1', name: 'Training'}]])
@@ -199,7 +203,7 @@ describe('Ideas', () => {
     api.delete.mockResolvedValue(undefined)
     const wrapper = mount(Ideas, {props: {valueId: 7, subvalues: [subvalue]}})
 
-    await wrapper.vm.deleteSubvalue(subvalue)
+    await wrapper.findComponent(SubvalueCard).vm.deleteSubvalue()
 
     expect(api.delete).toHaveBeenCalledWith('/value/7/subvalue/1')
     expect(wrapper.emitted('subvalue-deleted')).toEqual([['1']])
