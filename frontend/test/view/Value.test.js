@@ -66,6 +66,32 @@ describe('Value view', () => {
     expect(wrapper.vm.subvalues[0].ideas).toEqual([])
   })
 
+  it('reports and retries source-idea cleanup after creating an Objective', async () => {
+    api.get.mockImplementation((path) => path.endsWith('/subvalue')
+        ? Promise.resolve([{id: '0', name: 'Default', ideas: [{id: 'idea-1', name: 'Walk', description: ''}]}])
+        : Promise.resolve({id: 1, name: 'Health', objectives: []}))
+    api.delete.mockRejectedValueOnce(new Error('Firebase unavailable')).mockResolvedValueOnce(undefined)
+    await router.push('/value/1')
+    const wrapper = shallowMount(Value, {global: {plugins: [router]}})
+    await flushPromises()
+    wrapper.vm.createObjectiveFromIdea({
+      subvalueId: '0',
+      idea: {id: 'idea-1', name: 'Walk', description: ''},
+    })
+
+    await wrapper.vm.addObjective({id: 2, name: 'Walk', state: 'active'})
+
+    expect(wrapper.vm.value.objectives).toContainEqual({id: 2, name: 'Walk', state: 'active'})
+    expect(wrapper.vm.subvalues[0].ideas).toHaveLength(1)
+    expect(wrapper.vm.conversionError).toContain('Objective was created')
+
+    await wrapper.vm.retrySourceIdeaDeletion()
+
+    expect(api.delete).toHaveBeenCalledTimes(2)
+    expect(wrapper.vm.subvalues[0].ideas).toEqual([])
+    expect(wrapper.vm.conversionError).toBeNull()
+  })
+
   it('places done Objectives on a newest-first timeline using their finished date', async () => {
     api.get.mockImplementation((path) => path.endsWith('/subvalue')
         ? Promise.resolve([])

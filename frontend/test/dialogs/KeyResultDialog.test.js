@@ -118,4 +118,40 @@ describe('KeyResultDialog', () => {
 
     expect(wrapper.emitted('updated')).toBeUndefined()
   })
+
+  it('deletes and closes only after the request succeeds', async () => {
+    api.delete.mockResolvedValue(undefined)
+    const wrapper = shallowMount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult},
+        kr_parent: {...keyResult, obj_state: 'active'},
+      },
+    })
+
+    await wrapper.vm.deleteKeyResult()
+
+    expect(api.delete).toHaveBeenCalledWith('/key_result/2')
+    expect(wrapper.emitted('deleted')).toEqual([[expect.objectContaining({id: 2})]])
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('update:modelValue')).toContainEqual([false])
+  })
+
+  it('keeps the dialog open and displays a failed deletion', async () => {
+    api.delete.mockRejectedValue(new Error('Delete failed'))
+    const wrapper = shallowMount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult},
+        kr_parent: {...keyResult, obj_state: 'active'},
+      },
+    })
+
+    await wrapper.vm.deleteKeyResult()
+
+    expect(wrapper.vm.submissionError).toBe('Delete failed')
+    expect(wrapper.emitted('deleted')).toBeUndefined()
+    expect(wrapper.emitted('close')).toBeUndefined()
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
 })

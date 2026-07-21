@@ -18,9 +18,10 @@ const tab = ref(OBJECTIVE_TAB.ACTIVE)
 const openAddObjDialog = ref(false)
 const objectiveDraft = ref(null)
 const ideaToDeleteAfterObjective = ref(null)
+const pendingSourceIdeaDeletion = ref(null)
+const conversionError = ref(null)
 const openAddSubvalueDialog = ref(false)
 const subvalues = ref([])
-const isSubmitting = ref(false)
 const activeObjectivesCarousel = ref(null)
 const activeObjectiveIndex = ref(0)
 
@@ -116,12 +117,25 @@ async function addObjective(objective) {
   ideaToDeleteAfterObjective.value = null
   if (!ideaToDelete) return
 
+  await deleteSourceIdea(ideaToDelete)
+}
+
+async function deleteSourceIdea(idea) {
+  conversionError.value = null
   try {
-    await api.delete('/value/' + valueId.value + '/subvalue/' + ideaToDelete.subvalueId + '/idea/' + ideaToDelete.id)
-    removeIdea({subvalueId: ideaToDelete.subvalueId, ideaId: ideaToDelete.id})
+    await api.delete('/value/' + valueId.value + '/subvalue/' + idea.subvalueId + '/idea/' + idea.id)
+    removeIdea({subvalueId: idea.subvalueId, ideaId: idea.id})
+    pendingSourceIdeaDeletion.value = null
+    return true
   } catch (error) {
-    console.error('Objective was created, but its source idea could not be deleted.', error)
+    pendingSourceIdeaDeletion.value = idea
+    conversionError.value = `Objective was created, but its source idea could not be deleted: ${error.message}`
+    return false
   }
+}
+
+async function retrySourceIdeaDeletion() {
+  if (pendingSourceIdeaDeletion.value) await deleteSourceIdea(pendingSourceIdeaDeletion.value)
 }
 
 function createObjectiveFromIdea({subvalueId, idea}) {
@@ -197,18 +211,9 @@ function removeKeyResult({objectiveId, keyResultId}) {
   objective.key_results = objective.key_results.filter((item) => item.id !== keyResultId)
 }
 
-async function deleteObjective(objective) {
-  if (isSubmitting.value) return
-  isSubmitting.value = true
-  try {
-    await api.delete('/objective/' + objective.id)
-    const index = value.value.objectives.findIndex((item) => item.id === objective.id)
-    if (index !== -1) value.value.objectives.splice(index, 1)
-  } catch (error) {
-    setError(error)
-  } finally {
-    isSubmitting.value = false
-  }
+function removeObjective(objective) {
+  const index = value.value.objectives.findIndex((item) => item.id === objective.id)
+  if (index !== -1) value.value.objectives.splice(index, 1)
 }
 
 watch(valueId, loadData, {immediate: true})
@@ -273,6 +278,11 @@ watch(openAddObjDialog, (open) => {
       </div>
     </div>
 
+    <v-alert v-if="conversionError" class="conversionError" title="Cleanup failed" type="warning">
+      {{ conversionError }}
+      <v-btn variant="text" @click="retrySourceIdeaDeletion">Retry</v-btn>
+    </v-alert>
+
     <AddObjectiveDialog
         v-if="tab !== OBJECTIVE_TAB.ACTIVE && openAddObjDialog"
         v-model="openAddObjDialog"
@@ -287,7 +297,7 @@ watch(openAddObjDialog, (open) => {
         <Objective v-for="objective in activeObjectives"
                    :key="objective.id"
                    :objective="objective"
-                   @deleted="deleteObjective"
+                   @deleted="removeObjective"
                    @state-changed="selectTab"
                    @updated="updateObjective"
                    @key-result-created="addKeyResult"
@@ -319,7 +329,7 @@ watch(openAddObjDialog, (open) => {
                      :key="objective.id"
                      class="timelineObjective"
                      :objective="objective"
-                     @deleted="deleteObjective"
+                     @deleted="removeObjective"
                      @state-changed="selectTab"
                      @updated="updateObjective"
                      @key-result-created="addKeyResult"

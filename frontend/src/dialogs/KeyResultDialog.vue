@@ -175,10 +175,19 @@ async function updateKeyResultState(state) {
   })
 }
 
-function deleteKeyResult() {
-  emit('deleted', keyResultParent.value);
-  confirmDeleteKrDialog.value = false;
-  closeDialog()
+async function deleteKeyResult() {
+  return withSubmissionLock(async () => {
+    try {
+      await api.delete('/key_result/' + keyResult.value.id)
+      emit('deleted', keyResultParent.value)
+      confirmDeleteKrDialog.value = false
+      closeDialog()
+      return true
+    } catch (error) {
+      submissionError.value = error.message
+      return false
+    }
+  })
 }
 </script>
 
@@ -215,7 +224,7 @@ function deleteKeyResult() {
               Delete permanently?
             </v-card-title>
             <v-card-actions>
-              <v-btn block @click="deleteKeyResult()">Confirm</v-btn>
+              <v-btn block :disabled="isSubmitting" @click="deleteKeyResult()">Confirm</v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>

@@ -150,22 +150,32 @@ async function keyResultCreatedFromIdea(keyResult) {
   ideaToDeleteAfterKeyResult.value = null
   if (!idea) return
 
+  emit('key-result-created', keyResult)
+
   await withSubmissionLock(async () => {
     try {
       await api.delete('/objective/' + objective.value.id + '/idea/' + idea.id)
       removeIdeaFromState(idea)
-      emit('key-result-created', keyResult)
       closeDialog()
     } catch (error) {
-      submissionError.value = error.message
+      submissionError.value = `Key Result was created, but its source idea could not be deleted: ${error.message}`
     }
   })
 }
 
-function deleteObjective() {
-  emit('deleted', objective.value);
-  confirmDeleteObjDialog.value = false;
-  closeDialog()
+async function deleteObjective() {
+  return withSubmissionLock(async () => {
+    try {
+      await api.delete('/objective/' + objective.value.id)
+      emit('deleted', objective.value)
+      confirmDeleteObjDialog.value = false
+      closeDialog()
+      return true
+    } catch (error) {
+      submissionError.value = error.message
+      return false
+    }
+  })
 }
 </script>
 
@@ -204,7 +214,7 @@ function deleteObjective() {
               Delete permanently?
             </v-card-title>
             <v-card-actions>
-              <v-btn block @click="deleteObjective()">Confirm</v-btn>
+              <v-btn block :disabled="isSubmitting" @click="deleteObjective()">Confirm</v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>

@@ -66,14 +66,9 @@ function updateKeyResult(updatedKeyResult) {
   keyResults.value = sortKeyResultsByDeadline(keyResults.value)
 }
 
-async function deleteKeyResult(keyResult) {
-  try {
-    await api.delete('/key_result/' + keyResult.id)
-    keyResults.value = keyResults.value.filter((item) => item.id !== keyResult.id)
-    openKeyResultDialog.value = false
-  } catch (error) {
-    setError(error)
-  }
+function removeKeyResult(keyResult) {
+  keyResults.value = keyResults.value.filter((item) => item.id !== keyResult.id)
+  openKeyResultDialog.value = false
 }
 
 function returnToValues() {
@@ -136,7 +131,7 @@ onMounted(loadKeyResults)
                      :kr="selectedKeyResult"
                      :kr_parent="selectedKeyResultParent"
                      @updated="updateKeyResult"
-                     @deleted="deleteKeyResult"/>
+                     @deleted="removeKeyResult"/>
   </main>
 </template>
 

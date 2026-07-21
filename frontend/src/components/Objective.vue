@@ -22,8 +22,6 @@ const selectedKr = ref(null)
 const selectedKr_parent = ref(null)
 const selectedObj = ref(null)
 const openKrDialog = ref(false)
-const isSubmitting = ref(false)
-const submissionError = ref(null)
 const keyResultsList = ref(null)
 let keyResultsResizeObserver
 let keyResultsAnimationFrame = null
@@ -169,18 +167,8 @@ function openObjective() {
   openObjDialog.value = true
 }
 
-async function deleteKeyResult(keyResult) {
-  if (isSubmitting.value) return
-  isSubmitting.value = true
-  submissionError.value = null
-  try {
-    await api.delete('/key_result/' + keyResult.id)
-    emit('key-result-deleted', {objectiveId: objective.id, keyResultId: keyResult.id})
-  } catch (error) {
-    submissionError.value = error.message
-  } finally {
-    isSubmitting.value = false
-  }
+function keyResultDeleted(keyResult) {
+  emit('key-result-deleted', {objectiveId: objective.id, keyResultId: keyResult.id})
 }
 </script>
 <template>
@@ -192,7 +180,7 @@ async function deleteKeyResult(keyResult) {
     <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" v-model="openKrDialog"
                      @close="openKrDialog = false"
                      @updated="emit('key-result-updated', {objectiveId: objective.id, keyResult: $event})"
-                     @deleted="deleteKeyResult"/>
+                     @deleted="keyResultDeleted"/>
 
     <div class="objHeader">
       <v-card-title>{{ objective.name }}</v-card-title>

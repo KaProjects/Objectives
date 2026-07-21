@@ -71,6 +71,34 @@ describe('ObjectiveDialog', () => {
     expect(wrapper.emitted('updated')).toBeUndefined()
   })
 
+  it('deletes and closes only after the request succeeds', async () => {
+    api.delete.mockResolvedValue(undefined)
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective}},
+    })
+
+    await wrapper.vm.deleteObjective()
+
+    expect(api.delete).toHaveBeenCalledWith('/objective/1')
+    expect(wrapper.emitted('deleted')).toEqual([[expect.objectContaining({id: 1})]])
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('update:modelValue')).toContainEqual([false])
+  })
+
+  it('keeps the dialog open and displays a failed deletion', async () => {
+    api.delete.mockRejectedValue(new Error('Delete failed'))
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective}},
+    })
+
+    await wrapper.vm.deleteObjective()
+
+    expect(wrapper.vm.submissionError).toBe('Delete failed')
+    expect(wrapper.emitted('deleted')).toBeUndefined()
+    expect(wrapper.emitted('close')).toBeUndefined()
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
   it('turns an idea into a key result, then removes the source idea and closes', async () => {
     const idea = {id: 3, value: 'Walk after lunch'}
     api.get.mockResolvedValue([idea])
@@ -92,5 +120,24 @@ describe('ObjectiveDialog', () => {
     expect(wrapper.emitted('key-result-created')).toEqual([[keyResult]])
     expect(wrapper.emitted('close')).toHaveLength(1)
     expect(wrapper.emitted('update:modelValue')).toContainEqual([false])
+  })
+
+  it('keeps a created Key Result visible when source-idea cleanup fails', async () => {
+    const idea = {id: 3, value: 'Walk after lunch'}
+    api.get.mockResolvedValue([idea])
+    api.delete.mockRejectedValue(new Error('Firebase unavailable'))
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective, ideas_count: 1}},
+    })
+    await flushPromises()
+    wrapper.vm.createKeyResultFromIdea(idea)
+
+    const keyResult = {id: 9, name: 'Walk after lunch'}
+    await wrapper.vm.keyResultCreatedFromIdea(keyResult)
+
+    expect(wrapper.emitted('key-result-created')).toEqual([[keyResult]])
+    expect(wrapper.vm.ideas).toEqual([idea])
+    expect(wrapper.vm.submissionError).toContain('Key Result was created')
+    expect(wrapper.emitted('close')).toBeUndefined()
   })
 })
