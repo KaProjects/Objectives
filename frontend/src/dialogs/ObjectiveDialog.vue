@@ -29,6 +29,7 @@ const ideaToDeleteAfterKeyResult = ref(null)
 const confirmDeleteObjDialog = ref(false)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
+const canDeleteObjective = computed(() => (props.obj?.key_results?.length ?? 0) === 0)
 
 watch(() => props.obj, async (value) => {
   objective.value = value ? {...value, key_results: [...value.key_results]} : null
@@ -219,7 +220,7 @@ async function deleteObjective() {
         <span class="detailsSpacer"/>
         <v-dialog v-model="confirmDeleteObjDialog" width="300">
           <template v-slot:activator="{ props }">
-            <v-btn :disabled="objective.key_results.length > 0"
+            <v-btn :disabled="!canDeleteObjective"
                    variant="plain" rounded="lg" icon="mdi-trash-can" size="small"
                    aria-label="Delete Objective" v-bind="props"
             />

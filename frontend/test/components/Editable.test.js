@@ -14,6 +14,21 @@ describe('Editable', () => {
     wrapper.unmount()
   })
 
+  it('hides its display content while editing', async () => {
+    const wrapper = mount(Editable, {
+      props: {value: 'Name', label: 'Name', submit: vi.fn()},
+      slots: {display: '<span class="display-value">Name</span>'},
+    })
+
+    expect(wrapper.find('.display-value').exists()).toBe(true)
+
+    await wrapper.vm.startEditing()
+
+    expect(wrapper.find('.display-value').exists()).toBe(false)
+    expect(wrapper.find('input').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
   it('delays closing after an unfocus save', async () => {
     const submit = vi.fn().mockResolvedValue(true)
     const wrapper = mount(Editable, {

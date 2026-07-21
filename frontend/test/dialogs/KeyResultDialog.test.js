@@ -77,6 +77,25 @@ describe('KeyResultDialog', () => {
     expect(deadlineEditor.props('datePicker')).toBe(true)
   })
 
+  it.each(['failed', 'completed'])('closes after the Key Result is marked %s', async (state) => {
+    api.put.mockResolvedValue(state)
+    api.get.mockResolvedValue({date_reviewed: '2026-01-02'})
+    const wrapper = shallowMount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult},
+        kr_parent: {...keyResult, obj_state: 'active'},
+      },
+    })
+
+    await wrapper.vm.updateKeyResultState(state)
+
+    expect(api.put).toHaveBeenCalledWith('/key_result/2/state', {state})
+    expect(wrapper.emitted('updated')).toContainEqual([expect.objectContaining({id: 2, state})])
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('update:modelValue')).toContainEqual([false])
+  })
+
   it('sends named draft fields in its update payload', async () => {
     api.put.mockResolvedValue('02/01/2026')
     const wrapper = shallowMount(KeyResultDialog, {

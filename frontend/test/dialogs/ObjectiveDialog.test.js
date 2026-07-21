@@ -1,5 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {flushPromises, shallowMount} from '@vue/test-utils'
+import {nextTick, reactive} from 'vue'
 
 const {api} = vi.hoisted(() => ({
   api: {
@@ -97,6 +98,23 @@ describe('ObjectiveDialog', () => {
     expect(wrapper.emitted('deleted')).toBeUndefined()
     expect(wrapper.emitted('close')).toBeUndefined()
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('enables deletion after the parent removes the final Key Result', async () => {
+    const parentObjective = reactive({...objective, key_results: [{id: 2, name: 'Walk'}]})
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {
+        modelValue: true,
+        obj: parentObjective,
+      },
+    })
+
+    expect(wrapper.vm.canDeleteObjective).toBe(false)
+
+    parentObjective.key_results = []
+    await nextTick()
+
+    expect(wrapper.vm.canDeleteObjective).toBe(true)
   })
 
   it('turns an idea into a key result, then removes the source idea and closes', async () => {

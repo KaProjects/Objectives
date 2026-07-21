@@ -170,6 +170,7 @@ async function updateKeyResultState(state) {
       await retrieveKeyResultReviewDate();
       emit('updated', {...keyResultParent.value});
       statePendingConfirmation.value = null
+      if (body === KEY_RESULT_STATE.FAILED || body === KEY_RESULT_STATE.COMPLETED) closeDialog()
     } catch (error) {
       submissionError.value = error.message
     }

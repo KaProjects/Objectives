@@ -101,7 +101,7 @@ defineExpose({startEditing})
                     @click:prepend-inner="openDatePicker" v-bind="inputProps"/>
       <input v-if="isEditing && datePicker" ref="nativeDatePicker" class="nativeDatePicker"
              type="date" :value="draftValue" @change="selectDate($event.target.value)">
-      <slot v-else name="display" :start-editing="startEditing"/>
+      <slot v-if="!isEditing" name="display" :start-editing="startEditing"/>
     </div>
   </div>
 </template>
