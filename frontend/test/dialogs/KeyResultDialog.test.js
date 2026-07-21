@@ -10,6 +10,7 @@ const {api} = vi.hoisted(() => ({
 vi.mock('@/services/apiClient', () => ({api}))
 
 import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
+import Editable from '@/components/Editable.vue'
 
 const keyResult = {
   id: 2,
@@ -59,6 +60,21 @@ describe('KeyResultDialog', () => {
     await addTaskButton.trigger('click')
 
     expect(wrapper.vm.openAddTaskDialog).toBe(true)
+  })
+
+  it('provides a date picker when editing the deadline', () => {
+    const wrapper = mount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult},
+        kr_parent: {...keyResult, obj_state: 'active'},
+      },
+    })
+
+    const deadlineEditor = wrapper.findAllComponents(Editable)
+        .find((editable) => editable.props('label') === 'Deadline')
+
+    expect(deadlineEditor.props('datePicker')).toBe(true)
   })
 
   it('sends named draft fields in its update payload', async () => {

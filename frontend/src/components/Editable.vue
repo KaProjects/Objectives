@@ -7,6 +7,7 @@ const props = defineProps({
   editable: {type: Boolean, default: true},
   label: {type: String, required: true},
   textarea: {type: Boolean, default: false},
+  datePicker: {type: Boolean, default: false},
   hideDetails: {type: Boolean, default: false},
   inputProps: {type: Object, default: () => ({})},
   cancelEditing: {type: Boolean, default: false},
@@ -16,6 +17,7 @@ const emit = defineEmits(['editing-changed'])
 const isEditing = ref(false)
 const draftValue = ref('')
 const editor = ref(null)
+const nativeDatePicker = ref(null)
 const pointerClickPending = ref(false)
 const isStartingEdit = ref(false)
 let closeAfterClick = false
@@ -63,6 +65,21 @@ function setValue(value) {
   draftValue.value = value
 }
 
+function openDatePicker() {
+  const input = nativeDatePicker.value
+
+  if (input?.showPicker) {
+    input.showPicker()
+  } else {
+    input?.focus()
+  }
+}
+
+async function selectDate(value) {
+  setValue(value)
+  await save()
+}
+
 async function save({deferClose = false} = {}) {
   if (draftValue.value !== props.value) {
     const saved = await props.submit(draftValue.value)
@@ -100,7 +117,11 @@ function handleFocusOut(event) {
                   @keydown.ctrl.enter.prevent="save" @keydown.meta.enter.prevent="save" @keydown.esc="cancel"
                   :label="label" :hide-details="hideDetails" v-bind="inputProps"/>
       <v-text-field v-else-if="isEditing" :model-value="draftValue" @update:model-value="setValue"
-                    @keydown.enter="save" @keydown.esc="cancel" :label="label" :hide-details="hideDetails" v-bind="inputProps"/>
+                    @keydown.enter="save" @keydown.esc="cancel" :label="label" :hide-details="hideDetails"
+                    :prepend-inner-icon="datePicker ? 'mdi-calendar' : undefined"
+                    @click:prepend-inner="openDatePicker" v-bind="inputProps"/>
+      <input v-if="isEditing && datePicker" ref="nativeDatePicker" class="nativeDatePicker"
+             type="date" :value="draftValue" @change="selectDate($event.target.value)">
       <slot v-else name="display" :start-editing="startEditing"/>
     </div>
   </div>
@@ -118,6 +139,14 @@ function handleFocusOut(event) {
 
 .edit.compact :deep(.v-input__details) {
   display: none;
+}
+
+.nativeDatePicker {
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 1px;
 }
 
 </style>

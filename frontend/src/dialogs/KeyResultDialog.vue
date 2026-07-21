@@ -262,7 +262,7 @@ function deleteKeyResult() {
 
       <v-divider class="smartDivider"/>
 
-      <Editable :value="draftKeyResult.timeBound" :editable="canEdit()" :submit="(value) => update('timeBound', value)" hide-details
+      <Editable :value="draftKeyResult.timeBound" :editable="canEdit()" :submit="(value) => update('timeBound', value)" date-picker hide-details
                 label="Deadline">
         <template #display="{startEditing}">
           <div v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE"

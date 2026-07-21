@@ -47,4 +47,22 @@ describe('Editable', () => {
     expect(wrapper.vm.isEditing).toBe(false)
     wrapper.unmount()
   })
+
+  it('submits a date selected with its native date picker', async () => {
+    const submit = vi.fn().mockResolvedValue(true)
+    const wrapper = mount(Editable, {
+      props: {value: '2026-07-01', label: 'Deadline', submit, datePicker: true},
+      slots: {display: '<span>2026-07-01</span>'},
+    })
+
+    await wrapper.vm.startEditing()
+    const datePicker = wrapper.find('input[type="date"]')
+    datePicker.element.value = '2026-08-15'
+    await datePicker.trigger('change')
+    await flushPromises()
+
+    expect(submit).toHaveBeenCalledWith('2026-08-15')
+    expect(wrapper.vm.isEditing).toBe(false)
+    wrapper.unmount()
+  })
 })
