@@ -232,7 +232,7 @@ render_dashboard() {
 
 (
   cd "$ROOT_DIR/backend" || exit 1
-  if [[ $USE_TTY_PROGRESS -eq 1 ]]; then
+  if [[ "$MODE" == "prod" && $USE_TTY_PROGRESS -eq 1 ]]; then
     script -q /dev/null env BUILDKIT_PROGRESS=tty ./build_deploy.sh "$MODE"
   else
     BUILDKIT_PROGRESS=plain ./build_deploy.sh "$MODE"
@@ -242,7 +242,7 @@ backend_pid=$!
 
 (
   cd "$ROOT_DIR/frontend" || exit 1
-  if [[ $USE_TTY_PROGRESS -eq 1 ]]; then
+  if [[ "$MODE" == "prod" && $USE_TTY_PROGRESS -eq 1 ]]; then
     script -q /dev/null env BUILDKIT_PROGRESS=tty ./build_deploy.sh "$MODE"
   else
     BUILDKIT_PROGRESS=plain ./build_deploy.sh "$MODE"
