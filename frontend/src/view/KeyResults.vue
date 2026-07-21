@@ -1,52 +1,53 @@
-<script setup>
+<script setup lang="ts">
 import {onMounted, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {setError} from '@/state/appState'
 import {api} from '@/services/apiClient'
 import {formatDate, isDeadlineClose, isDueOrOverdue, parseIsoDate, sortKeyResultsByDeadline} from '@/utils'
 import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
-import {KEY_RESULT_STATE} from '@/constants/states'
+import {KEY_RESULT_STATE, TASK_STATE} from '@/constants/states'
+import type {KeyResult, KeyResultOverview, KeyResultParent} from '@/types/domain'
 
-const keyResults = ref([])
+const keyResults = ref<KeyResultOverview[]>([])
 const router = useRouter()
-const selectedKeyResult = ref(null)
-const selectedKeyResultParent = ref(null)
+const selectedKeyResult = ref<KeyResult | null>(null)
+const selectedKeyResultParent = ref<KeyResultParent | null>(null)
 const openKeyResultDialog = ref(false)
 
 async function loadKeyResults() {
   try {
-    keyResults.value = sortKeyResultsByDeadline(await api.get('/key_result/overview'))
+    keyResults.value = sortKeyResultsByDeadline(await api.get<KeyResultOverview[]>('/key_result/overview'))
   } catch (error) {
     setError(error)
   }
 }
 
-function deadline(keyResult) {
+function deadline(keyResult: KeyResultOverview) {
   return parseIsoDate(keyResult.t)
 }
 
-function deadlineNeedsAttention(keyResult) {
+function deadlineNeedsAttention(keyResult: KeyResultOverview) {
   return isDueOrOverdue(keyResult.t)
 }
 
-function deadlineIsClose(keyResult) {
+function deadlineIsClose(keyResult: KeyResultOverview) {
   return isDeadlineClose(keyResult.t)
 }
 
-function deadlineIsMissing(keyResult) {
+function deadlineIsMissing(keyResult: KeyResultOverview) {
   return deadline(keyResult) === null
 }
 
-async function openKeyResult(keyResult) {
+async function openKeyResult(keyResult: KeyResultOverview) {
   try {
-    const fullKeyResult = await api.get('/key_result/' + keyResult.id)
+    const fullKeyResult = await api.get<KeyResult>('/key_result/' + keyResult.id)
     selectedKeyResult.value = fullKeyResult
     selectedKeyResultParent.value = {
       ...keyResult,
       state: fullKeyResult.state,
       obj_state: keyResult.objective_state,
       all_tasks_count: fullKeyResult.tasks.length,
-      resolved_tasks_count: fullKeyResult.tasks.filter((task) => task.state !== 'active').length,
+      resolved_tasks_count: fullKeyResult.tasks.filter((task) => task.state !== TASK_STATE.ACTIVE).length,
     }
     openKeyResultDialog.value = true
   } catch (error) {
@@ -54,10 +55,10 @@ async function openKeyResult(keyResult) {
   }
 }
 
-function updateKeyResult(updatedKeyResult) {
+function updateKeyResult(updatedKeyResult: KeyResultParent) {
   const keyResult = keyResults.value.find((item) => item.id === updatedKeyResult.id)
   if (!keyResult) return
-  if ([KEY_RESULT_STATE.COMPLETED, KEY_RESULT_STATE.FAILED].includes(updatedKeyResult.state)) {
+  if (updatedKeyResult.state === KEY_RESULT_STATE.COMPLETED || updatedKeyResult.state === KEY_RESULT_STATE.FAILED) {
     keyResults.value = keyResults.value.filter((item) => item.id !== updatedKeyResult.id)
     openKeyResultDialog.value = false
     return
@@ -66,7 +67,7 @@ function updateKeyResult(updatedKeyResult) {
   keyResults.value = sortKeyResultsByDeadline(keyResults.value)
 }
 
-function removeKeyResult(keyResult) {
+function removeKeyResult(keyResult: KeyResultParent) {
   keyResults.value = keyResults.value.filter((item) => item.id !== keyResult.id)
   openKeyResultDialog.value = false
 }

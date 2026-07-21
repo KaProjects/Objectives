@@ -48,6 +48,18 @@ describe('Objective', () => {
     expect(wrapper.vm.openKrDialog).toBe(true)
   })
 
+  it('uses a replacement objective prop when opening its dialog', async () => {
+    const wrapper = shallowMount(Objective, {
+      props: {objective: {...objective}},
+    })
+    const replacement = {...objective, id: 8, name: 'Updated objective'}
+
+    await wrapper.setProps({objective: replacement})
+    wrapper.vm.openObjective()
+
+    expect(wrapper.vm.selectedObj).toEqual(replacement)
+  })
+
   it('sorts active key results by deadline before inactive ones', () => {
     const wrapper = shallowMount(Objective, {props: {objective: {...objective}}})
     const keyResults = [

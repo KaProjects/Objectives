@@ -1,25 +1,38 @@
-<script setup>
+<script setup lang="ts">
 import {nextTick, ref, watch} from 'vue'
 import {api} from '@/services/apiClient'
 import DialogCard from '@/dialogs/DialogCard.vue'
+import type {EntityId, Idea} from '@/types/domain'
 
-const props = defineProps({
-  valueId: {type: [String, Number], required: true},
-  subvalueId: {type: [String, Number], required: true},
-  idea: {type: Object, required: true},
-  disabled: {type: Boolean, default: false},
-  dragging: {type: Boolean, default: false},
-  moving: {type: Boolean, default: false},
+type IdeaDraft = Pick<Idea, 'name' | 'description'>
+
+const props = withDefaults(defineProps<{
+  valueId: EntityId
+  subvalueId: EntityId
+  idea: Idea
+  disabled?: boolean
+  dragging?: boolean
+  moving?: boolean
+}>(), {
+  disabled: false,
+  dragging: false,
+  moving: false,
 })
-const emit = defineEmits(['updated', 'deleted', 'create-objective', 'move-requested', 'drag-start', 'drag-end', 'resized'])
+const emit = defineEmits<{
+  (event: 'updated', idea: Idea): void
+  (event: 'deleted', ideaId: string): void
+  (event: 'create-objective' | 'move-requested', idea: Idea): void
+  (event: 'drag-start', payload: {event: DragEvent; idea: Idea}): void
+  (event: 'drag-end' | 'resized'): void
+}>()
 
 const isEditing = ref(false)
-const draftIdea = ref({name: '', description: ''})
-const ideaEditor = ref(null)
+const draftIdea = ref<IdeaDraft>({name: '', description: ''})
+const ideaEditor = ref<HTMLElement | null>(null)
 const confirmDeletion = ref(false)
 const actionsMenuOpen = ref(false)
 const isSubmitting = ref(false)
-const submissionError = ref(null)
+const submissionError = ref<string | null>(null)
 
 async function startEditing() {
   if (props.disabled || isSubmitting.value || isEditing.value) return
@@ -47,21 +60,22 @@ async function saveIdea() {
   isSubmitting.value = true
   submissionError.value = null
   try {
-    const updatedIdea = await api.put(
+    const updatedIdea = await api.put<Idea, IdeaDraft>(
         `/value/${props.valueId}/subvalue/${props.subvalueId}/idea/${props.idea.id}`,
         draftIdea.value,
     )
     emit('updated', updatedIdea)
     cancelEditing()
   } catch (error) {
-    submissionError.value = error.message
+    submissionError.value = error instanceof Error ? error.message : String(error)
   } finally {
     isSubmitting.value = false
   }
 }
 
-function saveOnUnfocus(event) {
-  if (!event.currentTarget.contains(event.relatedTarget)) saveIdea()
+function saveOnUnfocus(event: FocusEvent) {
+  const editor = event.currentTarget as HTMLElement
+  if (!editor.contains(event.relatedTarget as Node | null)) saveIdea()
 }
 
 async function deleteIdea() {
@@ -73,7 +87,7 @@ async function deleteIdea() {
     confirmDeletion.value = false
     emit('deleted', props.idea.id)
   } catch (error) {
-    submissionError.value = error.message
+    submissionError.value = error instanceof Error ? error.message : String(error)
   } finally {
     isSubmitting.value = false
   }
@@ -98,7 +112,7 @@ function requestDeletion() {
   confirmDeletion.value = true
 }
 
-function startDragging(event) {
+function startDragging(event: DragEvent) {
   if (props.disabled || isSubmitting.value) {
     event.preventDefault()
     return

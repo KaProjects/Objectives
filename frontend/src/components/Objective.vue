@@ -1,5 +1,5 @@
 <script setup>
-import {nextTick, ref, watch} from 'vue'
+import {nextTick, ref, toRef, watch} from 'vue'
 import {compareDates, formatDate, parseIsoDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
@@ -16,7 +16,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['deleted', 'state-changed', 'updated', 'key-result-created', 'key-result-updated', 'key-result-deleted'])
 
-const objective = props.objective
+const objective = toRef(props, 'objective')
 const openObjDialog = ref(false)
 const openAddKrDialog = ref(false)
 const selectedKr = ref(null)
@@ -85,12 +85,12 @@ async function openKeyResult(keyResult, objectiveState) {
 }
 
 function openObjective() {
-  selectedObj.value = objective
+  selectedObj.value = objective.value
   openObjDialog.value = true
 }
 
 function keyResultDeleted(keyResult) {
-  emit('key-result-deleted', {objectiveId: objective.id, keyResultId: keyResult.id})
+  emit('key-result-deleted', {objectiveId: objective.value.id, keyResultId: keyResult.id})
 }
 </script>
 <template>

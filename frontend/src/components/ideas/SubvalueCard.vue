@@ -1,47 +1,80 @@
-<script setup>
+<script setup lang="ts">
 import {nextTick, ref, watch} from 'vue'
 import {api} from '@/services/apiClient'
 import {useEdgeRoll} from '@/composables/useEdgeRoll'
-import Editable from '@/components/Editable.vue'
+import RawEditable from '@/components/Editable.vue'
 import AddIdeaDialog from '@/dialogs/AddIdeaDialog.vue'
 import DialogCard from '@/dialogs/DialogCard.vue'
 import IdeaItem from '@/components/ideas/IdeaItem.vue'
+import type {EntityId, Idea, Subvalue, SubvalueIdentity} from '@/types/domain'
 
-const props = defineProps({
-  valueId: {type: [String, Number], required: true},
-  subvalue: {type: Object, required: true},
-  dragOver: {type: Boolean, default: false},
-  draggedIdea: {type: Object, default: null},
-  pendingMove: {type: Object, default: null},
-  disabled: {type: Boolean, default: false},
+interface IdeaSelection {
+  sourceSubvalueId: EntityId
+  idea: Idea
+}
+
+interface DragStartPayload {
+  event: DragEvent
+  idea: Idea
+}
+
+interface EditableInstance {
+  startEditing: () => Promise<void>
+  $slots: {
+    display: (props: {startEditing: () => Promise<void>}) => unknown
+  }
+}
+
+const Editable = RawEditable as typeof RawEditable & (new () => EditableInstance)
+
+const props = withDefaults(defineProps<{
+  valueId: EntityId
+  subvalue: Subvalue
+  dragOver?: boolean
+  draggedIdea?: IdeaSelection | null
+  pendingMove?: IdeaSelection | null
+  disabled?: boolean
+}>(), {
+  dragOver: false,
+  draggedIdea: null,
+  pendingMove: null,
+  disabled: false,
 })
-const emit = defineEmits([
-  'created', 'updated', 'deleted', 'subvalue-updated', 'subvalue-deleted', 'create-objective',
-  'move-requested', 'move-here', 'cancel-move', 'drag-start', 'drag-end', 'drag-over', 'drop',
-])
+const emit = defineEmits<{
+  (event: 'created' | 'updated' | 'create-objective' | 'move-requested', idea: Idea): void
+  (event: 'deleted', ideaId: string): void
+  (event: 'subvalue-updated', subvalue: SubvalueIdentity): void
+  (event: 'subvalue-deleted', subvalueId: EntityId): void
+  (event: 'drag-start', payload: DragStartPayload): void
+  (event: 'move-here' | 'cancel-move' | 'drag-end' | 'drag-over' | 'drop'): void
+}>()
 
 const editingSubvalue = ref(false)
 const confirmSubvalueDeletion = ref(false)
 const openAddIdeaDialog = ref(false)
 const isSubmitting = ref(false)
-const submissionError = ref(null)
-const ideaListWrapper = ref(null)
+const submissionError = ref<string | null>(null)
+const ideaListWrapper = ref<HTMLElement | null>(null)
+const subvalueNameEditor = ref<EditableInstance | null>(null)
 const {scheduleEdgeRoll: scheduleIdeaListRoll} = useEdgeRoll(
     () => ideaListWrapper.value?.querySelector('.subvalueIdeas'),
 )
 
 watch(() => props.subvalue.ideas, () => nextTick(scheduleIdeaListRoll), {deep: true})
 
-async function updateSubvalue(name) {
+async function updateSubvalue(name: string) {
   if (props.disabled || isSubmitting.value) return false
   isSubmitting.value = true
   submissionError.value = null
   try {
-    const updatedSubvalue = await api.put(`/value/${props.valueId}/subvalue/${props.subvalue.id}`, {name})
+    const updatedSubvalue = await api.put<SubvalueIdentity, {name: string}>(
+        `/value/${props.valueId}/subvalue/${props.subvalue.id}`,
+        {name},
+    )
     emit('subvalue-updated', updatedSubvalue)
     return true
   } catch (error) {
-    submissionError.value = error.message
+    submissionError.value = error instanceof Error ? error.message : String(error)
     return false
   } finally {
     isSubmitting.value = false
@@ -57,17 +90,17 @@ async function deleteSubvalue() {
     confirmSubvalueDeletion.value = false
     emit('subvalue-deleted', props.subvalue.id)
   } catch (error) {
-    submissionError.value = error.message
+    submissionError.value = error instanceof Error ? error.message : String(error)
   } finally {
     isSubmitting.value = false
   }
 }
 
-function isDragged(idea) {
+function isDragged(idea: Idea) {
   return props.draggedIdea?.sourceSubvalueId === props.subvalue.id && props.draggedIdea?.idea.id === idea.id
 }
 
-function isMoving(idea) {
+function isMoving(idea: Idea) {
   return props.pendingMove?.sourceSubvalueId === props.subvalue.id && props.pendingMove?.idea.id === idea.id
 }
 </script>
@@ -76,11 +109,13 @@ function isMoving(idea) {
   <v-card width="300" elevation="3" shaped class="subvalueList" :class="{dragOver}"
           @dragover.prevent="emit('drag-over')" @drop.prevent="emit('drop')">
     <v-card-title class="subvalueListHeader">
-      <Editable v-if="subvalue.id !== '0'" class="subvalueNameEditor" :value="subvalue.name" label="Name" hide-details
+      <Editable v-if="subvalue.id !== '0'" ref="subvalueNameEditor" class="subvalueNameEditor"
+                :value="subvalue.name" label="Name" hide-details
                 :cancel-editing="confirmSubvalueDeletion" :submit="updateSubvalue"
                 @editing-changed="editingSubvalue = $event">
-        <template #display="{startEditing}">
-          <span class="subvalueName" @click="startEditing">{{ subvalue.name }}</span>
+        <!-- @vue-ignore Legacy Vue 3.2 does not expose scoped-slot types to vue-tsc. -->
+        <template #display>
+          <span class="subvalueName" @click="subvalueNameEditor?.startEditing()">{{ subvalue.name }}</span>
         </template>
       </Editable>
       <span v-else/>

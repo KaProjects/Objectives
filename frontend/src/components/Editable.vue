@@ -85,6 +85,8 @@ function handleFocusOut(event) {
     save({deferClose: true})
   }
 }
+
+defineExpose({startEditing})
 </script>
 
 <template>

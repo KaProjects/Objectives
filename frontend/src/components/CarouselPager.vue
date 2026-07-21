@@ -1,9 +1,9 @@
-<script setup>
-defineProps({
-  count: {type: Number, required: true},
-  activeIndex: {type: Number, required: true},
-  label: {type: String, required: true},
-})
+<script setup lang="ts">
+defineProps<{
+  count: number
+  activeIndex: number
+  label: string
+}>()
 </script>
 
 <template>

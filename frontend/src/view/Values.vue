@@ -1,15 +1,16 @@
-<script setup>
+<script setup lang="ts">
 import {onMounted, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {setError} from '@/state/appState'
 import {api} from '@/services/apiClient'
+import type {ValueSummary} from '@/types/domain'
 
-const values = ref([])
+const values = ref<ValueSummary[]>([])
 const router = useRouter()
 
 async function loadValues() {
   try {
-    values.value = await api.get('/values')
+    values.value = await api.get<ValueSummary[]>('/values')
   } catch (error) {
     setError(error)
   }
@@ -19,7 +20,7 @@ function addValue() {
   alert('add value')
 }
 
-function openValue(value) {
+function openValue(value: ValueSummary) {
   router.push({name: 'value', params: {valueId: value.id, tab: 'active'}})
 }
 

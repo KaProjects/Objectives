@@ -1,18 +1,34 @@
-<script setup>
+<script setup lang="ts">
 import {computed, ref} from 'vue'
 import {api} from '@/services/apiClient'
 import SubvalueCard from '@/components/ideas/SubvalueCard.vue'
 import CarouselPager from '@/components/CarouselPager.vue'
 import {useHorizontalCarousel} from '@/composables/useHorizontalCarousel'
+import type {EntityId, Idea, Subvalue, SubvalueIdentity} from '@/types/domain'
 
-const props = defineProps({
-  valueId: [String, Number],
-  subvalues: {
-    type: Array,
-    default: () => [],
-  },
+interface IdeaSelection {
+  sourceSubvalueId: EntityId
+  idea: Idea
+}
+
+interface IdeaEvent {
+  subvalueId: EntityId
+  idea: Idea
+}
+
+const props = withDefaults(defineProps<{
+  valueId: EntityId
+  subvalues?: Subvalue[]
+}>(), {
+  subvalues: () => [],
 })
-const emit = defineEmits(['created', 'updated', 'moved', 'subvalue-updated', 'subvalue-deleted', 'create-objective', 'deleted'])
+const emit = defineEmits<{
+  (event: 'created' | 'updated' | 'create-objective', payload: IdeaEvent): void
+  (event: 'moved', payload: {sourceSubvalueId: EntityId; targetSubvalueId: EntityId; idea: Idea}): void
+  (event: 'subvalue-updated', subvalue: SubvalueIdentity): void
+  (event: 'subvalue-deleted', subvalueId: EntityId): void
+  (event: 'deleted', payload: {subvalueId: EntityId; ideaId: string}): void
+}>()
 
 const subvalueCount = computed(() => props.subvalues.length)
 const {
@@ -20,14 +36,15 @@ const {
   activeIndex: activeSubvalueIndex,
   updateActiveIndex: updateActiveSubvalueIndex,
 } = useHorizontalCarousel(subvalueCount)
-const draggedIdea = ref(null)
-const dragOverSubvalueId = ref(null)
-const pendingMove = ref(null)
+const draggedIdea = ref<IdeaSelection | null>(null)
+const dragOverSubvalueId = ref<EntityId | null>(null)
+const pendingMove = ref<IdeaSelection | null>(null)
 const isSubmitting = ref(false)
-const submissionError = ref(null)
+const submissionError = ref<string | null>(null)
 
-function startDragging({event, idea}, subvalue) {
+function startDragging({event, idea}: {event: DragEvent; idea: Idea}, subvalue: Subvalue) {
   draggedIdea.value = {sourceSubvalueId: subvalue.id, idea}
+  if (!event.dataTransfer) return
   event.dataTransfer.effectAllowed = 'move'
   event.dataTransfer.setData('text/plain', idea.id)
 }
@@ -37,20 +54,20 @@ function endDragging() {
   dragOverSubvalueId.value = null
 }
 
-function markDragOver(subvalue) {
+function markDragOver(subvalue: Subvalue) {
   if (draggedIdea.value?.sourceSubvalueId !== subvalue.id) {
     dragOverSubvalueId.value = subvalue.id
   }
 }
 
-async function moveDraggedIdea(targetSubvalue) {
+async function moveDraggedIdea(targetSubvalue: Subvalue) {
   const dragged = draggedIdea.value
   endDragging()
   if (!dragged || dragged.sourceSubvalueId === targetSubvalue.id) return
   await moveIdea(dragged, targetSubvalue)
 }
 
-function startMove(subvalue, idea) {
+function startMove(subvalue: Subvalue, idea: Idea) {
   if (isSubmitting.value) return
   pendingMove.value = {sourceSubvalueId: subvalue.id, idea}
 }
@@ -59,7 +76,7 @@ function cancelMove() {
   pendingMove.value = null
 }
 
-async function movePendingIdea(targetSubvalue) {
+async function movePendingIdea(targetSubvalue: Subvalue) {
   const pending = pendingMove.value
   if (!pending) return
   if (pending.sourceSubvalueId === targetSubvalue.id) {
@@ -69,12 +86,12 @@ async function movePendingIdea(targetSubvalue) {
   if (await moveIdea(pending, targetSubvalue)) cancelMove()
 }
 
-async function moveIdea(source, targetSubvalue) {
+async function moveIdea(source: IdeaSelection, targetSubvalue: Subvalue) {
   if (isSubmitting.value) return false
   isSubmitting.value = true
   submissionError.value = null
   try {
-    const movedIdea = await api.put(
+    const movedIdea = await api.put<Idea, {target_subvalue_id: EntityId}>(
         `/value/${props.valueId}/subvalue/${source.sourceSubvalueId}/idea/${source.idea.id}/move`,
         {target_subvalue_id: targetSubvalue.id},
     )
@@ -85,7 +102,7 @@ async function moveIdea(source, targetSubvalue) {
     })
     return true
   } catch (error) {
-    submissionError.value = error.message
+    submissionError.value = error instanceof Error ? error.message : String(error)
     return false
   } finally {
     isSubmitting.value = false
