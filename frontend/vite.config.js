@@ -15,13 +15,7 @@ export default defineConfig({
     clearMocks: true,
   },
   plugins: [
-    vue({
-      template: {
-        compilerOptions: {
-          isCustomElement: (tag) => ['v-list-item-content'].includes(tag),
-        }
-      }
-    })
+    vue()
   ],
   resolve: {
     alias: {

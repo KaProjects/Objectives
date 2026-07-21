@@ -125,58 +125,56 @@ watch(() => draftIdea.value.description, () => nextTick(() => emit('resized')))
 
 <template>
   <v-list-item class="ideaItem">
-    <v-list-item-content>
-      <div v-if="!isEditing"
-           class="idea"
-           :class="{shortIdea: !idea.description, draggingIdea: dragging, movingIdea: moving}"
-           :draggable="!disabled && !isSubmitting"
-           @dragstart="startDragging"
-           @dragend="emit('drag-end')"
-           @click="startEditing">
-        <div class="ideaContent">
-          <div class="ideaName">{{ idea.name }}</div>
-          <div v-if="idea.description" class="ideaDescription">{{ idea.description }}</div>
-        </div>
-
-        <div class="ideaActions">
-          <div class="desktopIdeaActions">
-            <v-icon class="createObjectiveFromIdea" icon="mdi-flag-plus-outline" size="18"
-                    @click.stop="emit('create-objective', idea)"/>
-            <v-icon class="moveIdea" icon="mdi-arrow-right-bold-circle-outline" size="18"
-                    @click.stop="emit('move-requested', idea)"/>
-            <v-icon class="deleteIdea" icon="mdi-delete" size="18"
-                    @click.stop="confirmDeletion = true"/>
-          </div>
-          <v-menu v-model="actionsMenuOpen">
-            <template #activator="{props: menuProps}">
-              <v-icon class="mobileIdeaActionsTrigger" icon="mdi-dots-vertical" v-bind="menuProps"/>
-            </template>
-            <v-list class="mobileIdeaActionsMenu" density="compact">
-              <v-list-item prepend-icon="mdi-flag-plus-outline" title="Create Objective" @click="createObjective"/>
-              <v-list-item prepend-icon="mdi-arrow-right-bold-circle-outline" title="Move to…" @click="requestMove"/>
-              <v-list-item class="deleteIdeaMenuItem" prepend-icon="mdi-delete" title="Delete" @click="requestDeletion"/>
-            </v-list>
-          </v-menu>
-        </div>
-
-        <v-dialog v-model="confirmDeletion" width="300">
-          <DialogCard :error="submissionError">
-            <v-card-title class="text-h5 grey lighten-2">Delete Idea?</v-card-title>
-            <v-card-text>{{ idea.name }}</v-card-text>
-            <v-card-actions>
-              <v-btn block :disabled="isSubmitting" @click="deleteIdea">Confirm</v-btn>
-            </v-card-actions>
-          </DialogCard>
-        </v-dialog>
+    <div v-if="!isEditing"
+         class="idea"
+         :class="{shortIdea: !idea.description, draggingIdea: dragging, movingIdea: moving}"
+         :draggable="!disabled && !isSubmitting"
+         @dragstart="startDragging"
+         @dragend="emit('drag-end')"
+         @click="startEditing">
+      <div class="ideaContent">
+        <div class="ideaName">{{ idea.name }}</div>
+        <div v-if="idea.description" class="ideaDescription">{{ idea.description }}</div>
       </div>
 
-      <div v-else ref="ideaEditor" class="ideaEditor" @focusout="saveOnUnfocus">
-        <v-text-field v-model="draftIdea.name" label="Name" hide-details
-                      @keydown.enter.prevent="saveIdea" @keydown.esc.prevent="cancelEditing"/>
-        <v-textarea v-model="draftIdea.description" label="Description" rows="1" auto-grow hide-details
+      <div class="ideaActions">
+        <div class="desktopIdeaActions">
+          <v-icon class="createObjectiveFromIdea" icon="mdi-flag-plus-outline" size="18"
+                  @click.stop="emit('create-objective', idea)"/>
+          <v-icon class="moveIdea" icon="mdi-arrow-right-bold-circle-outline" size="18"
+                  @click.stop="emit('move-requested', idea)"/>
+          <v-icon class="deleteIdea" icon="mdi-delete" size="18"
+                  @click.stop="confirmDeletion = true"/>
+        </div>
+        <v-menu v-model="actionsMenuOpen">
+          <template #activator="{props: menuProps}">
+            <v-icon class="mobileIdeaActionsTrigger" icon="mdi-dots-vertical" v-bind="menuProps"/>
+          </template>
+          <v-list class="mobileIdeaActionsMenu" density="compact">
+            <v-list-item prepend-icon="mdi-flag-plus-outline" title="Create Objective" @click="createObjective"/>
+            <v-list-item prepend-icon="mdi-arrow-right-bold-circle-outline" title="Move to…" @click="requestMove"/>
+            <v-list-item class="deleteIdeaMenuItem" prepend-icon="mdi-delete" title="Delete" @click="requestDeletion"/>
+          </v-list>
+        </v-menu>
+      </div>
+
+      <v-dialog v-model="confirmDeletion" width="300">
+        <DialogCard :error="submissionError">
+          <v-card-title class="text-h5 grey lighten-2">Delete Idea?</v-card-title>
+          <v-card-text>{{ idea.name }}</v-card-text>
+          <v-card-actions>
+            <v-btn block :disabled="isSubmitting" @click="deleteIdea">Confirm</v-btn>
+          </v-card-actions>
+        </DialogCard>
+      </v-dialog>
+    </div>
+
+    <div v-else ref="ideaEditor" class="ideaEditor" @focusout="saveOnUnfocus">
+      <v-text-field v-model="draftIdea.name" label="Name" hide-details
                     @keydown.enter.prevent="saveIdea" @keydown.esc.prevent="cancelEditing"/>
-      </div>
-    </v-list-item-content>
+      <v-textarea v-model="draftIdea.description" label="Description" rows="1" auto-grow hide-details
+                  @keydown.enter.prevent="saveIdea" @keydown.esc.prevent="cancelEditing"/>
+    </div>
   </v-list-item>
 </template>
 

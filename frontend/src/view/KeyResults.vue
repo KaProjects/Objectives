@@ -127,7 +127,7 @@ onMounted(loadKeyResults)
       <p v-if="keyResults.length === 0" class="emptyState">No Key Results yet.</p>
     </section>
 
-    <KeyResultDialog v-if="selectedKeyResult"
+    <KeyResultDialog v-if="selectedKeyResult && selectedKeyResultParent"
                      v-model="openKeyResultDialog"
                      :kr="selectedKeyResult"
                      :kr_parent="selectedKeyResultParent"
