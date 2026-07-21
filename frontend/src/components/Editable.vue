@@ -1,5 +1,6 @@
 <script setup>
-import {nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
+import {nextTick, ref, watch} from 'vue'
+import {useClickCompletion} from '@/composables/useClickCompletion'
 
 const props = defineProps({
   value: {type: String, default: ''},
@@ -18,31 +19,8 @@ const isEditing = ref(false)
 const draftValue = ref('')
 const editor = ref(null)
 const nativeDatePicker = ref(null)
-const pointerClickPending = ref(false)
 const isStartingEdit = ref(false)
-let closeAfterClick = false
-
-function handlePointerDown() {
-  pointerClickPending.value = true
-}
-
-function handleWindowClick() {
-  pointerClickPending.value = false
-  if (closeAfterClick) {
-    closeAfterClick = false
-    stopEditing()
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('pointerdown', handlePointerDown, true)
-  window.addEventListener('click', handleWindowClick)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('pointerdown', handlePointerDown, true)
-  window.removeEventListener('click', handleWindowClick)
-})
+const {cancelDeferredClick, deferUntilClick} = useClickCompletion()
 
 async function startEditing() {
   if (!props.editable) return
@@ -57,6 +35,7 @@ async function startEditing() {
 
 function stopEditing() {
   if (!isEditing.value) return
+  cancelDeferredClick()
   isEditing.value = false
   emit('editing-changed', false)
 }
@@ -86,9 +65,7 @@ async function save({deferClose = false} = {}) {
     if (saved === false) return false
   }
 
-  if (deferClose && pointerClickPending.value) {
-    closeAfterClick = true
-  } else {
+  if (!deferClose || !deferUntilClick(stopEditing)) {
     stopEditing()
   }
 

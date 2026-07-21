@@ -11,6 +11,7 @@ describe('Editable', () => {
     })
 
     expect(wrapper.find('input[aria-label="Name"]').exists()).toBe(true)
+    wrapper.unmount()
   })
 
   it('delays closing after an unfocus save', async () => {
@@ -64,5 +65,30 @@ describe('Editable', () => {
     expect(submit).toHaveBeenCalledWith('2026-08-15')
     expect(wrapper.vm.isEditing).toBe(false)
     wrapper.unmount()
+  })
+
+  it('shares one pair of window listeners across all editor instances', () => {
+    const addListener = vi.spyOn(window, 'addEventListener')
+    const removeListener = vi.spyOn(window, 'removeEventListener')
+    const wrapper = mount({
+      components: {Editable},
+      setup: () => ({submit: vi.fn()}),
+      template: `
+        <div>
+          <Editable value="First" label="First" :submit="submit"><template #display>First</template></Editable>
+          <Editable value="Second" label="Second" :submit="submit"><template #display>Second</template></Editable>
+        </div>
+      `,
+    })
+
+    expect(addListener.mock.calls.filter(([type]) => type === 'pointerdown')).toHaveLength(1)
+    expect(addListener.mock.calls.filter(([type]) => type === 'click')).toHaveLength(1)
+
+    wrapper.unmount()
+
+    expect(removeListener.mock.calls.filter(([type]) => type === 'pointerdown')).toHaveLength(1)
+    expect(removeListener.mock.calls.filter(([type]) => type === 'click')).toHaveLength(1)
+    addListener.mockRestore()
+    removeListener.mockRestore()
   })
 })
