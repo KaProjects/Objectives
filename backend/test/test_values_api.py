@@ -44,6 +44,8 @@ class TestValuesApi(ApiTestCase):
         self.assertEqual(value["objectives"][1]["key_results"][2]["state"], "active", message)
         self.assertEqual(value["objectives"][1]["key_results"][2]["all_tasks_count"], 3, message)
         self.assertEqual(value["objectives"][1]["key_results"][2]["resolved_tasks_count"], 2, message)
+        self.assertEqual(value["objectives"][1]["key_results"][2]["t"], "e", message)
+        self.assertEqual(value["objectives"][1]["key_results"][2]["date_created"], "2023-03-10", message)
         self.assertEqual(value["objectives"][2]["id"], 3, message)
         self.assertEqual(value["objectives"][2]["state"], "failed", message)
         self.assertEqual(len(value["objectives"][2]["key_results"]), 1, message)

@@ -1,6 +1,6 @@
 <script setup>
 import {nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
-import {compareDates, formatDate, string_to_html} from '@/utils'
+import {compareDates, formatDate, parseIsoDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
 import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
@@ -118,14 +118,40 @@ onBeforeUnmount(() => {
 watch(() => props.objective.key_results.length, () => nextTick(updateKeyResultsRoll))
 
 function compareKeyResults(a, b) {
-  const activeComparison = Number(b.state === KEY_RESULT_STATE.ACTIVE) - Number(a.state === KEY_RESULT_STATE.ACTIVE)
+  const aIsActive = a.state === KEY_RESULT_STATE.ACTIVE
+  const bIsActive = b.state === KEY_RESULT_STATE.ACTIVE
+  const activeComparison = Number(bIsActive) - Number(aIsActive)
   if (activeComparison !== 0) return activeComparison
+
+  if (aIsActive) {
+    const aDeadline = parseIsoDate(a.t)
+    const bDeadline = parseIsoDate(b.t)
+    if (aDeadline !== null && bDeadline !== null) {
+      const deadlineComparison = aDeadline.localeCompare(bDeadline)
+      if (deadlineComparison !== 0) return deadlineComparison
+    } else if (aDeadline === null && bDeadline !== null) {
+      return 1
+    } else if (aDeadline !== null) {
+      return -1
+    }
+  }
 
   const reviewedComparison = -compareDates(a.date_reviewed || '', b.date_reviewed || '')
   if (reviewedComparison !== 0) return reviewedComparison
 
   const createdComparison = -compareDates(a.date_created || '', b.date_created || '')
   return createdComparison !== 0 ? createdComparison : b.id - a.id
+}
+
+function keyResultDeadlineIsMissing(keyResult) {
+  return keyResult.state === KEY_RESULT_STATE.ACTIVE && parseIsoDate(keyResult.t) === null
+}
+
+function keyResultMetaDate(keyResult) {
+  if (keyResult.state !== KEY_RESULT_STATE.ACTIVE) return formatDate(keyResult.date_reviewed)
+
+  const deadline = parseIsoDate(keyResult.t)
+  return deadline === null ? 'Not set' : formatDate(deadline)
 }
 
 async function openKeyResult(keyResult, objectiveState) {
@@ -210,14 +236,20 @@ async function deleteKeyResult(keyResult) {
                 </span>
               </div>
 
-              <div v-if="key_result.state === KEY_RESULT_STATE.ACTIVE" class="krMeta">
-                <span class="krMetaItem">
+              <div class="krMeta">
+                <span v-if="key_result.state === KEY_RESULT_STATE.ACTIVE" class="krMetaItem">
                   <v-icon icon="mdi-checkbox-marked-circle-outline" size="12"/>
                   {{ key_result.resolved_tasks_count ?? 0 }}/{{ key_result.all_tasks_count ?? 0 }}
                 </span>
-                <span class="krMetaItem">
-                  <v-icon icon="mdi-calendar-clock-outline" size="12"/>
-                  {{ formatDate(key_result.date_reviewed) }}
+                <span class="krMetaItem krMetaDate">
+                  <v-icon
+                    :class="{'krDeadlineMissing': keyResultDeadlineIsMissing(key_result)}"
+                    icon="mdi-calendar-clock-outline"
+                    size="12"
+                    :aria-label="keyResultDeadlineIsMissing(key_result) ? 'Deadline not set' : undefined"
+                    :title="keyResultDeadlineIsMissing(key_result) ? 'Deadline not set' : undefined"
+                  />
+                  <template v-if="!keyResultDeadlineIsMissing(key_result)">{{ keyResultMetaDate(key_result) }}</template>
                 </span>
               </div>
             </div>
@@ -403,6 +435,15 @@ async function deleteKeyResult(keyResult) {
   align-items: center;
   display: inline-flex;
   gap: 3px;
+}
+
+.krMetaDate {
+  margin-left: auto;
+}
+
+.krDeadlineMissing {
+  color: #d7193f;
+  opacity: 1;
 }
 
 .standardKrContent {
