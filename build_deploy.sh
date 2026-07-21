@@ -15,12 +15,6 @@ if command -v script >/dev/null 2>&1 \
   USE_TTY_PROGRESS=1
 fi
 
-TERMINAL_SIZE="$(stty size < /dev/tty 2>/dev/null || true)"
-TERMINAL_ROWS="${TERMINAL_SIZE%% *}"
-if [[ ! "$TERMINAL_ROWS" =~ ^[0-9]+$ ]] || [[ $TERMINAL_ROWS -lt 12 ]]; then
-  TERMINAL_ROWS=24
-fi
-MAX_PANEL_LINES=$((TERMINAL_ROWS - 6))
 LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/objectives-build.XXXXXX")"
 BACKEND_LOG="$LOG_DIR/backend.log"
 FRONTEND_LOG="$LOG_DIR/frontend.log"
@@ -29,7 +23,8 @@ frontend_pid=""
 backend_status=""
 frontend_status=""
 dashboard_rendered=0
-dashboard_height=0
+dashboard_rows=0
+dashboard_width=0
 cursor_hidden=0
 
 show_cursor() {
@@ -108,12 +103,25 @@ stop_children() {
 trap cleanup EXIT
 trap stop_children INT TERM
 
-clean_log() {
-  tr '\r' '\n' < "$1" \
+clean_log_stream() {
+  tr '\r\t' '\n ' \
     | sed $'s/\\^D\010\010//g' \
     | tr -d '\004\010' \
     | sed $'s|\033\\[[0-9;?]*[ -/]*[@-~]||g' \
     | sed '/^[[:space:]]*$/d'
+}
+
+clean_log() {
+  clean_log_stream < "$1"
+}
+
+recent_clean_log() {
+  local file="$1"
+  local lines="$2"
+
+  # Animated build output can grow quickly. Only clean a generous recent
+  # window; the dashboard only needs enough data to fill its fixed-height pane.
+  tail -c 131072 "$file" | clean_log_stream | tail -n "$lines"
 }
 
 terminal_width() {
@@ -130,28 +138,58 @@ terminal_width() {
   printf '%s' "$width"
 }
 
+terminal_height() {
+  local size
+  local height
+  size="$(stty size < /dev/tty 2>/dev/null || true)"
+  height="${size%% *}"
+  if [[ ! "$height" =~ ^[0-9]+$ ]] || [[ $height -lt 12 ]]; then
+    height="${LINES:-24}"
+  fi
+  if [[ ! "$height" =~ ^[0-9]+$ ]] || [[ $height -lt 12 ]]; then
+    height=24
+  fi
+  printf '%s' "$height"
+}
+
+render_line() {
+  local content="$1"
+  local width="$2"
+  local color="${3:-}"
+
+  printf '\033[2K\r'
+  [[ -n "$color" ]] && printf '%s' "$color"
+  printf '%-*.*s' "$width" "$width" "$content"
+  [[ -n "$color" ]] && printf '\033[0m'
+  printf '\n'
+}
+
 render_dashboard() {
   local width
+  local height
+  local render_width
   local backend_title='BACKEND [RUNNING]'
   local frontend_title='FRONTEND [RUNNING]'
   local backend_failed=0
   local frontend_failed=0
   local red=''
-  local reset=''
-  local separator=' | '
-  local separator_width=${#separator}
-  local backend_width
-  local frontend_width
-  local panel_lines
+  local separator
+  local available_log_lines
+  local backend_panel_lines
+  local frontend_panel_lines
   local line
-  local backend_line
-  local frontend_line
   local index
   local backend_lines=()
   local frontend_lines=()
+
   width="$(terminal_width)"
-  backend_width=$(((width - separator_width) / 2))
-  frontend_width=$((width - separator_width - backend_width))
+  height="$(terminal_height)"
+  render_width=$((width - 1))
+  available_log_lines=$((height - 4))
+  backend_panel_lines=$((available_log_lines / 2))
+  frontend_panel_lines=$((available_log_lines - backend_panel_lines))
+  printf -v separator '%*s' "$render_width" ''
+  separator="${separator// /-}"
 
   if [[ -n "$backend_status" ]]; then
     if [[ $backend_status -eq 0 ]]; then
@@ -171,63 +209,68 @@ render_dashboard() {
   fi
   if [[ -t 1 ]]; then
     red=$'\033[31m'
-    reset=$'\033[0m'
+  fi
+
+  if [[ ! -t 1 ]]; then
+    printf '%s\n' "$backend_title"
+    clean_log "$BACKEND_LOG"
+    printf '%s\n' "$separator"
+    printf '%s\n' "$frontend_title"
+    clean_log "$FRONTEND_LOG"
+    return
   fi
 
   while IFS= read -r line; do
     backend_lines[${#backend_lines[@]}]="$line"
-  done < <(clean_log "$BACKEND_LOG" | tail -n "$MAX_PANEL_LINES")
+  done < <(recent_clean_log "$BACKEND_LOG" "$backend_panel_lines")
 
   while IFS= read -r line; do
     frontend_lines[${#frontend_lines[@]}]="$line"
-  done < <(clean_log "$FRONTEND_LOG" | tail -n "$MAX_PANEL_LINES")
+  done < <(recent_clean_log "$FRONTEND_LOG" "$frontend_panel_lines")
 
-  panel_lines=${#backend_lines[@]}
-  if [[ ${#frontend_lines[@]} -gt $panel_lines ]]; then
-    panel_lines=${#frontend_lines[@]}
-  fi
-  if [[ $panel_lines -lt 1 ]]; then
-    panel_lines=1
-  fi
-
-  if [[ $dashboard_rendered -eq 1 ]]; then
-    printf '\033[%dA' "$dashboard_height"
+  if [[ $dashboard_rendered -eq 0 \
+      || $dashboard_rows -ne $height \
+      || $dashboard_width -ne $width ]]; then
+    printf '\033[2J\033[H'
+  else
+    printf '\033[H'
   fi
 
-  [[ -t 1 ]] && printf '\033[2K\r'
   if [[ $backend_failed -eq 1 ]]; then
-    printf '%s%-*.*s%s' "$red" "$backend_width" "$backend_width" "$backend_title" "$reset"
+    render_line "$backend_title" "$render_width" "$red"
   else
-    printf '%-*.*s' "$backend_width" "$backend_width" "$backend_title"
+    render_line "$backend_title" "$render_width"
   fi
-  printf '%s' "$separator"
-  if [[ $frontend_failed -eq 1 ]]; then
-    printf '%s%.*s%s' "$red" "$frontend_width" "$frontend_title" "$reset"
-  else
-    printf '%.*s' "$frontend_width" "$frontend_title"
-  fi
-  printf '\n'
 
-  for ((index = 0; index < panel_lines; index++)); do
-    backend_line="${backend_lines[$index]-}"
-    frontend_line="${frontend_lines[$index]-}"
-    [[ -t 1 ]] && printf '\033[2K\r'
-    if [[ "$backend_line" == *'ERROR:'* ]]; then
-      printf '%s%-*.*s%s' "$red" "$backend_width" "$backend_width" "$backend_line" "$reset"
+  for ((index = 0; index < backend_panel_lines; index++)); do
+    line="${backend_lines[$index]-}"
+    if [[ "$line" == *'ERROR:'* ]]; then
+      render_line "$line" "$render_width" "$red"
     else
-      printf '%-*.*s' "$backend_width" "$backend_width" "$backend_line"
+      render_line "$line" "$render_width"
     fi
-    printf '%s' "$separator"
-    if [[ "$frontend_line" == *'ERROR:'* ]]; then
-      printf '%s%.*s%s' "$red" "$frontend_width" "$frontend_line" "$reset"
+  done
+
+  render_line "$separator" "$render_width"
+
+  if [[ $frontend_failed -eq 1 ]]; then
+    render_line "$frontend_title" "$render_width" "$red"
+  else
+    render_line "$frontend_title" "$render_width"
+  fi
+
+  for ((index = 0; index < frontend_panel_lines; index++)); do
+    line="${frontend_lines[$index]-}"
+    if [[ "$line" == *'ERROR:'* ]]; then
+      render_line "$line" "$render_width" "$red"
     else
-      printf '%.*s' "$frontend_width" "$frontend_line"
+      render_line "$line" "$render_width"
     fi
-    printf '\n'
   done
 
   dashboard_rendered=1
-  dashboard_height=$((panel_lines + 1))
+  dashboard_rows=$height
+  dashboard_width=$width
 }
 
 (
@@ -260,36 +303,38 @@ frontend_pid=$!
 if [[ -t 1 ]]; then
   printf '\033[?25l'
   cursor_hidden=1
-
-  while [[ -z "$backend_status" || -z "$frontend_status" ]]; do
-    if [[ -z "$backend_status" ]] && ! kill -0 "$backend_pid" 2>/dev/null; then
-      wait "$backend_pid"
-      backend_status=$?
-    fi
-    if [[ -z "$frontend_status" ]] && ! kill -0 "$frontend_pid" 2>/dev/null; then
-      wait "$frontend_pid"
-      frontend_status=$?
-    fi
-
-    # The development servers form one application. If either side exits or
-    # fails to start, stop the other side instead of leaving the launcher
-    # waiting indefinitely with only half of the application running.
-    if [[ "$MODE" == "dev" ]]; then
-      if [[ -n "$frontend_status" && -z "$backend_status" ]]; then
-        terminate_process_tree "$backend_pid"
-        wait "$backend_pid" 2>/dev/null || true
-        backend_status=0
-      elif [[ -n "$backend_status" && -z "$frontend_status" ]]; then
-        terminate_process_tree "$frontend_pid"
-        wait "$frontend_pid" 2>/dev/null || true
-        frontend_status=0
-      fi
-    fi
-
-    render_dashboard
-    sleep 0.2
-  done
 fi
+
+while [[ -z "$backend_status" || -z "$frontend_status" ]]; do
+  if [[ -z "$backend_status" ]] && ! kill -0 "$backend_pid" 2>/dev/null; then
+    wait "$backend_pid"
+    backend_status=$?
+  fi
+  if [[ -z "$frontend_status" ]] && ! kill -0 "$frontend_pid" 2>/dev/null; then
+    wait "$frontend_pid"
+    frontend_status=$?
+  fi
+
+  # The development servers form one application. If either side exits or
+  # fails to start, stop the other side instead of leaving the launcher
+  # waiting indefinitely with only half of the application running.
+  if [[ "$MODE" == "dev" ]]; then
+    if [[ -n "$frontend_status" && -z "$backend_status" ]]; then
+      terminate_process_tree "$backend_pid"
+      wait "$backend_pid" 2>/dev/null || true
+      backend_status=0
+    elif [[ -n "$backend_status" && -z "$frontend_status" ]]; then
+      terminate_process_tree "$frontend_pid"
+      wait "$frontend_pid" 2>/dev/null || true
+      frontend_status=0
+    fi
+  fi
+
+  if [[ -t 1 ]]; then
+    render_dashboard
+  fi
+  sleep 0.2
+done
 
 if [[ -z "$backend_status" ]]; then
   wait "$backend_pid"
@@ -305,7 +350,6 @@ render_dashboard
 show_cursor
 
 if [[ $backend_status -ne 0 || $frontend_status -ne 0 ]]; then
-  printf '\n'
   if [[ -t 2 ]]; then
     printf '\033[31mBuild/deploy failed (backend=%d, frontend=%d).\033[0m\n' \
       "$backend_status" "$frontend_status" >&2
