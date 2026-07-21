@@ -33,7 +33,7 @@ describe('Key Results overview', () => {
   it('opens the existing Key Result dialog with full Key Result data', async () => {
     api.get.mockImplementation((path) => path === '/key_result/overview'
         ? Promise.resolve([{id: 3, name: 'Sooner', value_name: 'Health', objective_name: 'Energy', objective_state: 'active', t: '2000-08-01'}])
-        : Promise.resolve({id: 3, name: 'Sooner', tasks: []}))
+        : Promise.resolve({id: 3, name: 'Sooner', state: 'active', tasks: []}))
     await router.push('/key-results')
     const wrapper = shallowMount(KeyResults, {global: {plugins: [router]}})
     await flushPromises()
@@ -43,7 +43,25 @@ describe('Key Results overview', () => {
 
     expect(api.get).toHaveBeenCalledWith('/key_result/3')
     expect(wrapper.vm.openKeyResultDialog).toBe(true)
+    expect(wrapper.vm.selectedKeyResultParent.state).toBe('active')
     expect(wrapper.vm.selectedKeyResultParent.obj_state).toBe('active')
+  })
+
+  it('keeps an edited active Key Result open and reorders it after a deadline change', async () => {
+    api.get.mockResolvedValue([
+      {id: 1, name: 'August', value_name: 'Health', objective_name: 'Energy', objective_state: 'active', t: '2026-08-01'},
+      {id: 2, name: 'December', value_name: 'Work', objective_name: 'Launch', objective_state: 'active', t: '2026-12-01'},
+    ])
+    await router.push('/key-results')
+    const wrapper = shallowMount(KeyResults, {global: {plugins: [router]}})
+    await flushPromises()
+    wrapper.vm.openKeyResultDialog = true
+
+    wrapper.vm.updateKeyResult({id: 2, name: 'July', t: '2026-07-01'})
+
+    expect(wrapper.vm.openKeyResultDialog).toBe(true)
+    expect(wrapper.vm.keyResults.map((keyResult) => keyResult.id)).toEqual([2, 1])
+    expect(wrapper.vm.keyResults[0]).toEqual(expect.objectContaining({name: 'July', t: '2026-07-01'}))
   })
 
   it('removes a Key Result after it is completed or failed', async () => {

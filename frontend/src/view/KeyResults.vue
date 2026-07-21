@@ -43,6 +43,7 @@ async function openKeyResult(keyResult) {
     selectedKeyResult.value = fullKeyResult
     selectedKeyResultParent.value = {
       ...keyResult,
+      state: fullKeyResult.state,
       obj_state: keyResult.objective_state,
       all_tasks_count: fullKeyResult.tasks.length,
       resolved_tasks_count: fullKeyResult.tasks.filter((task) => task.state !== 'active').length,
@@ -56,12 +57,13 @@ async function openKeyResult(keyResult) {
 function updateKeyResult(updatedKeyResult) {
   const keyResult = keyResults.value.find((item) => item.id === updatedKeyResult.id)
   if (!keyResult) return
-  if (updatedKeyResult.state !== KEY_RESULT_STATE.ACTIVE) {
+  if ([KEY_RESULT_STATE.COMPLETED, KEY_RESULT_STATE.FAILED].includes(updatedKeyResult.state)) {
     keyResults.value = keyResults.value.filter((item) => item.id !== updatedKeyResult.id)
     openKeyResultDialog.value = false
     return
   }
   Object.assign(keyResult, updatedKeyResult)
+  keyResults.value = sortKeyResultsByDeadline(keyResults.value)
 }
 
 async function deleteKeyResult(keyResult) {
