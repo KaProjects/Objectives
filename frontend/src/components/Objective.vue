@@ -257,8 +257,8 @@ async function deleteKeyResult(keyResult) {
 
           <div v-else class="standardKrContent">
             <v-list-item-title class="standardKrName">{{ key_result.name }}</v-list-item-title>
-            <v-icon v-if="key_result.state === KEY_RESULT_STATE.COMPLETED" icon="mdi-check-bold"/>
-            <v-icon v-else-if="key_result.state === KEY_RESULT_STATE.FAILED" icon="mdi-close-thick"/>
+            <v-icon v-if="key_result.state === KEY_RESULT_STATE.COMPLETED" icon="mdi-check-bold" size="11"/>
+            <v-icon v-else-if="key_result.state === KEY_RESULT_STATE.FAILED" icon="mdi-close-thick" size="11"/>
           </div>
         </v-list-item>
       </div>
@@ -296,8 +296,23 @@ async function deleteKeyResult(keyResult) {
   color: #000000;
 }
 
+.kr:not(.krPlaque) {
+  border-color: rgba(44, 62, 80, 0.24);
+  border-radius: 4px;
+  color: inherit;
+  height: 20px;
+  min-height: 20px;
+  overflow: hidden;
+  padding: 0 4px;
+}
+
 .kr:not(.krPlaque):hover {
-  border-width: 2px;
+  border-color: rgba(44, 62, 80, 0.42);
+}
+
+.kr:not(.krPlaque) :deep(.v-list-item__content) {
+  height: 20px;
+  min-height: 0;
 }
 
 .krPlaque {
@@ -450,11 +465,19 @@ async function deleteKeyResult(keyResult) {
   align-items: center;
   display: flex;
   gap: 4px;
+  height: 20px;
+  line-height: 20px;
   min-width: 0;
+  width: 100%;
 }
 
 .standardKrName {
+  color: inherit;
   flex: 1 1 auto;
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.0178571429em;
+  line-height: 20px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -508,6 +531,19 @@ async function deleteKeyResult(keyResult) {
   flex-direction: column;
   min-height: 0;
   position: relative;
+}
+
+.obj:not(.active) {
+  max-height: none;
+}
+
+.obj:not(.active) .keyResultsListWrapper {
+  flex: 0 0 auto;
+}
+
+.obj:not(.active) .keyResultsList {
+  flex: 0 0 auto;
+  overflow-y: visible;
 }
 
 .kr.rollingTop {
