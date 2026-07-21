@@ -6,6 +6,7 @@ import {api} from '@/services/apiClient'
 import {KEY_RESULT_STATE, OBJECTIVE_STATE, TASK_STATE} from '@/constants/states'
 import DialogCard from '@/dialogs/DialogCard.vue'
 import AddTaskDialog from '@/dialogs/AddTaskDialog.vue'
+import IconAction from '@/components/IconAction.vue'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -197,7 +198,13 @@ async function deleteKeyResult() {
 
       <Editable :value="draftKeyResult.name" :editable="canEdit()" :submit="(value) => update('name', value)" label="Name" hide-details>
         <template #display="{startEditing}">
-          <v-card-title @click="startEditing" class="dialogTitle text-h5 grey lighten-2">
+          <v-card-title class="dialogTitle text-h5 grey lighten-2"
+                        :role="canEdit() ? 'button' : undefined"
+                        :tabindex="canEdit() ? 0 : undefined"
+                        :aria-label="canEdit() ? 'Edit Key Result name' : undefined"
+                        @click="startEditing"
+                        @keydown.enter.prevent="startEditing"
+                        @keydown.space.prevent="startEditing">
             {{ keyResult.name }}
           </v-card-title>
         </template>
@@ -206,7 +213,14 @@ async function deleteKeyResult() {
       <Editable :value="draftKeyResult.description" :editable="canEdit()" textarea hide-details
                 :submit="(value) => update('description', value)" label="Description">
         <template #display="{startEditing}">
-          <div class="v-card-text" v-html="string_to_html(keyResult.description)" @click="startEditing"/>
+          <div class="v-card-text"
+               :role="canEdit() ? 'button' : undefined"
+               :tabindex="canEdit() ? 0 : undefined"
+               :aria-label="canEdit() ? 'Edit Key Result description' : undefined"
+               v-html="string_to_html(keyResult.description)"
+               @click="startEditing"
+               @keydown.enter.prevent="startEditing"
+               @keydown.space.prevent="startEditing"/>
         </template>
       </Editable>
       <div class="keyResultDetails">
@@ -217,7 +231,8 @@ async function deleteKeyResult() {
         <span class="detailsSpacer"/>
         <v-dialog v-model="confirmDeleteKrDialog" width="300">
           <template v-slot:activator="{ props }">
-            <v-btn variant="plain" rounded="lg" icon="mdi-trash-can" size="small" v-bind="props"/>
+            <v-btn variant="plain" rounded="lg" icon="mdi-trash-can" size="small"
+                   aria-label="Delete Key Result" v-bind="props"/>
           </template>
           <v-card>
             <v-card-title class="text-h5 grey lighten-2">
@@ -247,8 +262,10 @@ async function deleteKeyResult() {
                 label="Acceptance Criteria">
         <template #display="{startEditing}">
           <div v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE"
-           @click="startEditing"
-           class="smart smartRow">
+               class="smart smartRow" role="button" tabindex="0" aria-label="Edit Acceptance Criteria"
+               @click="startEditing"
+               @keydown.enter.prevent="startEditing"
+               @keydown.space.prevent="startEditing">
         <v-icon class="smartIcon" icon="mdi-format-list-checks" size="18"/>
         <div class="smartValue">{{ keyResult.m }}</div>
       </div>
@@ -261,8 +278,10 @@ async function deleteKeyResult() {
                 label="Completion Risks">
         <template #display="{startEditing}">
           <div v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE"
-           @click="startEditing"
-           class="smart smartRow smartRiskRow">
+               class="smart smartRow smartRiskRow" role="button" tabindex="0" aria-label="Edit Completion Risks"
+               @click="startEditing"
+               @keydown.enter.prevent="startEditing"
+               @keydown.space.prevent="startEditing">
         <v-icon class="smartIcon" icon="mdi-alert-outline" size="18"/>
         <div class="smartValue">{{ keyResult.a }}</div>
       </div>
@@ -275,8 +294,10 @@ async function deleteKeyResult() {
                 label="Deadline">
         <template #display="{startEditing}">
           <div v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE"
-           @click="startEditing"
-           class="smart smartRow">
+               class="smart smartRow" role="button" tabindex="0" aria-label="Edit Deadline"
+               @click="startEditing"
+               @keydown.enter.prevent="startEditing"
+               @keydown.space.prevent="startEditing">
         <v-icon class="smartIcon" icon="mdi-calendar" size="18"/>
         <div class="smartValue">{{ keyResult.t }}</div>
       </div>
@@ -296,19 +317,26 @@ async function deleteKeyResult() {
                   <v-icon class="smartIcon" icon="mdi-checkbox-marked-outline" size="18" v-if="task.state === TASK_STATE.FINISHED"/>
                   <v-icon class="smartIcon" icon="mdi-checkbox-blank-outline" size="18" v-if="task.state === TASK_STATE.ACTIVE"/>
                 </div>
-                <div class="smartValue taskValue" v-html="string_to_html(task.value)" @click="startEditing" :class="task.state"/>
+                <div class="smartValue taskValue" :class="task.state"
+                     :role="canEdit() ? 'button' : undefined"
+                     :tabindex="canEdit() ? 0 : undefined"
+                     :aria-label="canEdit() ? `Edit task ${task.value}` : undefined"
+                     v-html="string_to_html(task.value)"
+                     @click="startEditing"
+                     @keydown.enter.prevent="startEditing"
+                     @keydown.space.prevent="startEditing"/>
               </div>
 
               <div class="taskActions">
-          <v-icon icon="mdi-checkbox-blank-outline" size="18"
-                  v-if="task.state !== TASK_STATE.ACTIVE && canEdit()"
-                  @click="updateTaskState(task, TASK_STATE.ACTIVE)"/>
-          <v-icon icon="mdi-checkbox-marked-outline" size="18"
-                  v-if="task.state !== TASK_STATE.FINISHED && canEdit()"
-                  @click="updateTaskState(task, TASK_STATE.FINISHED)"/>
-          <v-icon icon="mdi-close-box-outline" size="18"
-                  v-if="task.state !== TASK_STATE.FAILED && canEdit()"
-                  @click="updateTaskState(task, TASK_STATE.FAILED)"/>
+          <IconAction v-if="task.state !== TASK_STATE.ACTIVE && canEdit()"
+                      icon="mdi-checkbox-blank-outline" size="18" :label="`Mark ${task.value} active`"
+                      @click="updateTaskState(task, TASK_STATE.ACTIVE)"/>
+          <IconAction v-if="task.state !== TASK_STATE.FINISHED && canEdit()"
+                      icon="mdi-checkbox-marked-outline" size="18" :label="`Mark ${task.value} finished`"
+                      @click="updateTaskState(task, TASK_STATE.FINISHED)"/>
+          <IconAction v-if="task.state !== TASK_STATE.FAILED && canEdit()"
+                      icon="mdi-close-box-outline" size="18" :label="`Mark ${task.value} failed`"
+                      @click="updateTaskState(task, TASK_STATE.FAILED)"/>
 
           <v-dialog
               :model-value="taskPendingDeletionId === task.id"
@@ -316,8 +344,8 @@ async function deleteKeyResult() {
               width="300"
           >
             <template v-slot:activator="{ props }">
-              <v-icon icon="mdi-delete-forever" size="18" v-bind="props"
-                      v-if="canEdit()"/>
+              <IconAction v-if="canEdit()" icon="mdi-delete-forever" size="18"
+                          :label="`Delete task ${task.value}`" v-bind="props"/>
             </template>
 
             <v-card>
@@ -451,7 +479,8 @@ async function deleteKeyResult() {
   margin: 3px;
 }
 
-.task:hover .taskActions {
+.task:hover .taskActions,
+.task:focus-within .taskActions {
   display: flex;
 }
 

@@ -50,7 +50,7 @@ async function addObjective() {
 <template>
   <v-dialog v-model="isOpen" width="300">
     <template v-if="showActivator" v-slot:activator="{ props }">
-      <v-btn v-bind="props" variant="tonal" rounded="lg">
+      <v-btn v-bind="props" variant="tonal" rounded="lg" aria-label="Add Objective">
         <v-icon icon="mdi-plus"/>
       </v-btn>
     </template>

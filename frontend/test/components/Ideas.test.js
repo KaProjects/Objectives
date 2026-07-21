@@ -68,11 +68,46 @@ describe('Ideas', () => {
     const subvalue = {id: '1', name: 'Fitness', ideas: [idea]}
     const wrapper = mount(Ideas, {props: {valueId: 7, subvalues: [subvalue]}})
 
-    await wrapper.find('.createObjectiveFromIdea').trigger('click')
+    const createButton = wrapper.get('.createObjectiveFromIdea')
+    expect(createButton.element.tagName).toBe('BUTTON')
+    expect(createButton.attributes('aria-label')).toBe('Create Objective from Walk')
+
+    await createButton.trigger('click')
 
     expect(wrapper.emitted('create-objective')).toEqual([[{
       subvalueId: '1', idea,
     }]])
+  })
+
+  it('enters idea editing from the keyboard', async () => {
+    const idea = {id: 'idea-1', name: 'Walk', description: 'Short walk'}
+    const wrapper = mount(Ideas, {
+      props: {valueId: 7, subvalues: [{id: '1', name: 'Fitness', ideas: [idea]}]},
+    })
+
+    const content = wrapper.get('.ideaContent')
+    expect(content.attributes()).toMatchObject({
+      role: 'button',
+      tabindex: '0',
+      'aria-label': 'Edit idea Walk',
+    })
+
+    await content.trigger('keydown.enter')
+
+    expect(wrapper.find('.ideaEditor').exists()).toBe(true)
+  })
+
+  it('opens idea deletion without entering edit mode', async () => {
+    const idea = {id: 'idea-1', name: 'Walk', description: 'Short walk'}
+    const wrapper = mount(Ideas, {
+      props: {valueId: 7, subvalues: [{id: '1', name: 'Fitness', ideas: [idea]}]},
+    })
+    const ideaItem = wrapper.findComponent(IdeaItem)
+
+    await wrapper.get('.deleteIdea').trigger('click')
+
+    expect(ideaItem.vm.confirmDeletion).toBe(true)
+    expect(ideaItem.vm.isEditing).toBe(false)
   })
 
   it('saves an edited subvalue name and notifies its parent', async () => {

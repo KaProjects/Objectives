@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import {shallowMount} from '@vue/test-utils'
+import {flushPromises, shallowMount} from '@vue/test-utils'
 
 const {api} = vi.hoisted(() => ({
   api: {
@@ -41,9 +41,30 @@ describe('Objective', () => {
   it('loads a key result before opening its dialog', async () => {
     api.get.mockResolvedValue(keyResult)
     const wrapper = shallowMount(Objective, {
-      props: {objective: {...objective}},
+      props: {
+        objective: {
+          ...objective,
+          key_results: [{
+            id: 2,
+            name: 'Walk',
+            state: 'active',
+            date_created: '2026-01-01',
+            date_reviewed: '2026-01-01',
+          }],
+        },
+      },
     })
-    await wrapper.vm.openKeyResult({id: 2}, 'active')
+
+    const keyResultCard = wrapper.get('.kr')
+    expect(keyResultCard.attributes()).toMatchObject({
+      role: 'button',
+      tabindex: '0',
+      'aria-label': 'Open Key Result Walk',
+    })
+
+    await keyResultCard.trigger('keydown.enter')
+    await flushPromises()
+
     expect(api.get).toHaveBeenCalledWith('/key_result/2')
     expect(wrapper.vm.openKrDialog).toBe(true)
   })

@@ -42,7 +42,14 @@ describe('Values view', () => {
 
     const wrapper = shallowMount(Values, {global: {plugins: [router]}})
     await flushPromises()
-    await wrapper.get('.value').trigger('click')
+    const valueCard = wrapper.get('.value')
+    expect(valueCard.attributes()).toMatchObject({
+      role: 'link',
+      tabindex: '0',
+      'aria-label': 'Open Relationships',
+    })
+
+    await valueCard.trigger('keydown.enter')
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('value')

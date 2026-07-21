@@ -40,7 +40,7 @@ async function addSubvalue() {
 <template>
   <v-dialog v-model="isOpen" width="300">
     <template v-slot:activator="{ props }">
-      <v-btn v-bind="props" variant="tonal" rounded="lg">
+      <v-btn v-bind="props" variant="tonal" rounded="lg" aria-label="Add Subvalue">
         <v-icon icon="mdi-plus"/>
       </v-btn>
     </template>

@@ -7,9 +7,10 @@ defineProps<{
 </script>
 
 <template>
-  <div v-if="count > 1" class="carouselPager" :aria-label="label">
+  <div v-if="count > 1" class="carouselPager" role="status" aria-live="polite">
+    <span class="visuallyHidden">{{ label }}: Card {{ activeIndex + 1 }} of {{ count }}</span>
     <span v-for="index in count" :key="index" class="carouselPagerDot"
-          :class="{active: index - 1 === activeIndex}"/>
+          :class="{active: index - 1 === activeIndex}" aria-hidden="true"/>
   </div>
 </template>
 
@@ -40,6 +41,16 @@ defineProps<{
 .carouselPagerDot.active {
   background: var(--v-theme-primary);
   width: 16px;
+}
+
+.visuallyHidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 @media (max-width: 600px) {

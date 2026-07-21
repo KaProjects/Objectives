@@ -8,6 +8,7 @@ import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
 import ObjectiveDialog from '@/dialogs/ObjectiveDialog.vue'
 import {KEY_RESULT_STATE, OBJECTIVE_STATE} from '@/constants/states'
 import AddKeyResultDialog from '@/dialogs/AddKeyResultDialog.vue'
+import IconAction from '@/components/IconAction.vue'
 import achievementStamp from '@/assets/achievement-stamp.png'
 import failStamp from '@/assets/fail-stamp.png'
 
@@ -118,7 +119,8 @@ function keyResultDeleted(keyResult) {
          alt="Fail"
          class="failureStamp">
 
-    <v-icon class="objEdit" icon="mdi-pencil-circle-outline" large @click="openObjective()"/>
+    <IconAction class="objEdit" icon="mdi-pencil-circle-outline"
+                :label="`Open objective ${objective.name}`" @click="openObjective"/>
 
     <div class="objIdeas" v-if="objective.state === OBJECTIVE_STATE.ACTIVE && objective.ideas_count > 0">
       <v-icon icon="mdi-lightbulb-variant-outline" size="15" style="margin: 0 auto;"/>
@@ -132,7 +134,12 @@ function keyResultDeleted(keyResult) {
                      :key="key_result.id"
                      class="kr"
                      :class="[key_result.state, {krPlaque: objective.state === OBJECTIVE_STATE.ACTIVE}]"
-                     @click="openKeyResult(key_result, objective.state)">
+                     role="button"
+                     tabindex="0"
+                     :aria-label="`Open Key Result ${key_result.name}`"
+                     @click="openKeyResult(key_result, objective.state)"
+                     @keydown.enter.prevent="openKeyResult(key_result, objective.state)"
+                     @keydown.space.prevent="openKeyResult(key_result, objective.state)">
           <div v-if="objective.state === OBJECTIVE_STATE.ACTIVE" class="krLayout">
             <div class="krStatusMark" aria-hidden="true">
               <v-icon :icon="keyResultStatus[key_result.state].icon"/>
@@ -582,15 +589,18 @@ function keyResultDeleted(keyResult) {
 }
 
 .objEdit {
-  display: none;
+  opacity: 0;
+  pointer-events: none;
   position: absolute;
   right: 0;
   top: 0;
   z-index: 1;
 }
 
-.obj:hover .objEdit {
-  display: block;
+.obj:hover .objEdit,
+.objEdit:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .objIdeas {
@@ -602,7 +612,8 @@ function keyResultDeleted(keyResult) {
 
 @media (max-width: 600px) {
   .objEdit {
-    display: block;
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 

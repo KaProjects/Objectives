@@ -82,7 +82,7 @@ onMounted(loadKeyResults)
 <template>
   <main class="keyResultsPage">
     <header class="appbar">
-      <v-btn class="backButton" variant="tonal" rounded="lg" @click="returnToValues">
+      <v-btn class="backButton" variant="tonal" rounded="lg" aria-label="Back to Values" @click="returnToValues">
         <v-icon icon="mdi-arrow-left"/>
       </v-btn>
       <h1>Active KRs Overview</h1>
@@ -97,7 +97,12 @@ onMounted(loadKeyResults)
               }"
               class="keyResultCard"
               elevation="6"
-              @click="openKeyResult(keyResult)">
+              role="button"
+              tabindex="0"
+              :aria-label="`Open Key Result ${keyResult.name}`"
+              @click="openKeyResult(keyResult)"
+              @keydown.enter.prevent="openKeyResult(keyResult)"
+              @keydown.space.prevent="openKeyResult(keyResult)">
         <div class="cardHeader">
           <v-card-title>{{ keyResult.name }}</v-card-title>
           <v-icon v-if="deadlineNeedsAttention(keyResult)"

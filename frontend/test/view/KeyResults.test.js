@@ -38,7 +38,14 @@ describe('Key Results overview', () => {
     const wrapper = shallowMount(KeyResults, {global: {plugins: [router]}})
     await flushPromises()
 
-    await wrapper.find('.keyResultCard').trigger('click')
+    const keyResultCard = wrapper.get('.keyResultCard')
+    expect(keyResultCard.attributes()).toMatchObject({
+      role: 'button',
+      tabindex: '0',
+      'aria-label': 'Open Key Result Sooner',
+    })
+
+    await keyResultCard.trigger('keydown.space')
     await flushPromises()
 
     expect(api.get).toHaveBeenCalledWith('/key_result/3')

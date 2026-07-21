@@ -112,7 +112,7 @@ function updateScrollHint() {
 <template>
   <v-dialog v-model="isOpen" width="600">
     <template v-if="showActivator" v-slot:activator="{ props }">
-      <v-btn color="primary" v-bind="props">
+      <v-btn color="primary" v-bind="props" aria-label="Add Key Result">
         <v-icon icon="mdi-plus" large style="color: #000000"/>
       </v-btn>
     </template>

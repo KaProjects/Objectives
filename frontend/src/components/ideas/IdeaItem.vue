@@ -2,6 +2,7 @@
 import {nextTick, ref, watch} from 'vue'
 import {api} from '@/services/apiClient'
 import DialogCard from '@/dialogs/DialogCard.vue'
+import IconAction from '@/components/IconAction.vue'
 import type {EntityId, Idea} from '@/types/domain'
 
 type IdeaDraft = Pick<Idea, 'name' | 'description'>
@@ -132,23 +133,32 @@ watch(() => draftIdea.value.description, () => nextTick(() => emit('resized')))
          @dragstart="startDragging"
          @dragend="emit('drag-end')"
          @click="startEditing">
-      <div class="ideaContent">
+      <div class="ideaContent"
+           :role="!disabled && !isSubmitting ? 'button' : undefined"
+           :tabindex="!disabled && !isSubmitting ? 0 : undefined"
+           :aria-label="!disabled && !isSubmitting ? `Edit idea ${idea.name}` : undefined"
+           @keydown.enter.prevent="startEditing"
+           @keydown.space.prevent="startEditing">
         <div class="ideaName">{{ idea.name }}</div>
         <div v-if="idea.description" class="ideaDescription">{{ idea.description }}</div>
       </div>
 
       <div class="ideaActions">
         <div class="desktopIdeaActions">
-          <v-icon class="createObjectiveFromIdea" icon="mdi-flag-plus-outline" size="18"
-                  @click.stop="emit('create-objective', idea)"/>
-          <v-icon class="moveIdea" icon="mdi-arrow-right-bold-circle-outline" size="18"
-                  @click.stop="emit('move-requested', idea)"/>
-          <v-icon class="deleteIdea" icon="mdi-delete" size="18"
-                  @click.stop="confirmDeletion = true"/>
+          <IconAction class="createObjectiveFromIdea" icon="mdi-flag-plus-outline" size="18"
+                      :label="`Create Objective from ${idea.name}`"
+                      @click.stop="emit('create-objective', idea)"/>
+          <IconAction class="moveIdea" icon="mdi-arrow-right-bold-circle-outline" size="18"
+                      :label="`Move ${idea.name}`"
+                      @click.stop="emit('move-requested', idea)"/>
+          <IconAction class="deleteIdea" icon="mdi-delete" size="18"
+                      :label="`Delete ${idea.name}`"
+                      @click.stop="confirmDeletion = true"/>
         </div>
         <v-menu v-model="actionsMenuOpen">
           <template #activator="{props: menuProps}">
-            <v-icon class="mobileIdeaActionsTrigger" icon="mdi-dots-vertical" v-bind="menuProps"/>
+            <IconAction class="mobileIdeaActionsTrigger" icon="mdi-dots-vertical"
+                        :label="`Actions for ${idea.name}`" v-bind="menuProps"/>
           </template>
           <v-list class="mobileIdeaActionsMenu" density="compact">
             <v-list-item prepend-icon="mdi-flag-plus-outline" title="Create Objective" @click="createObjective"/>
@@ -241,7 +251,8 @@ watch(() => draftIdea.value.description, () => nextTick(() => emit('resized')))
   display: none;
 }
 
-.idea:hover .ideaActions {
+.idea:hover .ideaActions,
+.idea:focus-within .ideaActions {
   visibility: visible;
 }
 

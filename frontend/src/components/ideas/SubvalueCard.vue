@@ -113,9 +113,13 @@ function isMoving(idea: Idea) {
                 :value="subvalue.name" label="Name" hide-details
                 :cancel-editing="confirmSubvalueDeletion" :submit="updateSubvalue"
                 @editing-changed="editingSubvalue = $event">
-        <!-- @vue-ignore Legacy Vue 3.2 does not expose scoped-slot types to vue-tsc. -->
+        <!-- @vue-ignore Editable is JavaScript and does not expose typed scoped slots. -->
         <template #display>
-          <span class="subvalueName" @click="subvalueNameEditor?.startEditing()">{{ subvalue.name }}</span>
+          <span class="subvalueName" role="button" tabindex="0"
+                :aria-label="`Edit subvalue ${subvalue.name}`"
+                @click="subvalueNameEditor?.startEditing()"
+                @keydown.enter.prevent="subvalueNameEditor?.startEditing()"
+                @keydown.space.prevent="subvalueNameEditor?.startEditing()">{{ subvalue.name }}</span>
         </template>
       </Editable>
       <span v-else/>
@@ -126,7 +130,7 @@ function isMoving(idea: Idea) {
                      :subvalue-id="subvalue.id"
                      @created="emit('created', $event)"/>
       <v-btn v-else-if="editingSubvalue" class="deleteSubvalue" variant="text" icon="mdi-delete"
-             @mousedown.prevent @click="confirmSubvalueDeletion = true"/>
+             aria-label="Delete Subvalue" @mousedown.prevent @click="confirmSubvalueDeletion = true"/>
 
       <v-dialog v-if="subvalue.id !== '0'" v-model="confirmSubvalueDeletion" width="300">
         <DialogCard :error="submissionError">

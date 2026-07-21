@@ -50,7 +50,11 @@ onMounted(loadValues)
               elevation="20"
               outlined
               shaped
-              @click.stop="openValue(value)">
+              role="link"
+              tabindex="0"
+              :aria-label="`Open ${value.name}`"
+              @click.stop="openValue(value)"
+              @keydown.enter.prevent="openValue(value)">
         <v-card-text>
           <div class="valueHeader">
             <div class="valueName text-h4 text--primary">

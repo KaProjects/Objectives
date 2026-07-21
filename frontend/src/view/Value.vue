@@ -244,7 +244,8 @@ watch(openAddObjDialog, (open) => {
   <div class="valueView" :class="{containedView: tab === OBJECTIVE_TAB.ACTIVE || tab === OBJECTIVE_TAB.IDEAS}">
 
     <div class="appbar">
-      <v-btn class="button backButton" variant="tonal" rounded="lg" @click="returnToValues()">
+      <v-btn class="button backButton" variant="tonal" rounded="lg" aria-label="Back to Values"
+             @click="returnToValues()">
         <v-icon icon="mdi-arrow-left"/>
       </v-btn>
       <h1 class="title">{{ value.name }}</h1>

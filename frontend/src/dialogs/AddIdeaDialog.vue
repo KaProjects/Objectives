@@ -44,7 +44,8 @@ async function addIdea() {
 <template>
   <v-dialog v-model="isOpen" width="300">
     <template v-slot:activator="{ props }">
-      <v-btn v-bind="props" class="addIdeaButton" variant="text" icon="mdi-plus" @click="isOpen = true"/>
+      <v-btn v-bind="props" class="addIdeaButton" variant="text" icon="mdi-plus"
+             aria-label="Add Idea" @click="isOpen = true"/>
     </template>
 
     <DialogCard :error="submissionError">

@@ -7,6 +7,7 @@ import {setError} from '@/state/appState'
 import {OBJECTIVE_STATE} from '@/constants/states'
 import DialogCard from '@/dialogs/DialogCard.vue'
 import AddKeyResultDialog from '@/dialogs/AddKeyResultDialog.vue'
+import IconAction from '@/components/IconAction.vue'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -185,7 +186,13 @@ async function deleteObjective() {
       <Editable :value="draftObjective.name" :editable="objective.state === OBJECTIVE_STATE.ACTIVE" hide-details
                 :submit="(value) => updateObjective('name', value)" label="Name">
         <template #display="{startEditing}">
-          <v-card-title @click="startEditing" class="dialogTitle text-h5 grey lighten-2">
+          <v-card-title class="dialogTitle text-h5 grey lighten-2"
+                        :role="objective.state === OBJECTIVE_STATE.ACTIVE ? 'button' : undefined"
+                        :tabindex="objective.state === OBJECTIVE_STATE.ACTIVE ? 0 : undefined"
+                        :aria-label="objective.state === OBJECTIVE_STATE.ACTIVE ? 'Edit Objective name' : undefined"
+                        @click="startEditing"
+                        @keydown.enter.prevent="startEditing"
+                        @keydown.space.prevent="startEditing">
             {{ objective.name }}
           </v-card-title>
         </template>
@@ -194,7 +201,14 @@ async function deleteObjective() {
       <Editable :value="draftObjective.description" :editable="objective.state === OBJECTIVE_STATE.ACTIVE" textarea hide-details
                 :submit="(value) => updateObjective('description', value)" label="Description">
         <template #display="{startEditing}">
-          <div class="v-card-text" v-html="string_to_html(objective.description)" @click="startEditing"/>
+          <div class="v-card-text"
+               :role="objective.state === OBJECTIVE_STATE.ACTIVE ? 'button' : undefined"
+               :tabindex="objective.state === OBJECTIVE_STATE.ACTIVE ? 0 : undefined"
+               :aria-label="objective.state === OBJECTIVE_STATE.ACTIVE ? 'Edit Objective description' : undefined"
+               v-html="string_to_html(objective.description)"
+               @click="startEditing"
+               @keydown.enter.prevent="startEditing"
+               @keydown.space.prevent="startEditing"/>
         </template>
       </Editable>
 
@@ -206,7 +220,8 @@ async function deleteObjective() {
         <v-dialog v-model="confirmDeleteObjDialog" width="300">
           <template v-slot:activator="{ props }">
             <v-btn :disabled="objective.key_results.length > 0"
-                   variant="plain" rounded="lg" icon="mdi-trash-can" size="small" v-bind="props"
+                   variant="plain" rounded="lg" icon="mdi-trash-can" size="small"
+                   aria-label="Delete Objective" v-bind="props"
             />
           </template>
           <v-card>
@@ -229,11 +244,19 @@ async function deleteObjective() {
             <template #display="{startEditing}">
               <div class="idea">
                 <v-icon class="ideaIcon" icon="mdi-lightbulb-variant-outline" size="18"/>
-                <div class="ideaValue" v-html="string_to_html(idea.value)" @click="startEditing"/>
+                <div class="ideaValue"
+                     :role="objective.state === OBJECTIVE_STATE.ACTIVE ? 'button' : undefined"
+                     :tabindex="objective.state === OBJECTIVE_STATE.ACTIVE ? 0 : undefined"
+                     :aria-label="objective.state === OBJECTIVE_STATE.ACTIVE ? `Edit idea ${idea.value}` : undefined"
+                     v-html="string_to_html(idea.value)"
+                     @click="startEditing"
+                     @keydown.enter.prevent="startEditing"
+                     @keydown.space.prevent="startEditing"/>
 
                 <div v-if="objective.state === OBJECTIVE_STATE.ACTIVE" class="ideaActions">
-                  <v-icon class="ideaCreateKeyResultIcon" icon="mdi-flag-plus-outline" size="18"
-                          @click.stop="createKeyResultFromIdea(idea)"/>
+                  <IconAction class="ideaCreateKeyResultIcon" icon="mdi-flag-plus-outline" size="18"
+                              :label="`Create Key Result from ${idea.value}`"
+                              @click.stop="createKeyResultFromIdea(idea)"/>
 
                   <v-dialog
                       :model-value="ideaPendingDeletionId === idea.id"
@@ -241,7 +264,8 @@ async function deleteObjective() {
                       width="300"
                   >
                     <template v-slot:activator="{ props }">
-                      <v-icon class="ideaDeleteIcon" icon="mdi-delete-forever" size="18" v-bind="props"/>
+                      <IconAction class="ideaDeleteIcon" icon="mdi-delete-forever" size="18"
+                                  :label="`Delete idea ${idea.value}`" v-bind="props"/>
                     </template>
 
                     <v-card>
@@ -388,7 +412,8 @@ async function deleteObjective() {
   gap: 4px;
 }
 
-.idea:hover .ideaActions {
+.idea:hover .ideaActions,
+.idea:focus-within .ideaActions {
   display: flex;
 }
 
