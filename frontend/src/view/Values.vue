@@ -16,10 +16,6 @@ async function loadValues() {
   }
 }
 
-function addValue() {
-  alert('add value')
-}
-
 function openValue(value: ValueSummary) {
   router.push({name: 'value', params: {valueId: value.id, tab: 'active'}})
 }
@@ -34,7 +30,8 @@ onMounted(loadValues)
 <template>
   <div class="values0">
     <header class="valuesAppbar">
-      <v-btn class="addValueButton" variant="tonal" rounded="lg" aria-label="Add Value" @click="addValue">
+      <v-btn class="addValueButton" variant="tonal" rounded="lg" disabled
+             aria-label="Add Value (not yet available)" title="Add Value is not yet available">
         <v-icon icon="mdi-plus"/>
       </v-btn>
       <v-btn class="keyResultsButton" variant="tonal" rounded="lg" @click="openKeyResults">

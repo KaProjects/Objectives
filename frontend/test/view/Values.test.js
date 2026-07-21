@@ -29,6 +29,10 @@ describe('Values view', () => {
     expect(wrapper.text()).toContain('Health')
     expect(wrapper.text()).toContain('Active: 2')
     expect(wrapper.text()).toContain('Achievements: 1')
+
+    const addValueButton = wrapper.get('.addValueButton')
+    expect(addValueButton.attributes('disabled')).toBeDefined()
+    expect(addValueButton.attributes('aria-label')).toBe('Add Value (not yet available)')
   })
 
   it('opens the selected value on its active tab', async () => {
