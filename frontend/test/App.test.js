@@ -1,9 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {flushPromises, shallowMount} from '@vue/test-utils'
 
-const {api} = vi.hoisted(() => ({api: {get: vi.fn()}}))
-vi.mock('@/services/apiClient', () => ({api}))
-
 import App from '@/App.vue'
 import router from '@/router'
 import {appState, clearError, setError, setToken} from '@/state/appState'
@@ -13,7 +10,6 @@ describe('App', () => {
     setToken(null)
     clearError()
     sessionStorage.clear()
-    vi.clearAllMocks()
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -21,16 +17,21 @@ describe('App', () => {
     vi.restoreAllMocks()
   })
 
-  it('loads values after a remembered token is restored', async () => {
+  it('restores a remembered token and renders the authenticated route', async () => {
     sessionStorage.setItem('token', 'remembered-token')
-    api.get.mockResolvedValue([{id: 1, name: 'Health'}])
     await router.push('/')
-    const wrapper = shallowMount(App, {global: {plugins: [router]}})
+    const wrapper = shallowMount(App, {
+      global: {
+        plugins: [router],
+        stubs: {
+          RouterView: {template: '<div>Values route</div>'},
+        },
+      },
+    })
     await flushPromises()
 
     expect(appState.token).toBe('remembered-token')
-    expect(api.get).toHaveBeenCalledWith('/values')
-    expect(wrapper.text()).toContain('Health')
+    expect(wrapper.text()).toContain('Values route')
   })
 
   it('hides application content while a blocking error is set', async () => {

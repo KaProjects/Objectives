@@ -1,13 +1,12 @@
 import {createRouter, createWebHistory} from 'vue-router'
+import Values from '@/view/Values.vue'
 import Value from '@/view/Value.vue'
 import KeyResults from '@/view/KeyResults.vue'
-
-const ValuesListRoute = {template: '<div />'}
 
 export default createRouter({
   history: createWebHistory(),
   routes: [
-    {path: '/', name: 'values', component: ValuesListRoute},
+    {path: '/', name: 'values', component: Values},
     {
       path: '/value/:valueId',
       redirect: (to) => ({name: 'value', params: {valueId: to.params.valueId, tab: 'active'}}),
