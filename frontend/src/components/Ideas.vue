@@ -492,7 +492,7 @@ async function moveIdea(source, targetSubvalue) {
 .ideaLists {
   align-items: flex-start;
   display: flex;
-  gap: 12px;
+  gap: 4px;
   box-sizing: border-box;
   min-width: 100%;
   padding: 3px 12px 12px;
@@ -532,10 +532,17 @@ async function moveIdea(source, targetSubvalue) {
 }
 
 .subvalueList {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.24);
+  border-radius: 10px !important;
+  box-sizing: border-box;
+  box-shadow:
+    0 2px 4px rgba(16, 24, 40, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
   display: flex;
   flex: 0 0 300px;
   flex-direction: column;
   max-height: calc(100vh - 82px);
+  overflow: hidden;
   transition: box-shadow 160ms ease, transform 160ms ease;
 }
 
@@ -545,12 +552,14 @@ async function moveIdea(source, targetSubvalue) {
 }
 
 .subvalueIdeas {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1px;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  padding-bottom: 16px;
-  padding-top: 0;
+  padding: 2px;
   perspective: 380px;
   perspective-origin: center;
   position: relative;
@@ -558,15 +567,32 @@ async function moveIdea(source, targetSubvalue) {
 }
 
 .subvalueIdeasWrapper {
+  border: 1px solid transparent;
+  border-radius: 7px;
   display: flex;
   flex: 1 1 auto;
+  margin: 4px;
   min-height: 0;
+  overflow: hidden;
   position: relative;
 }
 
+.subvalueIdeasWrapper::after {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.18);
+  border-radius: inherit;
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
 .subvalueListHeader {
-  display: flex;
   align-items: center;
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.16);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+  display: flex;
+  flex: 0 0 auto;
   justify-content: space-between;
   padding-bottom: 4px;
 }
@@ -604,14 +630,6 @@ async function moveIdea(source, targetSubvalue) {
 
 .idea.movingIdea {
   background: rgba(var(--v-theme-primary), 0.12);
-}
-
-.ideaItem:first-child .idea {
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-}
-
-.ideaItem .idea {
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.12);
 }
 
 .ideaName {
@@ -717,7 +735,11 @@ async function moveIdea(source, targetSubvalue) {
 
 .ideaItem {
   backface-visibility: hidden;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.18);
+  border-radius: 9px;
+  box-sizing: border-box;
   min-height: 0 !important;
+  overflow: hidden;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
   transform-style: preserve-3d;
