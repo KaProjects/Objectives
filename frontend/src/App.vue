@@ -50,12 +50,17 @@ onMounted(() => {
 
     <div v-else>
       <div class="values0" v-if="isValuesList">
-        <div class="values">
+        <header class="valuesAppbar">
+          <v-btn class="addValueButton" variant="tonal" rounded="lg" aria-label="Add Value" @click="addValue">
+            <v-icon icon="mdi-plus"/>
+          </v-btn>
           <v-btn class="keyResultsButton" variant="tonal" rounded="lg" @click="openKeyResults">
             <v-icon icon="mdi-format-list-bulleted"/>
             Key Results
           </v-btn>
+        </header>
 
+        <div class="values">
           <v-card class="value" elevation="20" outlined shaped
 
                   v-for="value in values"
@@ -77,12 +82,6 @@ onMounted(() => {
             </v-card-text>
           </v-card>
 
-          <v-card class="addValue" elevation="20" outlined shaped @click="addValue">
-            <v-card-actions>
-              <v-icon class="centerButton" icon="mdi-plus" large/>
-            </v-card-actions>
-          </v-card>
-
         </div>
       </div>
 
@@ -93,32 +92,52 @@ onMounted(() => {
 </template>
 <style scoped>
 
+.valuesAppbar {
+  align-items: center;
+  background: rgb(var(--v-theme-surface));
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.12);
+  display: flex;
+  justify-content: flex-end;
+  min-height: 56px;
+  padding: 6px 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 .values {
   max-width: 600px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0.5rem 2rem 2rem;
   font-weight: normal;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 0.5rem;
-}
-
-.value,
-.addValue {
-  width: 100%;
-  background-color: #b2d5f3;
+  gap: 0.25rem;
 }
 
 .keyResultsButton {
-  justify-self: end;
+  margin-left: auto;
+}
+
+.addValueButton {
+  height: 40px;
+  min-width: 40px;
+  padding: 0;
+  width: 40px;
 }
 
 .value {
+  background: linear-gradient(135deg, #c2ddf3 0%, #a9cfee 100%);
+  border: 1px solid #7899ae;
+  border-radius: 12px !important;
   color: #000000;
+  overflow: hidden;
+  width: 100%;
 }
 
 .value:hover {
-  background-color: #96c6ef;
+  background: linear-gradient(135deg, #b7d7f0 0%, #96c6ef 100%);
 }
 
 .valueHeader {
@@ -136,23 +155,17 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.centerButton {
-  margin-left: auto;
-  margin-right: auto;
-  height: 3em;
-}
-
-.addValue {
-  background-color: #181818;
-  color: #96c6ef;
-}
-
-.addValue:hover {
-  background-color: #96c6ef;
-  color: #181818;
-}
-
 @media (max-width: 600px) {
+  .valuesAppbar {
+    min-height: 48px;
+    padding: 4px 8px;
+  }
+
+  .values {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
   .valueName {
     flex: 1 1 auto;
     min-width: 0;
