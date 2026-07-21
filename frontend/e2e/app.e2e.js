@@ -1,5 +1,5 @@
 const {expect, test} = require('@playwright/test')
-const {installMockBackend} = require('./support/mockBackend')
+const {createMockState, installMockBackend} = require('./support/mockBackend')
 
 async function loginAndOpenValue(page) {
   await page.goto('/')
@@ -61,17 +61,46 @@ test('logs in and completes an idea CRUD journey', async ({page}) => {
 })
 
 test.describe('mobile layout', () => {
-  test.use({viewport: {width: 390, height: 600}})
+  test.use({viewport: {width: 390, height: 600}, hasTouch: true, isMobile: true})
 
   test('keeps carousels responsive and dialog controls fixed while content scrolls', async ({page}) => {
-    await installMockBackend(page)
+    const state = createMockState()
+    state.value.objectives[1].key_results = Array.from({length: 15}, (_, index) => ({
+      id: 101 + index,
+      name: `Active Key Result ${index + 1}`,
+      state: 'active',
+      date_created: '2026-07-01',
+      date_reviewed: '2026-07-31',
+      resolved_tasks_count: index % 3,
+      all_tasks_count: 3,
+    }))
+    state.subvalues[0].ideas = Array.from({length: 15}, (_, index) => ({
+      id: `idea-${index + 1}`,
+      name: `Health idea ${index + 1}`,
+      description: 'A practical idea with enough detail to occupy some vertical space.',
+    }))
+    await installMockBackend(page, state)
     await loginAndOpenValue(page)
 
+    const valueView = page.locator('.valueView')
+    const appbar = page.locator('.appbar')
     const objectiveCarousel = page.locator('.activeObjectives')
     const objectiveCards = objectiveCarousel.locator('.obj')
     const objectivePager = page.locator('.activeObjectivesCarousel > .carouselPager')
+    const keyResultsList = objectiveCards.first().locator('.keyResultsList')
+    const initialAppbarY = (await appbar.boundingBox()).y
 
+    await expect(valueView).toHaveClass(/containedView/)
+    await expect(valueView).toHaveCSS('height', '600px')
+    await expect(valueView).toHaveCSS('overflow', 'hidden')
+    expect(await page.evaluate(() => globalThis.document.scrollingElement.scrollHeight)).toBeLessThanOrEqual(600)
     await expect(objectiveCarousel).toHaveCSS('scroll-snap-type', /x mandatory/)
+    await expect(keyResultsList).toHaveCSS('overscroll-behavior-y', 'contain')
+    expect(await keyResultsList.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true)
+    await keyResultsList.evaluate((element) => element.scrollTo({top: element.scrollHeight}))
+    expect(await keyResultsList.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+    expect(await page.evaluate(() => globalThis.scrollY)).toBe(0)
+    expect((await appbar.boundingBox()).y).toBe(initialAppbarY)
     await expect(objectivePager).toBeVisible()
     await expect(objectiveCards).toHaveCount(2)
 
@@ -102,6 +131,16 @@ test.describe('mobile layout', () => {
 
     const ideaCarousel = page.locator('.ideaLists')
     const ideaPager = page.locator('.ideaCarousel > .carouselPager')
+    const ideasList = page.locator('.subvalueIdeas').first()
+    await expect(valueView).toHaveClass(/containedView/)
+    await expect(page.locator('.ideasView')).toHaveCSS('overflow', 'hidden')
+    await expect(ideasList).toHaveCSS('overscroll-behavior-y', 'contain')
+    expect(await ideasList.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true)
+    await ideasList.evaluate((element) => element.scrollTo({top: element.scrollHeight}))
+    expect(await ideasList.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+    expect(await page.evaluate(() => globalThis.document.scrollingElement.scrollHeight)).toBeLessThanOrEqual(600)
+    expect(await page.evaluate(() => globalThis.scrollY)).toBe(0)
+    expect((await appbar.boundingBox()).y).toBe(initialAppbarY)
     await expect(ideaCarousel).toHaveCSS('scroll-snap-type', /x mandatory/)
     await expect(ideaPager).toBeVisible()
     await expect(page.locator('.subvalueIdeasWrapper').first()).toHaveCSS('margin-bottom', '40px')

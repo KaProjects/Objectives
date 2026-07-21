@@ -453,6 +453,7 @@ async function deleteKeyResult(keyResult) {
   gap: 1px;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
   padding: 2px;
   perspective: 380px;
   perspective-origin: center;

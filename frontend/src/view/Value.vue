@@ -240,7 +240,7 @@ watch(openAddObjDialog, (open) => {
 </script>
 
 <template>
-  <div>
+  <div class="valueView" :class="{containedView: tab === OBJECTIVE_TAB.ACTIVE || tab === OBJECTIVE_TAB.IDEAS}">
 
     <div class="appbar">
       <v-btn class="button backButton" variant="tonal" rounded="lg" @click="returnToValues()">
@@ -490,15 +490,45 @@ watch(openAddObjDialog, (open) => {
 }
 
 @media (max-width: 600px) {
+  .containedView {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    overscroll-behavior-y: none;
+  }
+
+  .appbar {
+    flex: 0 0 auto;
+  }
+
+  .activeObjectivesCarousel,
+  .ideasView {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .activeObjectivesCarousel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   .carouselPager {
     bottom: calc(24px + env(safe-area-inset-bottom));
     display: flex;
   }
 
   .activeObjectives {
+    flex: 0 1 auto;
     gap: 0;
     margin-left: 0;
     margin-right: 0;
+    max-height: 100%;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
   }
@@ -509,20 +539,30 @@ watch(openAddObjDialog, (open) => {
 
   .activeObjectives :deep(.obj) {
     flex: 0 0 100%;
-    max-height: calc(100dvh - 96px);
+    max-height: 100%;
+    min-height: 0;
     scroll-snap-align: start;
     scroll-snap-stop: always;
     width: 100% !important;
   }
 
   .ideasView {
-    overflow-x: hidden;
+    overflow: hidden;
+  }
+
+  .ideasView :deep(.ideaCarousel) {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
   }
 
   .ideasView :deep(.ideaLists) {
     gap: 0;
+    height: 100%;
     min-width: 0;
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 0;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
@@ -535,7 +575,9 @@ watch(openAddObjDialog, (open) => {
 
   .ideasView :deep(.subvalueList) {
     flex: 0 0 100%;
-    height: calc(100dvh - 96px);
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
     scroll-snap-align: start;
     scroll-snap-stop: always;
     width: 100% !important;

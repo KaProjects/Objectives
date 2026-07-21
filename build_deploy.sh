@@ -231,6 +231,10 @@ render_dashboard() {
 }
 
 (
+  # The parent launcher owns Ctrl+C and stops the complete process tree.
+  # Keeping SIGINT away from this background branch prevents its direct child
+  # from exiting before the parent can discover and terminate its descendants.
+  trap '' INT
   cd "$ROOT_DIR/backend" || exit 1
   if [[ "$MODE" == "prod" && $USE_TTY_PROGRESS -eq 1 ]]; then
     script -q /dev/null env BUILDKIT_PROGRESS=tty ./build_deploy.sh "$MODE"
@@ -241,6 +245,9 @@ render_dashboard() {
 backend_pid=$!
 
 (
+  # See the backend branch above. Without this, npm can outlive the launcher
+  # when Ctrl+C terminates the intermediate shell before cleanup inspects it.
+  trap '' INT
   cd "$ROOT_DIR/frontend" || exit 1
   if [[ "$MODE" == "prod" && $USE_TTY_PROGRESS -eq 1 ]]; then
     script -q /dev/null env BUILDKIT_PROGRESS=tty ./build_deploy.sh "$MODE"
@@ -263,6 +270,22 @@ if [[ -t 1 ]]; then
       wait "$frontend_pid"
       frontend_status=$?
     fi
+
+    # The development servers form one application. If either side exits or
+    # fails to start, stop the other side instead of leaving the launcher
+    # waiting indefinitely with only half of the application running.
+    if [[ "$MODE" == "dev" ]]; then
+      if [[ -n "$frontend_status" && -z "$backend_status" ]]; then
+        terminate_process_tree "$backend_pid"
+        wait "$backend_pid" 2>/dev/null || true
+        backend_status=0
+      elif [[ -n "$backend_status" && -z "$frontend_status" ]]; then
+        terminate_process_tree "$frontend_pid"
+        wait "$frontend_pid" 2>/dev/null || true
+        frontend_status=0
+      fi
+    fi
+
     render_dashboard
     sleep 0.2
   done
