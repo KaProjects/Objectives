@@ -1,6 +1,7 @@
 <script setup>
-import {nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
+import {nextTick, ref, watch} from 'vue'
 import {api} from '@/services/apiClient'
+import {useEdgeRoll} from '@/composables/useEdgeRoll'
 import Editable from '@/components/Editable.vue'
 import AddIdeaDialog from '@/dialogs/AddIdeaDialog.vue'
 import DialogCard from '@/dialogs/DialogCard.vue'
@@ -25,93 +26,9 @@ const openAddIdeaDialog = ref(false)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
 const ideaListWrapper = ref(null)
-let resizeObserver
-let animationFrame = null
-let rollingTopItem = null
-let rollingBottomItem = null
-
-function ideaListElement() {
-  return ideaListWrapper.value?.querySelector('.subvalueIdeas') ?? null
-}
-
-function clearRollingItem(item, className) {
-  if (!item) return
-  item.classList.remove(className)
-  item.style.removeProperty('--roll-angle')
-}
-
-function setRollingItem(item, className, angle) {
-  item.classList.add(className)
-  item.style.setProperty('--roll-angle', `${angle}deg`)
-}
-
-function updateIdeaListRoll() {
-  const list = ideaListElement()
-  if (!list) return
-
-  clearRollingItem(rollingTopItem, 'rollingTop')
-  clearRollingItem(rollingBottomItem, 'rollingBottom')
-  rollingTopItem = null
-  rollingBottomItem = null
-
-  const viewportTop = list.scrollTop
-  const viewportBottom = viewportTop + list.clientHeight
-
-  for (const item of list.children) {
-    const itemHeight = item.offsetHeight
-    if (itemHeight <= 0) continue
-
-    const itemTop = item.offsetTop
-    const itemBottom = itemTop + itemHeight
-
-    if (!rollingTopItem && itemTop < viewportTop && itemBottom > viewportTop) {
-      const progress = Math.min((viewportTop - itemTop) / itemHeight, 1)
-      rollingTopItem = item
-      setRollingItem(item, 'rollingTop', progress * 68)
-    }
-
-    if (itemTop < viewportBottom && itemBottom > viewportBottom) {
-      const visiblePart = viewportBottom - itemTop
-      const progress = 1 - Math.min(Math.max(visiblePart / itemHeight, 0), 1)
-      if (item !== rollingTopItem) {
-        rollingBottomItem = item
-        setRollingItem(item, 'rollingBottom', progress * -68)
-      }
-      break
-    }
-
-    if (itemTop >= viewportBottom) break
-  }
-}
-
-function scheduleIdeaListRoll() {
-  if (animationFrame !== null) return
-  if (typeof requestAnimationFrame === 'undefined') {
-    updateIdeaListRoll()
-    return
-  }
-  animationFrame = requestAnimationFrame(() => {
-    animationFrame = null
-    updateIdeaListRoll()
-  })
-}
-
-onMounted(() => {
-  nextTick(() => {
-    updateIdeaListRoll()
-    const list = ideaListElement()
-    if (typeof ResizeObserver === 'undefined' || !list) return
-    resizeObserver = new ResizeObserver(scheduleIdeaListRoll)
-    resizeObserver.observe(list)
-  })
-})
-
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect()
-  if (animationFrame !== null) cancelAnimationFrame(animationFrame)
-  clearRollingItem(rollingTopItem, 'rollingTop')
-  clearRollingItem(rollingBottomItem, 'rollingBottom')
-})
+const {scheduleEdgeRoll: scheduleIdeaListRoll} = useEdgeRoll(
+    () => ideaListWrapper.value?.querySelector('.subvalueIdeas'),
+)
 
 watch(() => props.subvalue.ideas, () => nextTick(scheduleIdeaListRoll), {deep: true})
 

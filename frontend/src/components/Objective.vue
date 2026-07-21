@@ -1,8 +1,9 @@
 <script setup>
-import {nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
+import {nextTick, ref, watch} from 'vue'
 import {compareDates, formatDate, parseIsoDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
+import {useEdgeRoll} from '@/composables/useEdgeRoll'
 import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
 import ObjectiveDialog from '@/dialogs/ObjectiveDialog.vue'
 import {KEY_RESULT_STATE, OBJECTIVE_STATE} from '@/constants/states'
@@ -23,94 +24,15 @@ const selectedKr_parent = ref(null)
 const selectedObj = ref(null)
 const openKrDialog = ref(false)
 const keyResultsList = ref(null)
-let keyResultsResizeObserver
-let keyResultsAnimationFrame = null
-let rollingTopItem = null
-let rollingBottomItem = null
+const {
+  scheduleEdgeRoll: scheduleKeyResultsRoll,
+  updateEdgeRoll: updateKeyResultsRoll,
+} = useEdgeRoll(keyResultsList)
 
 const keyResultStatus = Object.freeze({
   [KEY_RESULT_STATE.ACTIVE]: {label: 'Active', icon: 'mdi-progress-clock'},
   [KEY_RESULT_STATE.COMPLETED]: {label: 'Completed', icon: 'mdi-check-bold'},
   [KEY_RESULT_STATE.FAILED]: {label: 'Failed', icon: 'mdi-close-thick'},
-})
-
-function clearRollingItem(item, className) {
-  if (!item) return
-
-  item.classList.remove(className)
-  item.style.removeProperty('--roll-angle')
-}
-
-function setRollingItem(item, className, angle) {
-  item.classList.add(className)
-  item.style.setProperty('--roll-angle', `${angle}deg`)
-}
-
-function updateKeyResultsRoll() {
-  const list = keyResultsList.value
-  if (!list) return
-
-  clearRollingItem(rollingTopItem, 'rollingTop')
-  clearRollingItem(rollingBottomItem, 'rollingBottom')
-  rollingTopItem = null
-  rollingBottomItem = null
-
-  const items = list.children
-  if (items.length === 0) return
-
-  const viewportTop = list.scrollTop
-  const viewportBottom = viewportTop + list.clientHeight
-  const firstItem = items[0]
-  const itemHeight = firstItem.offsetHeight
-  const contentTop = firstItem.offsetTop
-  const itemPitch = items.length > 1 ? items[1].offsetTop - contentTop : itemHeight + 1
-  if (itemHeight <= 0 || itemPitch <= 0) return
-
-  const topIndex = Math.max(0, Math.min(items.length - 1, Math.floor((viewportTop - contentTop) / itemPitch)))
-  const topItem = items[topIndex]
-  const topItemTop = contentTop + topIndex * itemPitch
-  const topProgress = Math.min(Math.max((viewportTop - topItemTop) / itemHeight, 0), 1)
-  if (topProgress > 0) {
-    rollingTopItem = topItem
-    setRollingItem(topItem, 'rollingTop', topProgress * 68)
-  }
-
-  const bottomIndex = Math.max(0, Math.min(items.length - 1, Math.floor((viewportBottom - contentTop) / itemPitch)))
-  const bottomItem = items[bottomIndex]
-  const bottomItemTop = contentTop + bottomIndex * itemPitch
-  const visibleBottomPart = viewportBottom - bottomItemTop
-  const bottomProgress = 1 - Math.min(Math.max(visibleBottomPart / itemHeight, 0), 1)
-  if (bottomProgress > 0 && bottomItem !== rollingTopItem) {
-    rollingBottomItem = bottomItem
-    setRollingItem(bottomItem, 'rollingBottom', bottomProgress * -68)
-  }
-}
-
-function scheduleKeyResultsRoll() {
-  if (keyResultsAnimationFrame !== null) return
-  if (typeof requestAnimationFrame === 'undefined') {
-    updateKeyResultsRoll()
-    return
-  }
-
-  keyResultsAnimationFrame = requestAnimationFrame(() => {
-    keyResultsAnimationFrame = null
-    updateKeyResultsRoll()
-  })
-}
-
-onMounted(() => {
-  nextTick(updateKeyResultsRoll)
-  if (typeof ResizeObserver === 'undefined' || !keyResultsList.value) return
-  keyResultsResizeObserver = new ResizeObserver(scheduleKeyResultsRoll)
-  keyResultsResizeObserver.observe(keyResultsList.value)
-})
-
-onBeforeUnmount(() => {
-  keyResultsResizeObserver?.disconnect()
-  if (keyResultsAnimationFrame !== null) cancelAnimationFrame(keyResultsAnimationFrame)
-  clearRollingItem(rollingTopItem, 'rollingTop')
-  clearRollingItem(rollingBottomItem, 'rollingBottom')
 })
 
 watch(() => props.objective.key_results.length, () => nextTick(updateKeyResultsRoll))

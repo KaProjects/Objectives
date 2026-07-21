@@ -1,7 +1,9 @@
 <script setup>
-import {ref} from 'vue'
+import {computed, ref} from 'vue'
 import {api} from '@/services/apiClient'
 import SubvalueCard from '@/components/ideas/SubvalueCard.vue'
+import CarouselPager from '@/components/CarouselPager.vue'
+import {useHorizontalCarousel} from '@/composables/useHorizontalCarousel'
 
 const props = defineProps({
   valueId: [String, Number],
@@ -12,22 +14,17 @@ const props = defineProps({
 })
 const emit = defineEmits(['created', 'updated', 'moved', 'subvalue-updated', 'subvalue-deleted', 'create-objective', 'deleted'])
 
-const ideaLists = ref(null)
-const activeSubvalueIndex = ref(0)
+const subvalueCount = computed(() => props.subvalues.length)
+const {
+  carousel: ideaLists,
+  activeIndex: activeSubvalueIndex,
+  updateActiveIndex: updateActiveSubvalueIndex,
+} = useHorizontalCarousel(subvalueCount)
 const draggedIdea = ref(null)
 const dragOverSubvalueId = ref(null)
 const pendingMove = ref(null)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
-
-function updateActiveSubvalueIndex() {
-  const carousel = ideaLists.value
-  if (!carousel || carousel.clientWidth === 0) return
-  activeSubvalueIndex.value = Math.min(
-      props.subvalues.length - 1,
-      Math.max(0, Math.round(carousel.scrollLeft / carousel.clientWidth)),
-  )
-}
 
 function startDragging({event, idea}, subvalue) {
   draggedIdea.value = {sourceSubvalueId: subvalue.id, idea}
@@ -122,10 +119,7 @@ async function moveIdea(source, targetSubvalue) {
                     @drop="moveDraggedIdea(subvalue)"/>
     </div>
 
-    <div v-if="subvalues.length > 1" class="carouselPager" aria-label="Subvalue card position">
-      <span v-for="(_, index) in subvalues" :key="index" class="carouselPagerDot"
-            :class="{active: index === activeSubvalueIndex}"/>
-    </div>
+    <CarouselPager :count="subvalues.length" :active-index="activeSubvalueIndex" label="Subvalue card position"/>
   </div>
 </template>
 
@@ -144,38 +138,4 @@ async function moveIdea(source, targetSubvalue) {
   position: relative;
 }
 
-.carouselPager {
-  align-items: center;
-  background: color-mix(in srgb, var(--v-theme-surface) 82%, transparent);
-  border-radius: 999px;
-  bottom: 24px;
-  display: none;
-  gap: 5px;
-  left: 50%;
-  padding: 5px 8px;
-  pointer-events: none;
-  position: absolute;
-  transform: translateX(-50%);
-  z-index: 2;
-}
-
-.carouselPagerDot {
-  background: color-mix(in srgb, var(--v-theme-on-surface) 35%, transparent);
-  border-radius: 999px;
-  height: 6px;
-  transition: background 160ms ease, width 160ms ease;
-  width: 6px;
-}
-
-.carouselPagerDot.active {
-  background: var(--v-theme-primary);
-  width: 16px;
-}
-
-@media (max-width: 600px) {
-  .carouselPager {
-    bottom: calc(14px + env(safe-area-inset-bottom));
-    display: flex;
-  }
-}
 </style>

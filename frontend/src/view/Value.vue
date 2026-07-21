@@ -9,6 +9,8 @@ import Ideas from '@/components/Ideas.vue'
 import {OBJECTIVE_STATE, OBJECTIVE_TAB} from '@/constants/states'
 import AddObjectiveDialog from '@/dialogs/AddObjectiveDialog.vue'
 import AddSubvalueDialog from '@/dialogs/AddSubvalueDialog.vue'
+import CarouselPager from '@/components/CarouselPager.vue'
+import {useHorizontalCarousel} from '@/composables/useHorizontalCarousel'
 
 const value = ref({objectives: []})
 const route = useRoute()
@@ -22,8 +24,6 @@ const pendingSourceIdeaDeletion = ref(null)
 const conversionError = ref(null)
 const openAddSubvalueDialog = ref(false)
 const subvalues = ref([])
-const activeObjectivesCarousel = ref(null)
-const activeObjectiveIndex = ref(0)
 
 function normalizeTab(tab) {
   return Object.values(OBJECTIVE_TAB).includes(tab) ? tab : OBJECTIVE_TAB.ACTIVE
@@ -54,15 +54,11 @@ function filterObjectives(objectives, isActive) {
 }
 
 const activeObjectives = computed(() => filterObjectives(value.value.objectives ?? [], true) ?? [])
-
-function updateActiveObjectiveIndex() {
-  const carousel = activeObjectivesCarousel.value
-  if (!carousel || carousel.clientWidth === 0) return
-  activeObjectiveIndex.value = Math.min(
-      activeObjectives.value.length - 1,
-      Math.max(0, Math.round(carousel.scrollLeft / carousel.clientWidth)),
-  )
-}
+const {
+  carousel: activeObjectivesCarousel,
+  activeIndex: activeObjectiveIndex,
+  updateActiveIndex: updateActiveObjectiveIndex,
+} = useHorizontalCarousel(computed(() => activeObjectives.value.length))
 
 const doneObjectiveTimeline = computed(() => {
   const datedObjectives = []
@@ -304,10 +300,8 @@ watch(openAddObjDialog, (open) => {
                    @key-result-updated="updateKeyResult"
                    @key-result-deleted="removeKeyResult"/>
       </div>
-      <div v-if="activeObjectives.length > 1" class="carouselPager" aria-label="Objective card position">
-        <span v-for="(_, index) in activeObjectives" :key="index" class="carouselPagerDot"
-              :class="{active: index === activeObjectiveIndex}"/>
-      </div>
+      <CarouselPager :count="activeObjectives.length" :active-index="activeObjectiveIndex"
+                     label="Objective card position"/>
     </div>
 
     <section v-if="tab === OBJECTIVE_TAB.DONE" class="doneTimeline">
@@ -379,34 +373,6 @@ watch(openAddObjDialog, (open) => {
 
 .activeObjectivesCarousel {
   position: relative;
-}
-
-.carouselPager {
-  align-items: center;
-  background: color-mix(in srgb, var(--v-theme-surface) 82%, transparent);
-  border-radius: 999px;
-  bottom: 24px;
-  display: none;
-  gap: 5px;
-  left: 50%;
-  padding: 5px 8px;
-  pointer-events: none;
-  position: absolute;
-  transform: translateX(-50%);
-  z-index: 2;
-}
-
-.carouselPagerDot {
-  background: color-mix(in srgb, var(--v-theme-on-surface) 35%, transparent);
-  border-radius: 999px;
-  height: 6px;
-  transition: background 160ms ease, width 160ms ease;
-  width: 6px;
-}
-
-.carouselPagerDot.active {
-  background: var(--v-theme-primary);
-  width: 16px;
 }
 
 .activeObjectives {
@@ -523,11 +489,6 @@ watch(openAddObjDialog, (open) => {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-  }
-
-  .carouselPager {
-    bottom: calc(14px + env(safe-area-inset-bottom));
-    display: flex;
   }
 
   .activeObjectives {
