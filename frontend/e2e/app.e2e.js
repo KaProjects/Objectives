@@ -144,5 +144,20 @@ test.describe('mobile layout', () => {
     await expect(ideaCarousel).toHaveCSS('scroll-snap-type', /x mandatory/)
     await expect(ideaPager).toBeVisible()
     await expect(page.locator('.subvalueIdeasWrapper').first()).toHaveCSS('margin-bottom', '40px')
+
+    await ideaCarousel.evaluate((element) => element.scrollTo({left: element.clientWidth}))
+    await expect(ideaPager.locator('.carouselPagerDot').nth(1)).toHaveClass(/active/)
+
+    await page.getByRole('tab', {name: 'Active'}).click()
+    await expect(page).toHaveURL(/\/value\/1\/active$/)
+    await expect(objectiveCarousel).toBeVisible()
+    expect(await objectiveCarousel.evaluate((element) => Math.round(element.scrollLeft / element.clientWidth))).toBe(1)
+    await expect(objectivePager.locator('.carouselPagerDot').nth(1)).toHaveClass(/active/)
+
+    await page.getByRole('tab', {name: 'Ideas'}).click()
+    await expect(page).toHaveURL(/\/value\/1\/ideas$/)
+    await expect(ideaCarousel).toBeVisible()
+    expect(await ideaCarousel.evaluate((element) => Math.round(element.scrollLeft / element.clientWidth))).toBe(1)
+    await expect(ideaPager.locator('.carouselPagerDot').nth(1)).toHaveClass(/active/)
   })
 })

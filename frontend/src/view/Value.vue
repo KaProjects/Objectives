@@ -282,7 +282,7 @@ watch(openAddObjDialog, (open) => {
         @created="addObjective"
     />
 
-    <div v-if="tab === OBJECTIVE_TAB.ACTIVE" class="activeObjectivesCarousel">
+    <div v-show="tab === OBJECTIVE_TAB.ACTIVE" class="activeObjectivesCarousel">
       <div ref="activeObjectivesCarousel" class="activeObjectives" @scroll="updateActiveObjectiveIndex">
         <Objective v-for="objective in activeObjectives"
                    :key="objective.id"
@@ -300,7 +300,7 @@ watch(openAddObjDialog, (open) => {
       </div>
     </div>
 
-    <section v-else-if="tab === OBJECTIVE_TAB.DONE" class="doneTimeline">
+    <section v-if="tab === OBJECTIVE_TAB.DONE" class="doneTimeline">
       <div v-for="group in doneObjectiveTimeline" :key="group.finishedDate ?? 'unknown'" class="timelineEvent">
         <template v-if="group.showYear">
           <div class="timelineYear">{{ group.year }}</div>
@@ -329,7 +329,7 @@ watch(openAddObjDialog, (open) => {
       </div>
     </section>
 
-    <div v-else class="ideasView">
+    <div v-show="tab === OBJECTIVE_TAB.IDEAS" class="ideasView">
       <Ideas
              class="obj"
              :value-id="valueId"
