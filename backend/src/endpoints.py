@@ -4,14 +4,21 @@ from flask import Blueprint, Response, current_app
 from flask_restx import Api, Resource, fields
 
 from classes import JsonEncoder
-from decorators import authenticated
+from decorators import AUTH_COOKIE_NAME, authenticated
 from service import Service
 from states import KEY_RESULT_STATES, OBJECTIVE_STATES, TASK_STATES, KeyResultState, ObjectiveState, TaskState
 from errors import ApiError, ConflictError, NotFoundError, UnprocessableEntityError, ValidationError, error_body, translate_exception
 
 
 rest = Blueprint('rest', __name__)
-authorizations = {"Bearer": {"type": "apiKey", "in": "header", "name": "Authorization"}}
+authorizations = {
+    "SessionCookie": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Cookie",
+        "description": f"HttpOnly {AUTH_COOKIE_NAME} cookie set by POST /authenticate",
+    }
+}
 
 api = Api(rest, doc='/doc/', authorizations=authorizations, validate=True)
 
@@ -58,7 +65,7 @@ def create_exception_response(exception):
 
 @value.route('s')
 class Values(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.response(200, 'Success')
     def get(self):
@@ -73,7 +80,7 @@ class Values(Resource):
 @value.response(404, 'Value not found')
 @value.param('id', 'Value identifier')
 class Value(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.response(200, 'Success')
     def get(self, id):
@@ -90,7 +97,7 @@ class Value(Resource):
 @value.route('/<id>/idea')
 @value.param('id', 'Value identifier')
 class Ideas(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.response(200, 'Success')
     def get(self, id):
@@ -100,7 +107,7 @@ class Ideas(Resource):
         except Exception as e:
             return create_exception_response(e)
 
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.expect(api.model('IdeaCreate', {'idea': non_blank_string('new idea')}))
     @value.response(201, 'Created')
@@ -118,7 +125,7 @@ class Ideas(Resource):
 @value.param('id', 'Value identifier')
 @value.param('idea_id', 'Idea identifier')
 class Idea(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.response(204, 'Deleted')
     def delete(self, id, idea_id):
@@ -132,7 +139,7 @@ class Idea(Resource):
 @value.route('/<id>/subvalue')
 @value.param('id', 'Value identifier')
 class Subvalues(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.response(200, 'Success')
     def get(self, id):
@@ -141,7 +148,7 @@ class Subvalues(Resource):
         except Exception as e:
             return create_exception_response(e)
 
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.expect(api.model('SubvalueCreate', {'name': non_blank_string('new subvalue')}))
     @value.response(201, 'Created')
@@ -156,7 +163,7 @@ class Subvalues(Resource):
 @value.param('id', 'Value identifier')
 @value.param('subvalue_id', 'Subvalue identifier')
 class Subvalue(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.expect(api.model('SubvalueUpdate', {'name': non_blank_string('updated subvalue')}))
     @value.response(200, 'Updated')
@@ -166,7 +173,7 @@ class Subvalue(Resource):
         except Exception as e:
             return create_exception_response(e)
 
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.response(204, 'Deleted')
     def delete(self, id, subvalue_id):
@@ -181,7 +188,7 @@ class Subvalue(Resource):
 @value.param('id', 'Value identifier')
 @value.param('subvalue_id', 'Subvalue identifier')
 class SubvalueIdeas(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.expect(api.model('SubvalueIdeaCreate', {
         'name': non_blank_string('new idea'),
@@ -202,7 +209,7 @@ class SubvalueIdeas(Resource):
 @value.param('subvalue_id', 'Subvalue identifier')
 @value.param('idea_id', 'Idea identifier')
 class SubvalueIdea(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.expect(api.model('SubvalueIdeaUpdate', {
         'name': non_blank_string('updated idea'),
@@ -217,7 +224,7 @@ class SubvalueIdea(Resource):
         except Exception as e:
             return create_exception_response(e)
 
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.response(204, 'Deleted')
     def delete(self, id, subvalue_id, idea_id):
@@ -233,7 +240,7 @@ class SubvalueIdea(Resource):
 @value.param('subvalue_id', 'Source subvalue identifier')
 @value.param('idea_id', 'Idea identifier')
 class MoveSubvalueIdea(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @value.expect(api.model('SubvalueIdeaMove', {
         'target_subvalue_id': non_blank_string('target subvalue'),
@@ -249,7 +256,7 @@ class MoveSubvalueIdea(Resource):
 
 @key_result.route('')
 class KeyResults(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @key_result.expect(api.model('KeyResultCreate', {'name': non_blank_string('name'),
                                                      'description': fields.String(required=True, example='description'),
@@ -286,7 +293,7 @@ class KeyResults(Resource):
 
 @key_result.route('/overview')
 class KeyResultOverview(Resource):
-    @key_result.doc(security="Bearer")
+    @key_result.doc(security="SessionCookie")
     @authenticated
     @key_result.response(200, 'Success')
     def get(self):
@@ -300,7 +307,7 @@ class KeyResultOverview(Resource):
 @key_result.response(404, 'Key Result not found')
 @key_result.param('id', 'Key Result identifier')
 class KeyResult(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @key_result.response(200, 'Success')
     def get(self, id):
@@ -313,7 +320,7 @@ class KeyResult(Resource):
         except Exception as e:
             return create_exception_response(e)
 
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @key_result.expect(api.model('KeyResultUpdate', {'name': non_blank_string('name'),
                                                      'description': fields.String(required=True, example='description'),
@@ -334,7 +341,7 @@ class KeyResult(Resource):
         except Exception as e:
             return create_exception_response(e)
 
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @key_result.response(204, 'Deleted')
     def delete(self, id):
@@ -352,7 +359,7 @@ class KeyResult(Resource):
 @key_result.response(404, 'Key Result not found')
 @key_result.param('id', 'Key Result identifier')
 class KeyResultReview(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @key_result.response(200, 'Success')
     def put(self, id):
@@ -370,7 +377,7 @@ class KeyResultReview(Resource):
 @key_result.response(404, 'Key Result not found')
 @key_result.param('id', 'Key Result identifier')
 class KeyResultStateResource(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @key_result.expect(api.model('KeyResultState', {'state': fields.String(required=True, example=KeyResultState.ACTIVE.value)}))
     @key_result.response(200, 'Success')
@@ -393,7 +400,7 @@ class KeyResultStateResource(Resource):
 
 @task.route('')
 class Tasks(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @task.expect(api.model('TaskCreate', {'value': non_blank_string('value'),
                                           'kr_id': fields.Integer(required=True, example=1)}))
@@ -416,7 +423,7 @@ class Tasks(Resource):
 
 @task.route('/bulk')
 class BulkTasks(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @task.expect(api.model('TaskBulkCreate', {
         'value': non_blank_string('value'),
@@ -446,7 +453,7 @@ class BulkTasks(Resource):
 
 @task.route('/daily')
 class DailyTasks(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @task.expect(api.model('TaskDailyCreate', {
         'value': fields.String(required=False, example='Drink water'),
@@ -479,7 +486,7 @@ class DailyTasks(Resource):
 @task.response(404, 'Task not found')
 @task.param('id', 'Task identifier')
 class Task(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @task.expect(api.model('TaskUpdate', {'value': non_blank_string('value'),
                                           'kr_id': fields.Integer(required=True, example=1),
@@ -504,7 +511,7 @@ class Task(Resource):
         except Exception as e:
             return create_exception_response(e)
 
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @task.response(204, 'Deleted')
     def delete(self, id):
@@ -520,7 +527,7 @@ class Task(Resource):
 
 @objective.route('')
 class Objectives(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @objective.expect(api.model('ObjectiveCreate', {'name': non_blank_string('name'),
                                                     'description': fields.String(required=True, example='description'),
@@ -552,7 +559,7 @@ class Objectives(Resource):
 @objective.response(404, 'Objective not found')
 @objective.param('id', 'Objective identifier')
 class Objective(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @objective.expect(api.model('ObjectiveUpdate', {'name': non_blank_string('name'),
                                                     'description': fields.String(required=True, example='description')}))
@@ -569,7 +576,7 @@ class Objective(Resource):
         except Exception as e:
             return create_exception_response(e)
 
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @key_result.response(204, 'Deleted')
     @key_result.response(403, 'Objective has key results')
@@ -591,7 +598,7 @@ class Objective(Resource):
 @objective.response(404, 'Objective not found')
 @objective.param('id', 'Objective identifier')
 class ObjectiveStateResource(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @objective.expect(api.model('ObjectiveState', {'state': fields.String(required=True, example=ObjectiveState.ACTIVE.value)}))
     @objective.response(200, 'Success')
@@ -615,7 +622,7 @@ class ObjectiveStateResource(Resource):
 @objective.response(404, 'Objective not found')
 @objective.param('id', 'Objective identifier')
 class ObjectiveIdeas(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @objective.response(200, 'Success')
     def get(self, id):
@@ -628,7 +635,7 @@ class ObjectiveIdeas(Resource):
         except Exception as e:
             return create_exception_response(e)
 
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @objective.expect(api.model('ObjectiveIdeaCreate', {'value': non_blank_string('name')}))
     @objective.response(201, 'Created')
@@ -652,7 +659,7 @@ class ObjectiveIdeas(Resource):
 @objective.param('id', 'Objective identifier')
 @objective.param('idea_id', 'Idea identifier')
 class ObjectiveIdea(Resource):
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @objective.expect(api.model('ObjectiveIdeaUpdate', {'value': non_blank_string('value')}))
     @objective.response(404, 'Idea not found')
@@ -671,7 +678,7 @@ class ObjectiveIdea(Resource):
         except Exception as e:
             return create_exception_response(e)
 
-    @value.doc(security="Bearer")
+    @value.doc(security="SessionCookie")
     @authenticated
     @objective.response(404, 'Idea not found')
     @objective.response(204, 'Deleted')
@@ -692,14 +699,42 @@ class ObjectiveIdea(Resource):
 @auth.route('')
 class Auth(Resource):
 
+    @auth.doc(security="SessionCookie")
+    @authenticated
+    @auth.response(204, "authenticated")
+    @auth.response(401, "unauthorized")
+    def get(self):
+        return create_response(None, 204)
+
     @auth.expect(auth.model('Auth', {'user': fields.String(required=True, example='user'),
                                      'password': fields.String(required=True, example='password')}))
-    @auth.response(201, "authorized")
+    @auth.response(204, "authorized")
     @auth.response(401, "unauthorized")
     def post(self):
         data: dict = auth.payload
         token = Service().authenticate(data["user"], data["password"])
         if token:
-            return create_response(token, 201)
+            response = create_response(None, 204)
+            response.set_cookie(
+                AUTH_COOKIE_NAME,
+                token,
+                httponly=True,
+                secure=False,
+                samesite='Strict',
+                path='/',
+            )
+            return response
         else:
             return create_response("unauthorized", 401)
+
+    @auth.response(204, "logged out")
+    def delete(self):
+        response = create_response(None, 204)
+        response.delete_cookie(
+            AUTH_COOKIE_NAME,
+            httponly=True,
+            secure=False,
+            samesite='Strict',
+            path='/',
+        )
+        return response

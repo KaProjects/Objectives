@@ -1,24 +1,29 @@
 <script setup>
 import {ref} from 'vue'
 import {api} from '@/services/apiClient'
-import {setError, setToken} from '@/state/appState'
+import {setAuthStatus, setError} from '@/state/appState'
 
 const emit = defineEmits(['logged-in'])
 
 const username = ref('')
 const password = ref('')
 const isSubmitting = ref(false)
+const authenticationError = ref(null)
 
 async function login() {
   if (isSubmitting.value) return
   isSubmitting.value = true
+  authenticationError.value = null
   try {
-    const token = await api.login(username.value, password.value)
-    setToken(token)
-    sessionStorage.setItem('token', token)
-    emit('logged-in', token)
+    await api.login(username.value, password.value)
+    setAuthStatus('authenticated')
+    emit('logged-in')
   } catch (error) {
-    setError(error)
+    if (error?.status === 401) {
+      authenticationError.value = 'Invalid username or password'
+    } else {
+      setError(error)
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -28,6 +33,9 @@ async function login() {
   <div class="loginPage">
     <v-card class="loginCard elevation-12">
       <v-card-text>
+        <v-alert v-if="authenticationError" type="error" class="mb-4">
+          {{ authenticationError }}
+        </v-alert>
         <form ref="form" @submit.prevent="login()">
           <v-text-field
               v-model="username"

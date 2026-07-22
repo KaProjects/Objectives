@@ -1,12 +1,18 @@
 <script setup>
 import {onMounted} from 'vue'
-import {appState, setToken} from '@/state/appState'
+import {api} from '@/services/apiClient'
+import {appState, setAuthStatus, setError} from '@/state/appState'
 import Login from '@/components/Login.vue'
 
-onMounted(() => {
-  const token = sessionStorage.getItem('token')
-  if (token) {
-    setToken(token)
+onMounted(async () => {
+  try {
+    await api.checkAuthentication()
+    setAuthStatus('authenticated')
+  } catch (error) {
+    setAuthStatus('anonymous')
+    if (error?.status !== 401) {
+      setError(error)
+    }
   }
 })
 </script>
@@ -18,7 +24,7 @@ onMounted(() => {
   </v-alert>
 
   <div v-else>
-    <Login v-if="appState.token == null"/>
-    <RouterView v-else/>
+    <Login v-if="appState.authStatus === 'anonymous'"/>
+    <RouterView v-else-if="appState.authStatus === 'authenticated'"/>
   </div>
 </template>

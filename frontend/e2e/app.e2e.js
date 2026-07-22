@@ -1,5 +1,10 @@
 const {expect, test} = require('@playwright/test')
-const {createMockState, installMockBackend} = require('./support/mockBackend')
+const {
+  SESSION_COOKIE_NAME,
+  SESSION_COOKIE_VALUE,
+  createMockState,
+  installMockBackend,
+} = require('./support/mockBackend')
 
 async function loginAndOpenValue(page) {
   await page.goto('/')
@@ -18,6 +23,21 @@ async function loginAndOpenValue(page) {
 test('logs in and completes an idea CRUD journey', async ({page}) => {
   const state = await installMockBackend(page)
   await loginAndOpenValue(page)
+
+  const sessionCookie = (await page.context().cookies())
+      .find((cookie) => cookie.name === SESSION_COOKIE_NAME)
+  expect(sessionCookie).toMatchObject({
+    name: SESSION_COOKIE_NAME,
+    value: SESSION_COOKIE_VALUE,
+    httpOnly: true,
+    secure: false,
+    sameSite: 'Strict',
+  })
+  expect(await page.evaluate(() => globalThis.sessionStorage.getItem('token'))).toBeNull()
+  expect(await page.evaluate(() => globalThis.document.cookie)).not.toContain(`${SESSION_COOKIE_NAME}=`)
+
+  await page.reload()
+  await expect(page.getByRole('heading', {name: 'Health'})).toBeVisible()
 
   await page.getByRole('tab', {name: 'Ideas'}).click()
   await expect(page).toHaveURL(/\/value\/1\/ideas$/)
@@ -51,12 +71,57 @@ test('logs in and completes an idea CRUD journey', async ({page}) => {
   await expect(defaultList.getByText('Plan a Sunday walk')).toHaveCount(0)
 
   expect(state.requests).toEqual(expect.arrayContaining([
-    expect.objectContaining({method: 'POST', path: '/authenticate'}),
-    expect.objectContaining({method: 'GET', path: '/values'}),
-    expect.objectContaining({method: 'GET', path: '/value/1'}),
+    expect.objectContaining({method: 'GET', path: '/authenticate', authenticated: false}),
+    expect.objectContaining({
+      method: 'POST',
+      path: '/authenticate',
+      data: {user: 'user', password: 'password'},
+      clientHeader: 'web',
+    }),
+    expect.objectContaining({method: 'GET', path: '/authenticate', authenticated: true}),
+    expect.objectContaining({method: 'GET', path: '/values', authenticated: true}),
+    expect.objectContaining({method: 'GET', path: '/value/1', authenticated: true}),
     expect.objectContaining({method: 'POST', path: '/value/1/subvalue/0/idea'}),
     expect.objectContaining({method: 'PUT'}),
     expect.objectContaining({method: 'DELETE'}),
+  ]))
+})
+
+test('bootstraps from and clears an HttpOnly session cookie', async ({page}) => {
+  const state = await installMockBackend(page)
+  await page.context().addCookies([{
+    name: SESSION_COOKIE_NAME,
+    value: SESSION_COOKIE_VALUE,
+    url: 'http://127.0.0.1:4173',
+    httpOnly: true,
+    secure: false,
+    sameSite: 'Strict',
+  }])
+
+  await page.goto('/')
+  await expect(page.locator('.value').filter({hasText: 'Health'})).toBeVisible()
+  await expect(page.getByRole('button', {name: 'Login'})).toHaveCount(0)
+  expect(await page.evaluate(() => globalThis.sessionStorage.getItem('token'))).toBeNull()
+  expect(await page.evaluate(() => globalThis.document.cookie)).not.toContain(`${SESSION_COOKIE_NAME}=`)
+
+  const logoutStatus = await page.evaluate(async () => {
+    const response = await globalThis.fetch('/api/authenticate', {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {'X-Objectives-Client': 'web'},
+    })
+    return response.status
+  })
+  expect(logoutStatus).toBe(204)
+  expect((await page.context().cookies()).find((cookie) => cookie.name === SESSION_COOKIE_NAME))
+      .toBeUndefined()
+
+  await page.reload()
+  await expect(page.getByRole('button', {name: 'Login'})).toBeVisible()
+  expect(state.requests).toEqual(expect.arrayContaining([
+    expect.objectContaining({method: 'GET', path: '/authenticate', authenticated: true}),
+    expect.objectContaining({method: 'DELETE', path: '/authenticate', authenticated: true}),
+    expect.objectContaining({method: 'GET', path: '/authenticate', authenticated: false}),
   ]))
 })
 

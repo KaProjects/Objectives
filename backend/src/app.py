@@ -1,8 +1,9 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+from decorators import CLIENT_HEADER_NAME, CLIENT_HEADER_VALUE, UNSAFE_METHODS
 from endpoints import rest
-from errors import ApiError, InternalServerError, error_body
+from errors import ApiError, ForbiddenError, InternalServerError, error_body
 
 
 def create_app(service, auth, origins, port, debug):
@@ -10,11 +11,28 @@ def create_app(service, auth, origins, port, debug):
     app = Flask(__name__)
     app.extensions['auth'] = auth
     app.extensions['service'] = service
-    CORS(rest, resources={r"/*": {"origins": origins}})
+    CORS(
+        rest,
+        resources={r"/*": {"origins": [origins]}},
+        supports_credentials=True,
+        allow_headers=['Content-Type', CLIENT_HEADER_NAME],
+    )
     app.register_blueprint(rest)
     app.config["RESTX_MASK_SWAGGER"] = False
+    app.config['FRONTEND_ORIGIN'] = origins
     app.config['SERVER_PORT'] = port
     app.config['SERVER_DEBUG'] = debug
+
+    @app.before_request
+    def protect_unsafe_requests():
+        if request.method not in UNSAFE_METHODS:
+            return None
+        if (
+            request.headers.get('Origin') != app.config['FRONTEND_ORIGIN']
+            or request.headers.get(CLIENT_HEADER_NAME) != CLIENT_HEADER_VALUE
+        ):
+            raise ForbiddenError()
+        return None
 
     @app.errorhandler(ApiError)
     def handle_api_error(error):

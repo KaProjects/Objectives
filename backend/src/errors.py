@@ -16,6 +16,12 @@ class ValidationError(ApiError):
     default_message = 'The request contains invalid or missing data.'
 
 
+class ForbiddenError(ApiError):
+    status_code = 403
+    code = 'forbidden'
+    default_message = 'The request origin or client header is not allowed.'
+
+
 class NotFoundError(ApiError):
     status_code = 404
     code = 'not_found'

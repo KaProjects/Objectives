@@ -1,5 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
-import {setToken} from '@/state/appState'
+import {appState, clearError, setAuthStatus, setError} from '@/state/appState'
 import {ApiError, api} from '@/services/apiClient'
 
 function mockResponse({ok = true, status = 200, contentType = '', body = ''} = {}) {
@@ -16,14 +16,14 @@ function mockResponse({ok = true, status = 200, contentType = '', body = ''} = {
 
 describe('api client', () => {
   beforeEach(() => {
-    setToken(null)
+    setAuthStatus('checking')
+    clearError()
     vi.restoreAllMocks()
   })
 
   afterEach(() => vi.restoreAllMocks())
 
-  it('adds a bearer token and parses JSON responses', async () => {
-    setToken('user-token')
+  it('includes browser credentials without an authorization header', async () => {
     global.fetch = vi.fn().mockResolvedValue(mockResponse({
       contentType: 'application/json',
       body: [{id: 1}],
@@ -32,18 +32,64 @@ describe('api client', () => {
     await expect(api.get('/values')).resolves.toEqual([{id: 1}])
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/values'), expect.objectContaining({
       method: 'GET',
+      credentials: 'include',
       headers: expect.anything(),
     }))
-    expect(fetch.mock.calls[0][1].headers.get('Authorization')).toBe('Bearer user-token')
+    const headers = fetch.mock.calls[0][1].headers
+    expect(headers.get('Authorization')).toBeNull()
+    expect(headers.get('X-Objectives-Client')).toBeNull()
   })
 
-  it('sends JSON without authentication for login', async () => {
-    global.fetch = vi.fn().mockResolvedValue(mockResponse({body: 'new-token'}))
+  it('logs in with JSON and the mutation request header without returning a token', async () => {
+    global.fetch = vi.fn().mockResolvedValue(mockResponse({status: 204}))
 
-    await expect(api.login('alice', 'password')).resolves.toBe('new-token')
+    await expect(api.login('alice', 'password')).resolves.toBeUndefined()
     const options = fetch.mock.calls[0][1]
+    expect(options.method).toBe('POST')
+    expect(options.credentials).toBe('include')
     expect(options.headers.get('Authorization')).toBeNull()
+    expect(options.headers.get('Content-Type')).toBe('application/json')
+    expect(options.headers.get('X-Objectives-Client')).toBe('web')
     expect(options.body).toBe(JSON.stringify({user: 'alice', password: 'password'}))
+  })
+
+  it('checks and clears the cookie session through the authentication endpoint', async () => {
+    global.fetch = vi.fn().mockResolvedValue(mockResponse({status: 204}))
+
+    await api.checkAuthentication()
+    await api.logout()
+
+    expect(fetch).toHaveBeenNthCalledWith(1, expect.stringContaining('/authenticate'), expect.objectContaining({
+      method: 'GET',
+      credentials: 'include',
+    }))
+    expect(fetch).toHaveBeenNthCalledWith(2, expect.stringContaining('/authenticate'), expect.objectContaining({
+      method: 'DELETE',
+      credentials: 'include',
+    }))
+    expect(fetch.mock.calls[0][1].headers.get('X-Objectives-Client')).toBeNull()
+    expect(fetch.mock.calls[1][1].headers.get('X-Objectives-Client')).toBe('web')
+  })
+
+  it('transitions to anonymous without setting a global error on unauthorized requests', async () => {
+    setAuthStatus('authenticated')
+    global.fetch = vi.fn().mockResolvedValue(mockResponse({
+      ok: false,
+      status: 401,
+      body: 'invalid session',
+    }))
+
+    let requestError
+    try {
+      await api.get('/values')
+    } catch (error) {
+      requestError = error
+      setError(error)
+    }
+
+    expect(requestError).toBeInstanceOf(ApiError)
+    expect(appState.authStatus).toBe('anonymous')
+    expect(appState.error).toBeNull()
   })
 
   it('uses the backend error message for failed JSON requests', async () => {
@@ -59,6 +105,5 @@ describe('api client', () => {
       status: 404,
       message: 'Not found',
     })
-    await expect(api.get('/missing')).rejects.toBeInstanceOf(ApiError)
   })
 })

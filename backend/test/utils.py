@@ -1,20 +1,20 @@
 from datetime import date
 
 _client = None
-_token = None
+_mutation_headers = None
 
 
-def configure_client(client, token):
-    global _client, _token
+def configure_client(client, mutation_headers=None):
+    global _client, _mutation_headers
     _client = client
-    _token = token
+    _mutation_headers = mutation_headers
 
 
 def _request(method, path, payload=None):
     if _client is None:
         raise RuntimeError('API test client is not configured; inherit from ApiTestCase')
 
-    headers = {'Authorization': 'Bearer ' + _token}
+    headers = dict(_mutation_headers or {}) if method in {'POST', 'PUT', 'PATCH', 'DELETE'} else {}
     request_arguments = {'method': method, 'headers': headers}
     if method in {'POST', 'PUT'}:
         request_arguments.update(data=payload, content_type='application/json')

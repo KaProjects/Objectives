@@ -1,4 +1,4 @@
-import {appState} from '@/state/appState'
+import {setAuthStatus} from '@/state/appState'
 
 export class ApiError extends Error {
   readonly status: number
@@ -13,38 +13,42 @@ export class ApiError extends Error {
 interface RequestOptions<TData> {
   method?: string
   data?: TData
-  authenticated?: boolean
 }
 
 const backend = import.meta.env.VITE_BACKEND_URL
+const mutationMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
 async function request<TResponse, TData = never>(
     path: string,
-    {method = 'GET', data, authenticated = true}: RequestOptions<TData> = {},
+    {method = 'GET', data}: RequestOptions<TData> = {},
 ): Promise<TResponse> {
   const headers = new Headers()
+  const normalizedMethod = method.toUpperCase()
 
   if (data !== undefined) {
     headers.set('Content-Type', 'application/json')
   }
 
-  if (authenticated && appState.token) {
-    headers.set('Authorization', `Bearer ${appState.token}`)
+  if (mutationMethods.has(normalizedMethod)) {
+    headers.set('X-Objectives-Client', 'web')
   }
 
   const response = await fetch(`${backend}${path}`, {
-    method,
+    method: normalizedMethod,
     headers,
+    credentials: 'include',
     body: data === undefined ? undefined : JSON.stringify(data),
   })
   const contentType = response.headers.get('content-type') ?? ''
-  const body: unknown = contentType.includes('application/json')
-    ? await response.json()
-    : await response.text()
+  const body: unknown = response.status === 204
+    ? undefined
+    : contentType.includes('application/json')
+      ? await response.json()
+      : await response.text()
 
   if (!response.ok) {
     if (response.status === 401) {
-      sessionStorage.removeItem('token')
+      setAuthStatus('anonymous')
     }
     const message = errorMessage(body)
     throw new ApiError(response.status, message)
@@ -70,8 +74,10 @@ export const api = {
     request<TResponse, TData>(path, {method: 'POST', data}),
   put: <TResponse, TData = unknown>(path: string, data: TData) =>
     request<TResponse, TData>(path, {method: 'PUT', data}),
-  login: (username: string, password: string) => request<string, {user: string; password: string}>(
+  login: (username: string, password: string) => request<void, {user: string; password: string}>(
       '/authenticate',
-      {method: 'POST', data: {user: username, password}, authenticated: false},
+      {method: 'POST', data: {user: username, password}},
   ),
+  checkAuthentication: () => request<void>('/authenticate'),
+  logout: () => request<void>('/authenticate', {method: 'DELETE'}),
 }

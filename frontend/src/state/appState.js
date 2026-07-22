@@ -1,15 +1,19 @@
 import {reactive} from 'vue'
 
 export const appState = reactive({
-  token: null,
+  authStatus: 'checking',
   error: null,
 })
 
-export function setToken(token) {
-  appState.token = token
+export function setAuthStatus(status) {
+  appState.authStatus = status
 }
 
 export function setError(error) {
+  if (error?.status === 401) {
+    appState.error = null
+    return
+  }
   console.error(error)
   appState.error = error instanceof Error ? error.message : String(error)
 }

@@ -1,4 +1,5 @@
 import atexit
+from hashlib import sha256
 import os
 import sqlite3
 import tempfile
@@ -13,9 +14,15 @@ from app import create_app
 from auth_manager import AuthManager
 from database_manager import DatabaseManager
 from devel.fake_firebase import create_memory_database
+from decorators import AUTH_COOKIE_NAME, CLIENT_HEADER_NAME, CLIENT_HEADER_VALUE
 import firebase_manager
 from service import Service
 from utils import configure_client
+
+
+TEST_FRONTEND_ORIGIN = 'http://objectives.test'
+TEST_USER = 'test-user'
+TEST_PASSWORD = 'test-password'
 
 
 def _mysql_settings():
@@ -94,7 +101,8 @@ def initialize_test_database(database_path=None):
 
 
 def init_auth_manager():
-    return AuthManager('test-token-secret')
+    password_hash = sha256(TEST_PASSWORD.encode('utf-8')).hexdigest()
+    return AuthManager('test-token-secret', TEST_USER, password_hash)
 
 
 def init_firebase(data_path=None):
@@ -107,7 +115,7 @@ def create_test_app(database_path=None):
     database = initialize_test_database(database_path)
     firebase = init_firebase()
     auth = init_auth_manager()
-    app = create_app(Service(database, firebase, auth), auth, 'http://*:*', port=0, debug=False)
+    app = create_app(Service(database, firebase, auth), auth, TEST_FRONTEND_ORIGIN, port=0, debug=False)
     app.config.update(TESTING=True)
     return app, auth
 
@@ -139,10 +147,14 @@ class ApiTestCase(unittest.TestCase):
         initialize_test_database(database_path)
         init_firebase()
         self.client = self.app.test_client()
-        self.token = auth.generate_token('test-user')
-        self.auth_headers = {'Authorization': f'Bearer {self.token}'}
-        configure_client(self.client, self.token)
+        self.token = auth.generate_token(TEST_USER)
+        self.client.set_cookie(AUTH_COOKIE_NAME, self.token)
+        self.auth_headers = {
+            'Origin': TEST_FRONTEND_ORIGIN,
+            CLIENT_HEADER_NAME: CLIENT_HEADER_VALUE,
+        }
+        configure_client(self.client, self.auth_headers)
 
     def tearDown(self):
-        configure_client(None, None)
+        configure_client(None)
         super().tearDown()
