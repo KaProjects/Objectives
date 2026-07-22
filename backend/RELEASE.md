@@ -4,10 +4,14 @@
      check envs_prod_db.json
      bump build deploy sh versions
 
-## 1.3
-Released: TODO
+## 2.0
+Released: 22.7.2026
 
-    TODO
+    major refactoring
+    dev-ops improvements
+    improved authentization
+    new endpoints for new UI features
+    request validation
 
 ## 1.2
 Released: 21.10.2024

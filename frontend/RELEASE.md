@@ -4,10 +4,15 @@
      bump package.json version
      bump build deploy sh versions
 
-## 1.3
-Released: TODO
+## 2.0
+Released: 22.7.2026
 
-    TODO
+    complete redesign of UI
+    smart rework - now in create KR dialog
+    major refactoring
+    dev-ops improvements
+    ideas for subvalues
+    KR overview view
 
 ## 1.2
 Released: 21.10.2024
