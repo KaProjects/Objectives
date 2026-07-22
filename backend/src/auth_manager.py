@@ -1,42 +1,31 @@
-import json
-import sys
-import time
-import uuid
-
-from typing import Union
 from hashlib import sha256
 
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
-class Token:
-    def __init__(self):
-        self.value: Union[None, str] = None
-        self.expiration: Union[None, int] = None
+TOKEN_MAX_AGE_SECONDS = 18_000
 
-    def generate(self):
-        self.expiration = int(round(time.time())) + 18000
-        self.value = str(uuid.uuid4())
-        return self.value
 
-    def check(self, token):
+class AuthManager:
+    def __init__(self, token_secret, user=None, password_hash=None):
+        self._serializer = URLSafeTimedSerializer(token_secret, salt='objectives-auth')
+        self._user = user
+        self._password_hash = password_hash
+
+    def generate_token(self, user):
+        return self._serializer.dumps({'user': user})
+
+    def authenticate(self, user, password):
+        if self._user is None:
+            return self.generate_token(user)
+        if self._user == user and self._password_hash == sha256(password.encode('utf-8')).hexdigest():
+            return self.generate_token(user)
+        return None
+
+    def validate_token(self, token):
         if not token:
             return False
-        if token == self.value:
-            return int(round(time.time())) < self.expiration
-        else:
+        try:
+            self._serializer.loads(token, max_age=TOKEN_MAX_AGE_SECONDS)
+            return True
+        except (BadSignature, SignatureExpired):
             return False
-
-
-token_store = Token()
-
-
-def authenticate(user, password) -> Union[None, str]:
-    if sys.argv[1] == 'test':
-        return token_store.generate()
-    with open("envs_user.json") as envs_file:
-        envs = json.load(envs_file)
-        if envs["user"] == user and envs["hash"] == sha256(password.encode('utf-8')).hexdigest():
-            return token_store.generate()
-
-
-def validate_token(token) -> bool:
-    return token_store.check(token)

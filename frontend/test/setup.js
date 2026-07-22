@@ -1,0 +1,27 @@
+import {config} from '@vue/test-utils'
+
+config.global.stubs = {
+  'v-card': {template: '<section><slot /></section>'},
+  'v-card-title': {template: '<h2><slot /></h2>'},
+  'v-card-subtitle': {template: '<p><slot /></p>'},
+  'v-card-text': {template: '<div><slot /></div>'},
+  'v-card-actions': {template: '<div><slot /></div>'},
+  'v-dialog': {template: '<div><slot /><slot name="activator" :props="{}" /></div>'},
+  'v-menu': {template: '<div><slot /><slot name="activator" :props="{}" /></div>'},
+  'v-btn': {template: '<button><slot /></button>'},
+  'v-icon': {template: '<i><slot /></i>'},
+  'v-text-field': {props: ['modelValue'], template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'},
+  'v-textarea': {props: ['modelValue'], template: '<textarea :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'},
+  'v-checkbox': {props: ['modelValue'], template: '<input type="checkbox" :checked="modelValue" @change="$emit(\'update:modelValue\', $event.target.checked)" />'},
+  'v-alert': {template: '<div><slot /></div>'},
+  'v-container': {template: '<div><slot /></div>'},
+  'v-layout': {template: '<div><slot /></div>'},
+  'v-flex': {template: '<div><slot /></div>'},
+  'v-tabs': {template: '<div><slot /></div>'},
+  'v-tab': {template: '<button><slot /></button>'},
+  'v-progress-circular': {template: '<div />'},
+  'v-list': {template: '<div><slot /></div>'},
+  'v-list-item': {template: '<div><slot /></div>'},
+  'v-list-item-title': {template: '<div><slot /></div>'},
+  'v-divider': {template: '<hr />'},
+}

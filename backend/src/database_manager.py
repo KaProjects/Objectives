@@ -1,62 +1,70 @@
-import json
-import sqlite3
 from contextlib import contextmanager
-from enum import Enum
-from sqlite3 import Connection
-
-import mysql.connector
+from contextvars import ContextVar
+from datetime import date
 
 from classes import Value, Objective, KeyResult, Task, ObjectiveIdea
+from errors import DatabaseIntegrityError
+from states import KeyResultState, ObjectiveState, TaskState
 
-
-class DataSource(Enum):
-    PRODUCTION = "prod"
-    DEVEL = "dev"
-    TEST = "test"
-
-
-datasource: DataSource = None
+_placeholder = ContextVar('database_placeholder', default='?')
 
 
 def sql(query: str):
-    if datasource == DataSource.PRODUCTION:
-        query = query.replace("?", "%s")
-    return query
+    return query.replace('?', _placeholder.get())
+
+
+def validate_iso_date(value: str, allow_empty: bool = False) -> str:
+    if value == '' and allow_empty:
+        return value
+    if not isinstance(value, str):
+        raise ValueError('date must be a string')
+    try:
+        return date.fromisoformat(value).isoformat()
+    except ValueError as error:
+        raise ValueError('date must use ISO format YYYY-MM-DD') from error
 
 
 class DatabaseManager:
 
-    def __init__(self):
-        if datasource == DataSource.PRODUCTION:
-            with open("envs_prod_db.json") as envs_file:
-                envs = json.load(envs_file)
-                self.conn = mysql.connector.connect(
-                    host=envs["host"],
-                    port=envs["port"],
-                    user=envs["user"],
-                    password=envs["password"],
-                    database=envs["database"],
-                    buffered=True
-                )
-        elif datasource == DataSource.DEVEL:
-            self.conn: Connection = sqlite3.connect("devel.db")
-        elif datasource == DataSource.TEST:
-            self.conn: Connection = sqlite3.connect("test.db")
+    def __init__(self, connect, placeholder='?', integrity_errors=()):
+        self._connect = connect
+        self._placeholder = placeholder
+        self._integrity_errors = integrity_errors
+        self._placeholder_token = None
+        self.conn = None
 
-    def __del__(self):
-        self.conn.close()
+    def open(self):
+        """Create a short-lived session using this manager's configuration."""
+        return DatabaseManager(
+            connect=self._connect,
+            placeholder=self._placeholder,
+            integrity_errors=self._integrity_errors,
+        )
+
+    def close(self):
+        if getattr(self, 'conn', None) is not None:
+            self.conn.close()
+            self.conn = None
+
+    def __enter__(self):
+        self.conn = self._connect()
+        self._placeholder_token = _placeholder.set(self._placeholder)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+        _placeholder.reset(self._placeholder_token)
 
     @contextmanager
     def cursor(self, commit: bool = False):
         cursor = self.conn.cursor()
         try:
             yield cursor
-        except Exception as err:
-            print("DatabaseError {} ".format(err))
-            raise err
-        else:
             if commit:
                 self.conn.commit()
+        except self._integrity_errors as error:
+            self.conn.rollback()
+            raise DatabaseIntegrityError() from error
         finally:
             cursor.close()
 
@@ -68,9 +76,18 @@ class DatabaseManager:
     def select_all_values(self) -> list:
         values = list()
         with self.cursor() as cursor:
-            cursor.execute(sql('select * from PValues'))
-            for value in cursor.fetchall():
-                values.append(Value(value))
+            cursor.execute(sql('''
+                select values_table.id, values_table.name, values_table.description,
+                       sum(case when objectives.state = 'active' then 1 else 0 end) as active_count,
+                       sum(case when objectives.state = 'achieved' then 1 else 0 end) as achievements_count
+                from PValues values_table
+                left join Objectives objectives on objectives.value_id = values_table.id
+                group by values_table.id, values_table.name, values_table.description
+            '''))
+            for row in cursor.fetchall():
+                value = Value(row[:3])
+                value.set_counts(row[3], row[4])
+                values.append(value)
         return values
 
     # def insert_value(self, name, description) -> int:
@@ -88,31 +105,70 @@ class DatabaseManager:
     def select_objectives_for_value(self, value_id: str) -> list:
         objectives = list()
         with self.cursor() as cursor:
-            cursor.execute(sql('select * from Objectives where value_id=?'), (int(value_id),))
-            for objective in cursor.fetchall():
-                obj = Objective(objective)
-                cursor.execute(sql('select count(*) from ObjectiveIdeas where objective_id=?'), (int(obj.id),))
-                obj.set_ideas_count(cursor.fetchone()[0])
+            cursor.execute(sql('''
+                select objectives.id, objectives.value_id, objectives.state, objectives.name,
+                       objectives.description, objectives.date_created, objectives.date_finished,
+                       count(ideas.id) as ideas_count
+                from Objectives objectives
+                left join ObjectiveIdeas ideas on ideas.objective_id = objectives.id
+                where objectives.value_id=?
+                group by objectives.id, objectives.value_id, objectives.state, objectives.name,
+                         objectives.description, objectives.date_created, objectives.date_finished
+            '''), (int(value_id),))
+            for row in cursor.fetchall():
+                obj = Objective(row[:7])
+                obj.set_ideas_count(row[7])
                 objectives.append(obj)
         return objectives
 
     def select_key_results_for_objective(self, objective_id: str) -> list:
         key_results = list()
         with self.cursor() as cursor:
-            cursor.execute(sql('select * from KeyResults where objective_id=?'), (int(objective_id),))
-            for db_key_result in cursor.fetchall():
-                key_result = KeyResult(db_key_result, True)
-
-                cursor.execute(sql('select count(*) from Tasks where kr_id=?'), (int(key_result.id),))
-                all_tasks_count = cursor.fetchone()[0]
-                cursor.execute(sql('select count(*) from Tasks where kr_id=? and not state=?'), (int(key_result.id), 'active'))
-                resolved_tasks_count = cursor.fetchone()[0]
-                key_result.set_tasks_count(all_tasks_count, resolved_tasks_count)
+            cursor.execute(sql('''
+                select key_results.id, key_results.objective_id, key_results.state, key_results.name,
+                       key_results.description, key_results.s, key_results.m, key_results.a,
+                       key_results.r, key_results.t, key_results.date_created, key_results.date_reviewed,
+                       count(tasks.id) as all_tasks_count,
+                       sum(case when tasks.state <> ? then 1 else 0 end) as resolved_tasks_count
+                from KeyResults key_results
+                left join Tasks tasks on tasks.kr_id = key_results.id
+                where key_results.objective_id=?
+                group by key_results.id, key_results.objective_id, key_results.state, key_results.name,
+                         key_results.description, key_results.s, key_results.m, key_results.a,
+                         key_results.r, key_results.t, key_results.date_created, key_results.date_reviewed
+            '''), (TaskState.ACTIVE.value, int(objective_id)))
+            for row in cursor.fetchall():
+                key_result = KeyResult(row[:12], True)
+                key_result.set_tasks_count(row[12], row[13])
 
                 key_results.append(key_result)
         return key_results
 
+    def select_key_result_overview(self) -> list[dict]:
+        with self.cursor() as cursor:
+            cursor.execute(sql('''
+                select key_results.id, key_results.name, key_results.t,
+                       objectives.name as objective_name, objectives.state as objective_state,
+                       values_table.name as value_name
+                from KeyResults key_results
+                join Objectives objectives on objectives.id = key_results.objective_id
+                join PValues values_table on values_table.id = objectives.value_id
+                where key_results.state = ? and objectives.state = ?
+            '''), (KeyResultState.ACTIVE.value, ObjectiveState.ACTIVE.value))
+            return [
+                {
+                    'id': row[0],
+                    'name': row[1],
+                    't': row[2],
+                    'objective_name': row[3],
+                    'objective_state': row[4],
+                    'value_name': row[5],
+                }
+                for row in cursor.fetchall()
+            ]
+
     def insert_key_result(self, name, description, state, objective_id, s, m, a, r, t, date_created) -> int:
+        validate_iso_date(date_created)
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql("insert into KeyResults(objective_id, state, name, description, s, m, a, r, t, date_created, date_reviewed) values (?,?,?,?,?,?,?,?,?,?,?)"),
                 (objective_id, state, name, description, s, m, a, r, t, date_created, date_created))
@@ -127,15 +183,63 @@ class DatabaseManager:
                 return KeyResult(kr, False)
 
     def update_key_result(self, id, name, description, s, m, a, r, t, date_reviewed):
+        validate_iso_date(date_reviewed)
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update KeyResults set name=?,description=?,s=?,m=?,a=?,r=?,t=?,date_reviewed=? where id=?'),
                               (name, description, s, m, a, r, t, date_reviewed, int(id)))
+
+    def update_key_result_dates(self, id, date_created, date_reviewed):
+        date_created = validate_iso_date(date_created)
+        date_reviewed = validate_iso_date(date_reviewed)
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(
+                sql('update KeyResults set date_created=?,date_reviewed=? where id=?'),
+                (date_created, date_reviewed, int(id)),
+            )
+        return date_created, date_reviewed
 
     def delete_key_result(self, id):
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('delete from KeyResults where id=?'), (int(id),))
 
+    def create_task_and_review_key_result(self, value, kr_id, date_reviewed) -> int:
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql("insert into Tasks(kr_id, state, value) values (?,?,?)"),
+                           (kr_id, TaskState.ACTIVE.value, value))
+            task_id = cursor.lastrowid
+            cursor.execute(sql('update KeyResults set date_reviewed=? where id=?'),
+                           (date_reviewed, int(kr_id)))
+            return task_id
+
+    def create_tasks_and_review_key_result(self, value, kr_id, count, date_reviewed) -> list[int]:
+        task_values = [f"{value} {number}" for number in range(1, count + 1)]
+        return self.create_task_values_and_review_key_result(task_values, kr_id, date_reviewed)
+
+    def create_task_values_and_review_key_result(self, values, kr_id, date_reviewed) -> list[int]:
+        with self.cursor(commit=True) as cursor:
+            task_ids = []
+            for value in values:
+                cursor.execute(sql("insert into Tasks(kr_id, state, value) values (?,?,?)"),
+                               (kr_id, TaskState.ACTIVE.value, value))
+                task_ids.append(cursor.lastrowid)
+            cursor.execute(sql('update KeyResults set date_reviewed=? where id=?'),
+                           (date_reviewed, int(kr_id)))
+            return task_ids
+
+    def update_task_and_review_key_result(self, task_id, value, state, kr_id, date_reviewed):
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(sql('update Tasks set value=?,state=? where id=?'), (value, state, int(task_id)))
+            cursor.execute(sql('update KeyResults set date_reviewed=? where id=?'),
+                           (date_reviewed, int(kr_id)))
+
+    def select_task_key_result_id(self, task_id):
+        with self.cursor() as cursor:
+            cursor.execute(sql('select kr_id from Tasks where id=?'), (int(task_id),))
+            row = cursor.fetchone()
+            return row[0] if row else None
+
     def review_key_result(self, kr_id, date_reviewed):
+        validate_iso_date(date_reviewed)
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update KeyResults set date_reviewed=? where id=?'), (date_reviewed, int(kr_id)))
 
@@ -153,7 +257,7 @@ class DatabaseManager:
 
     def insert_task(self, value, kr_id) -> int:
         with self.cursor(commit=True) as cursor:
-            cursor.execute(sql("insert into Tasks(kr_id, state, value) values (?,?,?)"), (kr_id, "active", value))
+            cursor.execute(sql("insert into Tasks(kr_id, state, value) values (?,?,?)"), (kr_id, TaskState.ACTIVE.value, value))
             id = cursor.lastrowid
             return id
 
@@ -175,6 +279,7 @@ class DatabaseManager:
             return cursor.fetchone()[0];
 
     def insert_objective(self, name, description, state, value_id, date_created) -> int:
+        validate_iso_date(date_created)
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql("insert into Objectives(name, description, state, value_id, date_created, date_finished) values (?,?,?,?,?,?)"),
                            (name, description, state, value_id, date_created, ""))
@@ -189,7 +294,18 @@ class DatabaseManager:
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update Objectives set name=?,description=? where id=?'), (name, description, int(id)))
 
+    def update_objective_dates(self, id, date_created, date_finished):
+        date_created = validate_iso_date(date_created)
+        date_finished = validate_iso_date(date_finished, allow_empty=True)
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(
+                sql('update Objectives set date_created=?,date_finished=? where id=?'),
+                (date_created, date_finished, int(id)),
+            )
+        return date_created, date_finished
+
     def update_objective_state(self, id, state, date):
+        validate_iso_date(date, allow_empty=True)
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update Objectives set state=?,date_finished=? where id=?'), (state, date, int(id)))
 

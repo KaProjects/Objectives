@@ -1,49 +1,148 @@
-import json
-
-import firebase_admin
-from firebase_admin import credentials, db
-
 from classes import Idea
 
-# is_mocked = False
-# mock_ideas = dict()
 
-"""
-expects files:
-    envs_firebase_sa.json
-    envs_firebase_db.json
-"""
-def init_firebase():
-    cred = credentials.Certificate('envs_firebase_sa.json')
-    with open("envs_firebase_db.json") as envs_file:
-        envs = json.load(envs_file)
-    firebase_admin.initialize_app(cred, envs)
+DEFAULT_SUBVALUE_ID = '0'
+DEFAULT_SUBVALUE_NAME = 'default'
+db = None
 
-# def mock_firebase():
-#     mock_ideas["1"] = list[Idea]()
-#     mock_ideas["1"].append(Idea(id="1234", value="idea 1"))
-#     mock_ideas["1"].append(Idea(id="5678", value="idea 2x"))
-#     mock_ideas["2"] = list[Idea]()
-#     mock_ideas["2"].append(Idea(id="1234", value="value 2 idea"))
-#     mock_ideas["3"] = list[Idea]()
-#     global is_mocked 
-#     is_mocked = True
+
+def _value_path(value_id: str) -> str:
+    return f'values/{value_id}'
+
+
+def _subvalue_path(value_id: str, subvalue_id: str) -> str:
+    return f'{_value_path(value_id)}/subvalues/{subvalue_id}'
+
+
+def _ideas_path(value_id: str, subvalue_id: str) -> str:
+    return f'{_subvalue_path(value_id, subvalue_id)}/ideas'
+
+
+def _firebase_items(data):
+    """Support Firebase nodes returned as either keyed objects or arrays."""
+    if isinstance(data, dict):
+        return data.items()
+    if isinstance(data, list):
+        return ((str(index), value) for index, value in enumerate(data) if value is not None)
+    return ()
+
+
+def _firebase_mapping(data):
+    return {str(key): value for key, value in _firebase_items(data)}
+
+
+def create_value(value_id: str, name: str):
+    """Create or replace a value with its required default subvalue."""
+    db.reference(_value_path(value_id)).set({
+        'name': name,
+        'subvalues': {
+            DEFAULT_SUBVALUE_ID: {
+                'name': DEFAULT_SUBVALUE_NAME,
+                'ideas': {},
+            },
+        },
+    })
+
+
+def create_subvalue(value_id: str, name: str) -> str:
+    """Create the next numeric subvalue ID atomically."""
+    subvalues_ref = db.reference(f'{_value_path(value_id)}/subvalues')
+    created_id = None
+
+    def add_subvalue(current):
+        nonlocal created_id
+        current = _firebase_mapping(current)
+        numeric_ids = [int(subvalue_id) for subvalue_id in current if str(subvalue_id).isdigit()]
+        created_id = str(max(numeric_ids, default=-1) + 1)
+        current[created_id] = {'name': name, 'ideas': {}}
+        return current
+
+    subvalues_ref.transaction(add_subvalue)
+    return created_id
+
+
+def update_subvalue(value_id: str, subvalue_id: str, name: str):
+    db.reference(_subvalue_path(value_id, subvalue_id)).update({'name': name})
+
+
+def delete_subvalue(value_id: str, subvalue_id: str):
+    db.reference(_subvalue_path(value_id, subvalue_id)).delete()
+
+
+def add_idea_to_subvalue(value_id: str, subvalue_id: str, name: str, description: str) -> str:
+    return db.reference(_ideas_path(value_id, subvalue_id)).push({
+        'name': name,
+        'description': description,
+    }).key
+
+
+def update_idea(value_id: str, subvalue_id: str, idea_key: str, name: str, description: str):
+    db.reference(f'{_ideas_path(value_id, subvalue_id)}/{idea_key}').update({
+        'name': name,
+        'description': description,
+    })
+
+
+def move_idea_to_subvalue(value_id: str, source_subvalue_id: str, target_subvalue_id: str, idea_key: str):
+    source_path = f'{_ideas_path(value_id, source_subvalue_id)}/{idea_key}'
+    idea = db.reference(source_path).get()
+    if idea is None:
+        raise ValueError('idea not found')
+    if str(source_subvalue_id) != str(target_subvalue_id):
+        db.reference().update({
+            f'{_ideas_path(value_id, target_subvalue_id)}/{idea_key}': idea,
+            source_path: None,
+        })
+    return {
+        'id': str(idea_key),
+        'name': idea.get('name', '') if isinstance(idea, dict) else str(idea),
+        'description': idea.get('description', '') if isinstance(idea, dict) else '',
+    }
+
+
+def delete_idea_from_subvalue(value_id: str, subvalue_id: str, idea_key: str):
+    db.reference(f'{_ideas_path(value_id, subvalue_id)}/{idea_key}').delete()
+
+
+def get_subvalues(value_id: str) -> list[dict]:
+    subvalues = _firebase_mapping(db.reference(f'{_value_path(value_id)}/subvalues').get())
+    if DEFAULT_SUBVALUE_ID not in subvalues:
+        subvalues = {
+            DEFAULT_SUBVALUE_ID: {
+                'name': DEFAULT_SUBVALUE_NAME,
+                'ideas': {},
+            },
+            **subvalues,
+        }
+    return [
+        {
+            'id': str(subvalue_id),
+            'name': subvalue.get('name', '') if isinstance(subvalue, dict) else '',
+            'ideas': [
+                {
+                    'id': str(idea_key),
+                    'name': idea.get('name', '') if isinstance(idea, dict) else str(idea),
+                    'description': idea.get('description', '') if isinstance(idea, dict) else '',
+                }
+                for idea_key, idea in _firebase_items(subvalue.get('ideas') if isinstance(subvalue, dict) else None)
+            ],
+        }
+        for subvalue_id, subvalue in subvalues.items()
+    ]
 
 
 def get_ideas_of_value(value_id: str) -> list[Idea]:
-    ideas = list[Idea]()
-    db_objs = db.reference("/ideas/" + value_id).get()
-
-    if db_objs is not None:
-        for id in db_objs:
-            ideas.append(Idea(id, db_objs[id]))
-
-    return ideas
+    """Compatibility API: return names of ideas in the default subvalue."""
+    ideas = db.reference(_ideas_path(value_id, DEFAULT_SUBVALUE_ID)).get()
+    return [Idea(str(idea_key), idea.get('name', '') if isinstance(idea, dict) else idea)
+            for idea_key, idea in _firebase_items(ideas)]
 
 
-def add_idea(value_id: str, idea: Idea):
-    return db.reference("ideas/" + str(value_id)).push(idea).key
+def add_idea(value_id: str, idea: str) -> str:
+    """Compatibility API: add an idea to the default subvalue."""
+    return add_idea_to_subvalue(value_id, DEFAULT_SUBVALUE_ID, str(idea), '')
 
 
 def delete_idea(value_id: str, idea_id: str):
-    db.reference("ideas/" + str(value_id) + "/" + str(idea_id)).delete()
+    """Compatibility API: delete an idea from the default subvalue."""
+    delete_idea_from_subvalue(value_id, DEFAULT_SUBVALUE_ID, idea_id)

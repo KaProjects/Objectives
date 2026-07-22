@@ -1,0 +1,210 @@
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
+import {flushPromises, mount, shallowMount} from '@vue/test-utils'
+import {nextTick, reactive} from 'vue'
+
+const {api} = vi.hoisted(() => ({
+  api: {
+    get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn(), login: vi.fn(),
+  },
+}))
+
+vi.mock('@/services/apiClient', () => ({api}))
+
+import ObjectiveDialog from '@/dialogs/ObjectiveDialog.vue'
+import Editable from '@/components/Editable.vue'
+
+const objective = {
+  id: 1,
+  name: 'Exercise',
+  description: 'Move more',
+  state: 'active',
+  date_created: '2026-01-01',
+  date_finished: '',
+  ideas_count: 0,
+  key_results: [],
+}
+
+describe('ObjectiveDialog', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    api.get.mockResolvedValue([])
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('loads ideas for its objective and emits close', async () => {
+    api.get.mockResolvedValue([{id: 3, value: 'Idea'}])
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective}},
+    })
+    await flushPromises()
+    expect(api.get).toHaveBeenCalledWith('/objective/1/idea')
+    await wrapper.vm.closeDialog()
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('update:modelValue')).toEqual([[false]])
+  })
+
+  it('emits updates instead of mutating its objective prop', async () => {
+    api.put.mockResolvedValue(undefined)
+    const inputObjective = {...objective}
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: inputObjective},
+    })
+    await wrapper.vm.updateObjective('name', 'Updated exercise')
+
+    expect(wrapper.emitted('updated')).toContainEqual([{
+      id: 1, name: 'Updated exercise', description: 'Move more',
+    }])
+    expect(inputObjective.name).toBe('Exercise')
+  })
+
+  it('keeps the draft and editor intact when saving fails', async () => {
+    api.put.mockRejectedValueOnce(new Error('Network unavailable'))
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective}},
+    })
+    await wrapper.vm.updateObjective('name', 'Updated exercise')
+
+    expect(wrapper.vm.draftObjective.name).toBe('Exercise')
+    expect(wrapper.vm.objective.name).toBe('Exercise')
+    expect(wrapper.vm.submissionError).toBe('Network unavailable')
+    expect(wrapper.emitted('updated')).toBeUndefined()
+  })
+
+  it('keeps both date pickers editable after the Objective is achieved', () => {
+    const wrapper = mount(ObjectiveDialog, {
+      props: {
+        modelValue: true,
+        obj: {...objective, state: 'achieved', date_finished: '2026-02-01'},
+      },
+    })
+    const editors = wrapper.findAllComponents(Editable)
+    const nameEditor = editors.find((editor) => editor.props('label') === 'Name')
+    const createdEditor = editors.find((editor) => editor.props('label') === 'Created')
+    const finishedEditor = editors.find((editor) => editor.props('label') === 'Achieved')
+
+    expect(nameEditor.props('editable')).toBe(false)
+    expect(createdEditor.props()).toMatchObject({editable: true, datePicker: true})
+    expect(finishedEditor.props()).toMatchObject({editable: true, datePicker: true})
+  })
+
+  it('updates Objective dates without mutating the supplied Objective', async () => {
+    const inputObjective = {...objective, state: 'failed', date_finished: '2026-02-01'}
+    const updatedDates = {date_created: '2025-12-20', date_finished: '2026-02-01'}
+    api.put.mockResolvedValue(updatedDates)
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: inputObjective},
+    })
+
+    expect(await wrapper.vm.updateObjectiveDate('date_created', updatedDates.date_created)).toBe(true)
+
+    expect(api.put).toHaveBeenCalledWith('/objective/1/dates', updatedDates)
+    expect(wrapper.vm.objective.date_created).toBe('2025-12-20')
+    expect(inputObjective.date_created).toBe('2026-01-01')
+    expect(wrapper.emitted('updated')).toContainEqual([{id: 1, ...updatedDates}])
+    expect(wrapper.emitted('close')).toBeUndefined()
+  })
+
+  it('keeps the previous Objective dates when correction fails', async () => {
+    api.put.mockRejectedValue(new Error('Date update failed'))
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective}},
+    })
+
+    expect(await wrapper.vm.updateObjectiveDate('date_created', '2025-12-20')).toBe(false)
+
+    expect(wrapper.vm.objective.date_created).toBe('2026-01-01')
+    expect(wrapper.vm.submissionError).toBe('Date update failed')
+    expect(wrapper.emitted('updated')).toBeUndefined()
+  })
+
+  it('deletes and closes only after the request succeeds', async () => {
+    api.delete.mockResolvedValue(undefined)
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective}},
+    })
+
+    await wrapper.vm.deleteObjective()
+
+    expect(api.delete).toHaveBeenCalledWith('/objective/1')
+    expect(wrapper.emitted('deleted')).toEqual([[expect.objectContaining({id: 1})]])
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('update:modelValue')).toContainEqual([false])
+  })
+
+  it('keeps the dialog open and displays a failed deletion', async () => {
+    api.delete.mockRejectedValue(new Error('Delete failed'))
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective}},
+    })
+
+    await wrapper.vm.deleteObjective()
+
+    expect(wrapper.vm.submissionError).toBe('Delete failed')
+    expect(wrapper.emitted('deleted')).toBeUndefined()
+    expect(wrapper.emitted('close')).toBeUndefined()
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('enables deletion after the parent removes the final Key Result', async () => {
+    const parentObjective = reactive({...objective, key_results: [{id: 2, name: 'Walk'}]})
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {
+        modelValue: true,
+        obj: parentObjective,
+      },
+    })
+
+    expect(wrapper.vm.canDeleteObjective).toBe(false)
+
+    parentObjective.key_results = []
+    await nextTick()
+
+    expect(wrapper.vm.canDeleteObjective).toBe(true)
+  })
+
+  it('turns an idea into a key result, then removes the source idea and closes', async () => {
+    const idea = {id: 3, value: 'Walk after lunch'}
+    api.get.mockResolvedValue([idea])
+    api.delete.mockResolvedValue(undefined)
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective, ideas_count: 1}},
+    })
+    await flushPromises()
+
+    wrapper.vm.createKeyResultFromIdea(idea)
+    expect(wrapper.vm.keyResultDraft).toEqual({name: 'Walk after lunch'})
+    expect(wrapper.vm.openAddKeyResultDialog).toBe(true)
+
+    const keyResult = {id: 9, name: 'Walk after lunch'}
+    await wrapper.vm.keyResultCreatedFromIdea(keyResult)
+
+    expect(api.delete).toHaveBeenCalledWith('/objective/1/idea/3')
+    expect(wrapper.vm.ideas).toEqual([])
+    expect(wrapper.emitted('key-result-created')).toEqual([[keyResult]])
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('update:modelValue')).toContainEqual([false])
+  })
+
+  it('keeps a created Key Result visible when source-idea cleanup fails', async () => {
+    const idea = {id: 3, value: 'Walk after lunch'}
+    api.get.mockResolvedValue([idea])
+    api.delete.mockRejectedValue(new Error('Firebase unavailable'))
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective, ideas_count: 1}},
+    })
+    await flushPromises()
+    wrapper.vm.createKeyResultFromIdea(idea)
+
+    const keyResult = {id: 9, name: 'Walk after lunch'}
+    await wrapper.vm.keyResultCreatedFromIdea(keyResult)
+
+    expect(wrapper.emitted('key-result-created')).toEqual([[keyResult]])
+    expect(wrapper.vm.ideas).toEqual([idea])
+    expect(wrapper.vm.submissionError).toContain('Key Result was created')
+    expect(wrapper.emitted('close')).toBeUndefined()
+  })
+})

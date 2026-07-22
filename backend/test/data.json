@@ -1,0 +1,91 @@
+{
+  "values": {
+    "1": {
+      "name": "Health",
+      "subvalues": {
+        "0": {
+          "name": "default",
+          "ideas": {
+            "idea-1": {
+              "name": "Drink water",
+              "description": "Keep a bottle nearby during the day."
+            },
+            "idea-2": {
+              "name": "Prepare healthy snacks",
+              "description": "Fruit, nuts, or yogurt for the afternoon."
+            },
+            "idea-3": {
+              "name": "Plan meals for the week",
+              "description": ""
+            }
+          }
+        },
+        "1": {
+          "name": "Exercise",
+          "ideas": {
+            "idea-4": {
+              "name": "Walk",
+              "description": "30 minutes after lunch."
+            },
+            "idea-5": {
+              "name": "Strength training",
+              "description": "Two short full-body sessions each week."
+            },
+            "idea-6": {
+              "name": "Stretch in the morning",
+              "description": "Start with five minutes."
+            }
+          }
+        },
+        "2": {
+          "name": "Recovery",
+          "ideas": {
+            "idea-7": {
+              "name": "Keep a consistent bedtime",
+              "description": "Aim for seven to eight hours of sleep."
+            },
+            "idea-8": {
+              "name": "Take screen-free breaks",
+              "description": ""
+            }
+          }
+        }
+      }
+    },
+    "4": {
+      "name": "Test value",
+      "subvalues": {
+        "0": {
+          "name": "default",
+          "ideas": {
+            "idea-1": {
+              "name": "Test idea",
+              "description": ""
+            },
+            "idea-2": {
+              "name": "Write down a clear next step",
+              "description": "Keep it small enough to complete today."
+            },
+            "idea-3": {
+              "name": "Review progress on Friday",
+              "description": ""
+            }
+          }
+        },
+        "1": {
+          "name": "Experiments",
+          "ideas": {
+            "idea-4": {
+              "name": "Try a shorter planning session",
+              "description": ""
+            },
+            "idea-5": {
+              "name": "Remove one unnecessary task",
+              "description": "Focus on the outcome, not activity."
+            }
+          }
+        }
+      }
+    }
+  }
+}

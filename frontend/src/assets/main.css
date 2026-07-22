@@ -10,14 +10,37 @@
 
 a,
 .green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
+    text-decoration: none;
+    color: hsla(160, 100%, 37%, 1);
+    transition: 0.4s;
 }
 
 @media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
+    a:hover {
+        background-color: hsla(160, 100%, 37%, 0.2);
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+  .v-btn.dialogAdd {
+    background-color: #37474f !important;
+    color: #ffffff !important;
+  }
+
+  .v-btn.dialogFail {
+    background-color: #8b1e1e !important;
+    color: #ffffff !important;
+  }
+
+  .v-btn.dialogSuccess {
+    background-color: #1b5e20 !important;
+    color: #ffffff !important;
+  }
+
+  .v-btn.dialogActivate,
+  .v-btn.dialogClose {
+    background-color: #0d47a1 !important;
+    color: #ffffff !important;
   }
 }
 

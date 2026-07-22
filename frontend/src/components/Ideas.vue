@@ -1,116 +1,158 @@
-<script>
-import {backend_delete, backend_get, backend_post} from "@/utils";
+<script setup lang="ts">
+import {computed, ref} from 'vue'
+import {api} from '@/services/apiClient'
+import SubvalueCard from '@/components/ideas/SubvalueCard.vue'
+import CarouselPager from '@/components/CarouselPager.vue'
+import {useHorizontalCarousel} from '@/composables/useHorizontalCarousel'
+import type {EntityId, Idea, Subvalue, SubvalueIdentity} from '@/types/domain'
 
-export default {
-  name: "Ideas",
-  props: {
-    valueId: Number
-  },
-  data() {
-    return {
-      ideas: Object,
-      loading: true,
-      newIdeaDialog: false,
-      newIdea: "",
-      selectedIdea: -1,
-      confirmDeletionDialogs: [],
-    }
-  },
-  methods: {
-    async loadData() {
-      this.ideas = await backend_get("/value/" + this.valueId + "/idea")
-      this.loading = false
-    },
-    async addIdea() {
-      const body = await backend_post("/value/" + this.valueId + "/idea", {idea: this.newIdea})
-      this.ideas.push({id: body.new_id, value: body.idea})
-      this.newIdeaDialog = false
-      this.newIdea = ""
-    },
-    async deleteIdea(idea, index){
-      await backend_delete("/value/" + this.valueId + "/idea/" + idea.id)
-      this.ideas.splice(this.ideas.indexOf(idea), 1);
-      this.confirmDeletionDialogs[index] = false
-    },
-  },
-  mounted() {
-    this.loadData()
+interface IdeaSelection {
+  sourceSubvalueId: EntityId
+  idea: Idea
+}
+
+interface IdeaEvent {
+  subvalueId: EntityId
+  idea: Idea
+}
+
+const props = withDefaults(defineProps<{
+  valueId: EntityId
+  subvalues?: Subvalue[]
+}>(), {
+  subvalues: () => [],
+})
+const emit = defineEmits<{
+  (event: 'created' | 'updated' | 'create-objective', payload: IdeaEvent): void
+  (event: 'moved', payload: {sourceSubvalueId: EntityId; targetSubvalueId: EntityId; idea: Idea}): void
+  (event: 'subvalue-updated', subvalue: SubvalueIdentity): void
+  (event: 'subvalue-deleted', subvalueId: EntityId): void
+  (event: 'deleted', payload: {subvalueId: EntityId; ideaId: string}): void
+}>()
+
+const subvalueCount = computed(() => props.subvalues.length)
+const {
+  carousel: ideaLists,
+  activeIndex: activeSubvalueIndex,
+  updateActiveIndex: updateActiveSubvalueIndex,
+} = useHorizontalCarousel(subvalueCount)
+const draggedIdea = ref<IdeaSelection | null>(null)
+const dragOverSubvalueId = ref<EntityId | null>(null)
+const pendingMove = ref<IdeaSelection | null>(null)
+const isSubmitting = ref(false)
+const submissionError = ref<string | null>(null)
+
+function startDragging({event, idea}: {event: DragEvent; idea: Idea}, subvalue: Subvalue) {
+  draggedIdea.value = {sourceSubvalueId: subvalue.id, idea}
+  if (!event.dataTransfer) return
+  event.dataTransfer.effectAllowed = 'move'
+  event.dataTransfer.setData('text/plain', idea.id)
+}
+
+function endDragging() {
+  draggedIdea.value = null
+  dragOverSubvalueId.value = null
+}
+
+function markDragOver(subvalue: Subvalue) {
+  if (draggedIdea.value?.sourceSubvalueId !== subvalue.id) {
+    dragOverSubvalueId.value = subvalue.id
+  }
+}
+
+async function moveDraggedIdea(targetSubvalue: Subvalue) {
+  const dragged = draggedIdea.value
+  endDragging()
+  if (!dragged || dragged.sourceSubvalueId === targetSubvalue.id) return
+  await moveIdea(dragged, targetSubvalue)
+}
+
+function startMove(subvalue: Subvalue, idea: Idea) {
+  if (isSubmitting.value) return
+  pendingMove.value = {sourceSubvalueId: subvalue.id, idea}
+}
+
+function cancelMove() {
+  pendingMove.value = null
+}
+
+async function movePendingIdea(targetSubvalue: Subvalue) {
+  const pending = pendingMove.value
+  if (!pending) return
+  if (pending.sourceSubvalueId === targetSubvalue.id) {
+    cancelMove()
+    return
+  }
+  if (await moveIdea(pending, targetSubvalue)) cancelMove()
+}
+
+async function moveIdea(source: IdeaSelection, targetSubvalue: Subvalue) {
+  if (isSubmitting.value) return false
+  isSubmitting.value = true
+  submissionError.value = null
+  try {
+    const movedIdea = await api.put<Idea, {target_subvalue_id: EntityId}>(
+        `/value/${props.valueId}/subvalue/${source.sourceSubvalueId}/idea/${source.idea.id}/move`,
+        {target_subvalue_id: targetSubvalue.id},
+    )
+    emit('moved', {
+      sourceSubvalueId: source.sourceSubvalueId,
+      targetSubvalueId: targetSubvalue.id,
+      idea: movedIdea,
+    })
+    return true
+  } catch (error) {
+    submissionError.value = error instanceof Error ? error.message : String(error)
+    return false
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
+
 <template>
-  <v-card width="300" elevation="3" shaped max-height="calc(100vh - 70px)" style="overflow-y:scroll;">
-    <v-card-title>Ideas</v-card-title>
-    <v-progress-circular v-if="loading" style="margin: 0 0 10px 30px" indeterminate color="primary"></v-progress-circular>
-    <div v-else>
-      <v-list-item>
-        <v-list-item-content v-for="(idea, index) in ideas"
-                             @mouseover="selectedIdea = index"
-                             @mouseleave="selectedIdea = -1">
-          <div class="idea">
-            <v-list-item>{{idea.value}}</v-list-item>
-
-            <v-dialog
-                v-model="confirmDeletionDialogs[index]"
-                width="300"
-            >
-              <template v-slot:activator="{ props }">
-                <v-icon icon="mdi-delete" large v-bind="props" v-if="selectedIdea === index"/>
-              </template>
-
-              <v-card>
-                <v-card-title class="text-h5 grey lighten-2">
-                  Delete Idea?
-                </v-card-title>
-                <v-card-text>
-                  {{ idea.value }}
-                </v-card-text>
-                <v-card-actions>
-                  <v-btn block @click="deleteIdea(idea, index)">Confirm</v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-dialog>
-
-          </div>
-        </v-list-item-content>
-      </v-list-item>
-      <v-card-actions>
-        <v-dialog
-            v-model="newIdeaDialog"
-            width="300"
-        >
-          <template v-slot:activator="{ props }">
-            <v-btn color="primary" v-bind="props">
-              <v-icon icon="mdi-plus" large/>
-            </v-btn>
-          </template>
-
-          <v-card>
-            <v-text-field
-                label="Idea"
-                v-model="newIdea"
-                required
-            ></v-text-field>
-            <v-card-actions>
-              <v-btn block @click="addIdea">Add</v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
-      </v-card-actions>
+  <div class="ideaCarousel">
+    <div ref="ideaLists" class="ideaLists" @scroll="updateActiveSubvalueIndex">
+      <SubvalueCard v-for="subvalue in subvalues"
+                    :key="subvalue.id"
+                    :value-id="valueId"
+                    :subvalue="subvalue"
+                    :drag-over="dragOverSubvalueId === subvalue.id"
+                    :dragged-idea="draggedIdea"
+                    :pending-move="pendingMove"
+                    :disabled="isSubmitting"
+                    @created="emit('created', {subvalueId: subvalue.id, idea: $event})"
+                    @updated="emit('updated', {subvalueId: subvalue.id, idea: $event})"
+                    @deleted="emit('deleted', {subvalueId: subvalue.id, ideaId: $event})"
+                    @subvalue-updated="emit('subvalue-updated', $event)"
+                    @subvalue-deleted="emit('subvalue-deleted', $event)"
+                    @create-objective="emit('create-objective', {subvalueId: subvalue.id, idea: $event})"
+                    @move-requested="startMove(subvalue, $event)"
+                    @move-here="movePendingIdea(subvalue)"
+                    @cancel-move="cancelMove"
+                    @drag-start="startDragging($event, subvalue)"
+                    @drag-end="endDragging"
+                    @drag-over="markDragOver(subvalue)"
+                    @drop="moveDraggedIdea(subvalue)"/>
     </div>
-  </v-card>
+
+    <CarouselPager :count="subvalues.length" :active-index="activeSubvalueIndex" label="Subvalue card position"/>
+  </div>
 </template>
 
 <style scoped>
-.idea {
-  border: 1px #d9e0e1 solid;
+.ideaLists {
+  align-items: flex-start;
+  box-sizing: border-box;
+  display: flex;
+  gap: 4px;
+  min-width: 100%;
+  padding: 3px 12px 12px;
+  width: max-content;
 }
-.idea:hover {
-  border: 2px #d9e0e1 solid;
-}
-.idea > .v-icon {
-  position: absolute;
-  right: 0px;
+
+.ideaCarousel {
+  position: relative;
 }
 
 </style>

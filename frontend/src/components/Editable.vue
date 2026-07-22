@@ -1,17 +1,108 @@
-<script>
-export default {
-  name: "Editable",
-  props : ["cancel", "submit", "index"]
+<script setup>
+import {nextTick, ref, watch} from 'vue'
+import {useClickCompletion} from '@/composables/useClickCompletion'
+
+const props = defineProps({
+  value: {type: String, default: ''},
+  submit: {type: Function, required: true},
+  editable: {type: Boolean, default: true},
+  label: {type: String, required: true},
+  textarea: {type: Boolean, default: false},
+  datePicker: {type: Boolean, default: false},
+  hideDetails: {type: Boolean, default: false},
+  inputProps: {type: Object, default: () => ({})},
+  cancelEditing: {type: Boolean, default: false},
+})
+const emit = defineEmits(['editing-changed'])
+
+const isEditing = ref(false)
+const draftValue = ref('')
+const editor = ref(null)
+const nativeDatePicker = ref(null)
+const isStartingEdit = ref(false)
+const {cancelDeferredClick, deferUntilClick} = useClickCompletion()
+
+async function startEditing() {
+  if (!props.editable) return
+  draftValue.value = props.value
+  isStartingEdit.value = true
+  isEditing.value = true
+  emit('editing-changed', true)
+  await nextTick()
+  editor.value?.querySelector('input, textarea')?.focus()
+  isStartingEdit.value = false
 }
+
+function stopEditing() {
+  if (!isEditing.value) return
+  cancelDeferredClick()
+  isEditing.value = false
+  emit('editing-changed', false)
+}
+
+function setValue(value) {
+  draftValue.value = value
+}
+
+function openDatePicker() {
+  const input = nativeDatePicker.value
+
+  if (input?.showPicker) {
+    input.showPicker()
+  } else {
+    input?.focus()
+  }
+}
+
+async function selectDate(value) {
+  setValue(value)
+  await save()
+}
+
+async function save({deferClose = false} = {}) {
+  if (draftValue.value !== props.value) {
+    const saved = await props.submit(draftValue.value)
+    if (saved === false) return false
+  }
+
+  if (!deferClose || !deferUntilClick(stopEditing)) {
+    stopEditing()
+  }
+
+  return true
+}
+
+function cancel() {
+  stopEditing()
+}
+
+watch(() => props.cancelEditing, (cancelEditing) => {
+  if (cancelEditing) stopEditing()
+})
+
+function handleFocusOut(event) {
+  if (!isStartingEdit.value && isEditing.value && !event.currentTarget.contains(event.relatedTarget)) {
+    save({deferClose: true})
+  }
+}
+
+defineExpose({startEditing})
 </script>
 
 <template>
-  <div class="edit">
+  <div ref="editor" class="edit" :class="{compact: hideDetails}" @focusout="handleFocusOut">
     <div class="text">
-      <slot/>
+      <v-textarea v-if="isEditing && textarea" :model-value="draftValue" @update:model-value="setValue"
+                  @keydown.ctrl.enter.prevent="save" @keydown.meta.enter.prevent="save" @keydown.esc="cancel"
+                  :label="label" :hide-details="hideDetails" v-bind="inputProps"/>
+      <v-text-field v-else-if="isEditing" :model-value="draftValue" @update:model-value="setValue"
+                    @keydown.enter="save" @keydown.esc="cancel" :label="label" :hide-details="hideDetails"
+                    :prepend-inner-icon="datePicker ? 'mdi-calendar' : undefined"
+                    @click:prepend-inner="openDatePicker" v-bind="inputProps"/>
+      <input v-if="isEditing && datePicker" ref="nativeDatePicker" class="nativeDatePicker"
+             type="date" :value="draftValue" @change="selectDate($event.target.value)">
+      <slot v-if="!isEditing" name="display" :start-editing="startEditing"/>
     </div>
-    <v-btn class="btn1" :rounded="0" color="error" icon="mdi-close-octagon" @click="cancel"/>
-    <v-btn class="btn2" :rounded="0" color="success" icon="mdi-content-save-edit" @click="index === null ? submit : submit(index)"/>
   </div>
 </template>
 
@@ -19,13 +110,22 @@ export default {
 .edit {
   display: flex;
 }
+
 .text {
   flex: 15;
+  min-width: 0;
 }
-.btn1 {
-  flex: 1;
+
+.edit.compact :deep(.v-input__details) {
+  display: none;
 }
-.btn2 {
-  flex: 1;
+
+.nativeDatePicker {
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 1px;
 }
+
 </style>

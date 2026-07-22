@@ -1,141 +1,173 @@
 package org.kaleta.objectives.adapter
 
-import android.app.AlertDialog
-import android.graphics.PorterDuff
-import android.text.Editable
+import android.graphics.Rect
 import android.text.SpannableStringBuilder
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewGroup.MarginLayoutParams
+import android.view.inputmethod.InputMethodManager
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
-import org.kaleta.objectives.DataSource
-import org.kaleta.objectives.R
-import org.kaleta.objectives.ValueParameter
-import org.kaleta.objectives.data.Idea
-import org.kaleta.objectives.listener.OnSwipeTouchListener
-import android.view.View.OnLongClickListener
-import android.widget.*
 import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
+import org.kaleta.objectives.R
+import org.kaleta.objectives.data.Idea
 
-
-class IdeasAdapter(valueParameter: ValueParameter): RecyclerView.Adapter<IdeasAdapter.ViewHolder>(), ValueEventListener {
-
-    val valueParameter: ValueParameter
-
-    private val views = ArrayList<ViewHolder>()
-
-    init{
-        DataSource.ideasReference.addValueEventListener(this)
-        this.valueParameter = valueParameter
-    }
-
-    fun resetViews(){
-        for (view in views){
-            view.hideButtons()
-        }
-    }
+class IdeasAdapter(
+    private val onDeleteRequested: (Idea) -> Unit,
+    private val onEditRequested: (Idea, String, String) -> Boolean,
+) : ListAdapter<Idea, IdeasAdapter.ViewHolder>(IdeaDiffCallback) {
+    private var editingIdeaId: String? = null
+    private var ideaToFocusId: String? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = ViewHolder(
-            LayoutInflater.from(parent.context)
-                .inflate(R.layout.idea_item, parent, false),
-            this)
-        views.add(view)
-        return view
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.idea_item, parent, false)
+        return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        var ideasList = DataSource.ideasMap.get(valueParameter.getValueId())!!
-        holder.bind(ideasList.get(position))
+        val idea = getItem(position)
+        val shouldFocusEditor = idea.id == ideaToFocusId
+        holder.bind(
+            idea,
+            isEditing = idea.id == editingIdeaId,
+            shouldFocusEditor = shouldFocusEditor,
+        )
+        if (shouldFocusEditor) ideaToFocusId = null
     }
 
-    override fun getItemCount(): Int {
-        if (DataSource.ideasMap.keys.size == 0)
-            return 0
-        var ideasList = DataSource.ideasMap.get(valueParameter.getValueId())
-        return ideasList?.size ?: 0
+    override fun onViewRecycled(holder: ViewHolder) {
+        holder.recycle()
+        super.onViewRecycled(holder)
     }
 
+    fun stopEditing() {
+        updateEditingIdea(null)
+    }
 
-    class ViewHolder(itemView: View, val adapter: IdeasAdapter) : RecyclerView.ViewHolder(itemView) {
+    private fun updateEditingIdea(ideaId: String?) {
+        if (editingIdeaId == ideaId) return
 
-        var ideaView: TextView = itemView.findViewById(R.id.idea)
-        var ideaEdit: TextInputEditText = itemView.findViewById(R.id.ideaEdit)
-        var deleteButton: ImageView = itemView.findViewById(R.id.deleteIdea)
-        var confirmEditButton: ImageView = itemView.findViewById(R.id.confirmEditIdea)
+        val previousId = editingIdeaId
+        editingIdeaId = ideaId
+        notifyIdeaChanged(previousId)
+        notifyIdeaChanged(ideaId)
+    }
 
+    private fun notifyIdeaChanged(ideaId: String?) {
+        val position = currentList.indexOfFirst { it.id == ideaId }
+        if (position >= 0) notifyItemChanged(position)
+    }
 
-        fun bind(idea: Idea) {
-            ideaView.text = idea.value
-            ideaEdit.text = SpannableStringBuilder(idea.value)
+    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val ideaContent: View = itemView.findViewById(R.id.ideaContent)
+        private val ideaName: TextView = itemView.findViewById(R.id.ideaName)
+        private val ideaDescription: TextView = itemView.findViewById(R.id.ideaDescription)
+        private val ideaEditor: View = itemView.findViewById(R.id.ideaEditor)
+        private val ideaEdit: TextInputEditText = itemView.findViewById(R.id.ideaEdit)
+        private val ideaDescriptionEdit: TextInputEditText = itemView.findViewById(R.id.ideaDescriptionEdit)
+        private val deleteButton: ImageView = itemView.findViewById(R.id.deleteIdea)
+        private val confirmEditButton: ImageView = itemView.findViewById(R.id.confirmEditIdea)
+        private var boundIdeaId: String? = null
+        private var focusEditorRunnable: Runnable? = null
 
-            deleteButton.visibility = View.INVISIBLE
-            ideaEdit.visibility = View.INVISIBLE
-            confirmEditButton.visibility = View.INVISIBLE
+        fun bind(idea: Idea, isEditing: Boolean, shouldFocusEditor: Boolean) {
+            cancelPendingEditorFocus()
+            boundIdeaId = idea.id
+            resetEdgeRoll()
+            ideaName.text = idea.name
+            ideaDescription.text = idea.description
+            ideaDescription.visibility = if (idea.description.isBlank()) View.GONE else View.VISIBLE
+            ideaEdit.text = SpannableStringBuilder(idea.name)
+            ideaDescriptionEdit.text = SpannableStringBuilder(idea.description)
+            showEditingState(isEditing)
 
-            itemView.setOnClickListener {
-                adapter.resetViews()
-                true
-            }
+            itemView.setOnClickListener { startEditing(idea) }
             itemView.setOnLongClickListener {
-                adapter.resetViews()
-                deleteButton.visibility = View.VISIBLE
-                confirmEditButton.visibility = View.VISIBLE
-                ideaEdit.text = SpannableStringBuilder(idea.value)
-                ideaEdit.visibility = View.VISIBLE
-                ideaView.visibility = View.INVISIBLE
+                startEditing(idea)
                 true
             }
-            deleteButton.setOnTouchListener { v, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_UP -> {
-                        val alert = AlertDialog.Builder(itemView.context)
-                            .setTitle("Delete Idea?")
-                            .setPositiveButton("Confirm") { dialog, _ ->
-                                DataSource.deleteIdea(adapter.valueParameter.getValueId(), idea.id)
-                                dialog.cancel()
-                                adapter.resetViews()
-                            }
-                            .setNegativeButton("Cancel") { dialog, _ ->
-                                dialog.cancel()
-                            }.create()
-
-                        alert.show()
-                    }
-                }
-                false
+            deleteButton.setOnClickListener {
+                onDeleteRequested(idea)
             }
-            confirmEditButton.setOnTouchListener { v, event ->
-                when (event.action) {
-                    MotionEvent.ACTION_UP -> {
-                        DataSource.editIdea(adapter.valueParameter.getValueId(), idea.id, ideaEdit.text.toString())
-                        adapter.resetViews()
-                    }
+            confirmEditButton.setOnClickListener {
+                if (onEditRequested(
+                        idea,
+                        ideaEdit.text?.toString().orEmpty(),
+                        ideaDescriptionEdit.text?.toString().orEmpty(),
+                )
+                ) {
+                    hideKeyboard()
+                    stopEditing()
+                } else {
+                    ideaEdit.error = itemView.context.getString(R.string.idea_required)
                 }
-                false
+            }
+
+            if (isEditing && shouldFocusEditor) {
+                val focusRunnable = Runnable {
+                    focusEditorRunnable = null
+                    if (boundIdeaId != idea.id || editingIdeaId != idea.id) return@Runnable
+                    ideaEdit.requestFocus()
+                    ideaEdit.setSelection(ideaEdit.text?.length ?: 0)
+                    itemView.context
+                        .getSystemService(InputMethodManager::class.java)
+                        ?.showSoftInput(ideaEdit, InputMethodManager.SHOW_IMPLICIT)
+                    itemView.requestRectangleOnScreen(
+                        Rect(0, 0, itemView.width, itemView.height),
+                        true,
+                    )
+                }
+                focusEditorRunnable = focusRunnable
+                ideaEdit.post(focusRunnable)
             }
         }
 
-        fun hideButtons(){
-            deleteButton.visibility = View.INVISIBLE
-            confirmEditButton.visibility = View.INVISIBLE
-            ideaEdit.visibility = View.INVISIBLE
-            ideaView.visibility = View.VISIBLE
+        fun recycle() {
+            cancelPendingEditorFocus()
+            boundIdeaId = null
+            resetEdgeRoll()
+        }
+
+        fun resetEdgeRoll() {
+            itemView.rotationX = 0f
+            itemView.pivotX = itemView.width / 2f
+            itemView.pivotY = itemView.height / 2f
+        }
+
+        private fun showEditingState(isEditing: Boolean) {
+            val editVisibility = if (isEditing) View.VISIBLE else View.GONE
+            deleteButton.visibility = editVisibility
+            confirmEditButton.visibility = editVisibility
+            ideaEditor.visibility = editVisibility
+            ideaContent.visibility = if (isEditing) View.GONE else View.VISIBLE
+        }
+
+        private fun hideKeyboard() {
+            ideaEdit.clearFocus()
+            ideaDescriptionEdit.clearFocus()
+            itemView.context
+                .getSystemService(InputMethodManager::class.java)
+                ?.hideSoftInputFromWindow(itemView.windowToken, 0)
+        }
+
+        private fun startEditing(idea: Idea) {
+            if (editingIdeaId == idea.id) return
+            ideaToFocusId = idea.id
+            updateEditingIdea(idea.id)
+        }
+
+        private fun cancelPendingEditorFocus() {
+            focusEditorRunnable?.let(ideaEdit::removeCallbacks)
+            focusEditorRunnable = null
         }
     }
 
-    override fun onCancelled(p0: DatabaseError) {
-        println(p0.message)
-    }
+    private object IdeaDiffCallback : DiffUtil.ItemCallback<Idea>() {
+        override fun areItemsTheSame(oldItem: Idea, newItem: Idea): Boolean = oldItem.id == newItem.id
 
-    override fun onDataChange(p0: DataSnapshot) {
-//        views.clear()
-        this.notifyDataSetChanged();
+        override fun areContentsTheSame(oldItem: Idea, newItem: Idea): Boolean = oldItem == newItem
     }
 }

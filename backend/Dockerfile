@@ -1,16 +1,25 @@
-FROM python:3.9
+FROM python:3.12-slim
 
-COPY . /workdir/
-WORKDIR /workdir/
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    TZ=Europe/Prague
 
-RUN pip install --upgrade pip
+WORKDIR /app
 
-RUN pip install --user flask
-RUN pip install --user flask_cors
-RUN pip install --user firebase-admin==4.5.2
-RUN pip install --user mysql-connector-python
-RUN pip install --user flask-restx
+RUN addgroup --system app && adduser --system --ingroup app app
 
-ENV TZ=Europe/Prague
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python3","-u","src/app.py", "prod"]
+COPY ./src/ ./
+RUN chown -R app:app /app
+
+USER app
+
+EXPOSE 7777
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7777/health', timeout=2)"
+
+CMD ["gunicorn", "--bind", "0.0.0.0:7777", "--workers", "2", "--timeout", "30", "--access-logfile", "-", "--error-logfile", "-", "--log-level", "info", "--capture-output", "production:app"]

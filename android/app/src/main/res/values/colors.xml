@@ -7,4 +7,13 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="idea_pane_outline">#3D000000</color>
+    <color name="idea_item_outline">#2E000000</color>
+    <color name="selector_dock_surface">#FFF4F6F8</color>
+    <color name="selector_gradient_start">#FFE5EFF5</color>
+    <color name="selector_gradient_center">#FFD7E5ED</color>
+    <color name="selector_gradient_end">#FFC8DBE7</color>
+    <color name="selector_outline">#667899AE</color>
+    <color name="selector_divider">#3D476C84</color>
+    <color name="selector_content">#FF213846</color>
 </resources>

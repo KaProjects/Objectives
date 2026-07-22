@@ -1,45 +1,75 @@
-import {createApp, reactive} from 'vue'
+import {createApp} from 'vue'
 import App from './App.vue'
+import router from './router'
 
 
 import './assets/main.css'
 // Vuetify
 import 'vuetify/styles'
+import '@mdi/font/css/materialdesignicons.css'
 import {createVuetify} from 'vuetify'
 import {aliases, mdi} from 'vuetify/iconsets/mdi'
-import * as components from 'vuetify/components'
-import * as directives from 'vuetify/directives'
+import {
+  VAlert,
+  VBtn,
+  VCard,
+  VCardActions,
+  VCardSubtitle,
+  VCardText,
+  VCardTitle,
+  VCheckbox,
+  VDialog,
+  VDivider,
+  VIcon,
+  VList,
+  VListItem,
+  VListItemTitle,
+  VMenu,
+  VTab,
+  VTabs,
+  VTextField,
+  VTextarea,
+} from 'vuetify/components'
 
-export const app_state = reactive({
-    token: null,
-    set_token(token) {
-        this.token = token
-    },
-    value: null,
-    select_value(value) {
-        this.value = value
-    },
-    unselect_value() {
-        this.value = null
-    },
-    fetchErrorValue: null,
-    handle_fetch_error(error) {
-        console.error(error)
-        this.fetchErrorValue = error
-    }
-})
+const components = {
+  VAlert,
+  VBtn,
+  VCard,
+  VCardActions,
+  VCardSubtitle,
+  VCardText,
+  VCardTitle,
+  VCheckbox,
+  VDialog,
+  VDivider,
+  VIcon,
+  VList,
+  VListItem,
+  VListItemTitle,
+  VMenu,
+  VTab,
+  VTabs,
+  VTextField,
+  VTextarea,
+}
 
+const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
 const vuetify = createVuetify({
-    components,
-    directives,
-    icons: {
-        defaultSet: 'mdi',
-        aliases,
-        sets: {
-            mdi,
-        }
-    },
+  components,
+  theme: {
+    defaultTheme: systemTheme.matches ? 'dark' : 'light',
+  },
+  icons: {
+    defaultSet: 'mdi',
+    aliases,
+    sets: {
+      mdi,
+    }
+  },
 })
 
+systemTheme.addEventListener('change', (event) => {
+  vuetify.theme.global.name.value = event.matches ? 'dark' : 'light'
+})
 
-createApp(App).use(vuetify).mount('#app')
+createApp(App).use(vuetify).use(router).mount('#app')

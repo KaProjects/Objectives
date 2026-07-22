@@ -1,45 +1,67 @@
-import os
-import sys
-
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-import database_manager
-import firebase_manager
+from decorators import CLIENT_HEADER_NAME, CLIENT_HEADER_VALUE, UNSAFE_METHODS
 from endpoints import rest
+from errors import ApiError, ForbiddenError, InternalServerError, error_body
 
-if __name__ == '__main__':
 
-    if len(sys.argv) != 2:
-        raise Exception("usage: python3 app.py test/dev/prod")
-    elif sys.argv[1] == 'prod':
-        database_manager.datasource = database_manager.DataSource.PRODUCTION
-        port = 7777
-        debug = False
-        if os.getenv('ORIGIN') is None:
-            raise Exception("using prod option without ORIGIN set")
-        origins = os.getenv('ORIGIN')
-    elif sys.argv[1] == 'dev':
-        database_manager.datasource = database_manager.DataSource.DEVEL
-        database_manager.DatabaseManager()\
-            .execute_scripts(["sql/drop_tables.sql", "sql/create_tables.sql", "sql/data_dev.sql"])
-        port = 7702
-        debug = True
-        origins = "http://127.0.0.1:5173"
-    elif sys.argv[1] == 'test':
-        database_manager.datasource = database_manager.DataSource.TEST
-        database_manager.DatabaseManager()\
-            .execute_scripts(["sql/drop_tables.sql", "sql/create_tables.sql", "sql/data_test.sql"])
-        port = 7890
-        debug = True
-        origins = "http://*:*"
-        # firebase_manager.mock_firebase()
-    else:
-        raise Exception("usage: python3 app.py test/dev/prod")
-
-    firebase_manager.init_firebase()
+def create_app(service, auth, origins, port, debug):
+    """Create the API from dependencies supplied by a runtime bootstrap."""
     app = Flask(__name__)
-    CORS(rest, resources={r"/*": {"origins": origins}})
+    app.extensions['auth'] = auth
+    app.extensions['service'] = service
+    CORS(
+        rest,
+        resources={r"/*": {"origins": [origins]}},
+        supports_credentials=True,
+        allow_headers=['Content-Type', CLIENT_HEADER_NAME],
+    )
     app.register_blueprint(rest)
     app.config["RESTX_MASK_SWAGGER"] = False
-    app.run(port=port, debug=debug, host="0.0.0.0")
+    app.config['FRONTEND_ORIGIN'] = origins
+    app.config['SERVER_PORT'] = port
+    app.config['SERVER_DEBUG'] = debug
+
+    @app.before_request
+    def protect_unsafe_requests():
+        if request.method not in UNSAFE_METHODS:
+            return None
+        if (
+            request.headers.get('Origin') != app.config['FRONTEND_ORIGIN']
+            or request.headers.get(CLIENT_HEADER_NAME) != CLIENT_HEADER_VALUE
+        ):
+            raise ForbiddenError()
+        return None
+
+    @app.errorhandler(ApiError)
+    def handle_api_error(error):
+        return jsonify(error_body(error)), error.status_code
+
+    def handle_http_error(error):
+        return jsonify({
+            'error': {
+                'code': error.name.lower().replace(' ', '_'),
+                'message': error.description,
+            }
+        }), error.code
+
+    @app.errorhandler(404)
+    def handle_not_found(error):
+        return handle_http_error(error)
+
+    @app.errorhandler(405)
+    def handle_method_not_allowed(error):
+        return handle_http_error(error)
+
+    @app.errorhandler(Exception)
+    def handle_unexpected_error(error):
+        app.logger.exception('Unhandled server exception')
+        internal_error = InternalServerError()
+        return jsonify(error_body(internal_error)), internal_error.status_code
+
+    @app.get('/health')
+    def health():
+        return {'status': 'ok'}
+
+    return app
