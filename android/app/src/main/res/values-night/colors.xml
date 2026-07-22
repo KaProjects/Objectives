@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="idea_pane_outline">#3DFFFFFF</color>
+    <color name="idea_item_outline">#2EFFFFFF</color>
+    <color name="selector_dock_surface">#FF15171A</color>
+    <color name="selector_gradient_start">#FF2E4656</color>
+    <color name="selector_gradient_center">#FF273D4B</color>
+    <color name="selector_gradient_end">#FF203541</color>
+    <color name="selector_outline">#806F93AA</color>
+    <color name="selector_divider">#526F93AA</color>
+    <color name="selector_content">#FFF0F6FA</color>
+</resources>
