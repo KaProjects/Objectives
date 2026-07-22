@@ -29,6 +29,7 @@ const confirmDeleteKrDialog = ref(false)
 const openAddTaskDialog = ref(false)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
+const dateInputProps = Object.freeze({density: 'compact', style: 'width: 150px'})
 
 watch(() => props.kr, (value) => {
   keyResult.value = value ? {...value, tasks: value.tasks.map((task) => ({...task}))} : null
@@ -87,6 +88,32 @@ async function update(field, value) {
   if (await updateKeyResult()) return true
   draftKeyResult.value[field] = previousValue
   return false
+}
+
+async function updateKeyResultDate(field, value) {
+  return withSubmissionLock(async () => {
+    const dates = {
+      date_created: keyResult.value.date_created,
+      date_reviewed: keyResult.value.date_reviewed,
+      [field]: value,
+    }
+    try {
+      const updatedDates = await api.put('/key_result/' + keyResult.value.id + '/dates', dates)
+      Object.assign(keyResult.value, updatedDates)
+      Object.assign(keyResultParent.value, updatedDates)
+      emit('updated', {...keyResultParent.value})
+      return true
+    } catch (error) {
+      submissionError.value = error.message
+      return false
+    }
+  })
+}
+
+function reviewDateLabel() {
+  if (keyResult.value.state === KEY_RESULT_STATE.FAILED) return 'Failed'
+  if (keyResult.value.state === KEY_RESULT_STATE.COMPLETED) return 'Completed'
+  return 'Reviewed'
 }
 
 async function retrieveKeyResultReviewDate() {
@@ -225,10 +252,26 @@ async function deleteKeyResult() {
         </template>
       </Editable>
       <div class="keyResultDetails">
-        <span>created: {{ formatDate(keyResult.date_created) }}</span>
-        <span v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE">reviewed: {{ formatDate(keyResult.date_reviewed) }}</span>
-        <span v-if="keyResult.state === KEY_RESULT_STATE.FAILED">failed: {{ formatDate(keyResult.date_reviewed) }}</span>
-        <span v-if="keyResult.state === KEY_RESULT_STATE.COMPLETED">completed: {{ formatDate(keyResult.date_reviewed) }}</span>
+        <Editable class="dateEditor" :value="keyResult.date_created" date-picker hide-details
+                  :input-props="dateInputProps"
+                  :submit="(value) => updateKeyResultDate('date_created', value)" label="Created">
+          <template #display="{startEditing}">
+            <button type="button" class="dateDisplay" aria-label="Edit Key Result created date"
+                    @click="startEditing">
+              created: {{ formatDate(keyResult.date_created) }}
+            </button>
+          </template>
+        </Editable>
+        <Editable class="dateEditor" :value="keyResult.date_reviewed" date-picker hide-details
+                  :input-props="dateInputProps"
+                  :submit="(value) => updateKeyResultDate('date_reviewed', value)" :label="reviewDateLabel()">
+          <template #display="{startEditing}">
+            <button type="button" class="dateDisplay" aria-label="Edit Key Result review date"
+                    @click="startEditing">
+              {{ reviewDateLabel().toLowerCase() }}: {{ formatDate(keyResult.date_reviewed) }}
+            </button>
+          </template>
+        </Editable>
         <span class="detailsSpacer"/>
         <v-dialog v-model="confirmDeleteKrDialog" width="300">
           <template v-slot:activator="{ props }">
@@ -537,9 +580,28 @@ async function deleteKeyResult() {
 .keyResultDetails {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 0 12px;
   font-size: 12px;
+}
+
+.dateEditor {
+  flex: 0 0 auto;
+}
+
+.dateDisplay {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.dateDisplay:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
 }
 
 .detailsSpacer {

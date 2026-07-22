@@ -30,6 +30,7 @@ const confirmDeleteObjDialog = ref(false)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
 const canDeleteObjective = computed(() => (props.obj?.key_results?.length ?? 0) === 0)
+const dateInputProps = Object.freeze({density: 'compact', style: 'width: 150px'})
 
 watch(() => props.obj, async (value) => {
   objective.value = value ? {...value, key_results: [...value.key_results]} : null
@@ -67,6 +68,29 @@ async function updateObjective(field, value) {
       return false
     }
   })
+}
+
+async function updateObjectiveDate(field, value) {
+  return withSubmissionLock(async () => {
+    const dates = {
+      date_created: objective.value.date_created,
+      date_finished: objective.value.date_finished,
+      [field]: value,
+    }
+    try {
+      const updatedDates = await api.put('/objective/' + objective.value.id + '/dates', dates)
+      Object.assign(objective.value, updatedDates)
+      emit('updated', {id: objective.value.id, ...updatedDates})
+      return true
+    } catch (error) {
+      submissionError.value = error.message
+      return false
+    }
+  })
+}
+
+function finishedDateLabel() {
+  return objective.value.state === OBJECTIVE_STATE.ACHIEVED ? 'Achieved' : 'Failed'
 }
 
 function closeDialog() {
@@ -214,9 +238,26 @@ async function deleteObjective() {
       </Editable>
 
       <div class="objectiveDetails">
-        <span>created: {{ formatDate(objective.date_created) }}</span>
-        <span v-if="objective.state === OBJECTIVE_STATE.ACHIEVED">achieved: {{ formatDate(objective.date_finished) }}</span>
-        <span v-if="objective.state === OBJECTIVE_STATE.FAILED">failed: {{ formatDate(objective.date_finished) }}</span>
+        <Editable class="dateEditor" :value="objective.date_created" date-picker hide-details
+                  :input-props="dateInputProps"
+                  :submit="(value) => updateObjectiveDate('date_created', value)" label="Created">
+          <template #display="{startEditing}">
+            <button type="button" class="dateDisplay" aria-label="Edit Objective created date"
+                    @click="startEditing">
+              created: {{ formatDate(objective.date_created) }}
+            </button>
+          </template>
+        </Editable>
+        <Editable v-if="objective.state !== OBJECTIVE_STATE.ACTIVE" class="dateEditor"
+                  :value="objective.date_finished" date-picker hide-details :input-props="dateInputProps"
+                  :submit="(value) => updateObjectiveDate('date_finished', value)" :label="finishedDateLabel()">
+          <template #display="{startEditing}">
+            <button type="button" class="dateDisplay" aria-label="Edit Objective finished date"
+                    @click="startEditing">
+              {{ finishedDateLabel().toLowerCase() }}: {{ formatDate(objective.date_finished) }}
+            </button>
+          </template>
+        </Editable>
         <span class="detailsSpacer"/>
         <v-dialog v-model="confirmDeleteObjDialog" width="300">
           <template v-slot:activator="{ props }">
@@ -427,9 +468,28 @@ async function deleteObjective() {
 .objectiveDetails {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 0 12px;
   font-size: 12px;
+}
+
+.dateEditor {
+  flex: 0 0 auto;
+}
+
+.dateDisplay {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.dateDisplay:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
 }
 
 .detailsSpacer {

@@ -77,6 +77,61 @@ describe('KeyResultDialog', () => {
     expect(deadlineEditor.props('datePicker')).toBe(true)
   })
 
+  it('keeps created and reviewed date pickers editable for an inactive Key Result and Objective', () => {
+    const wrapper = mount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult, state: 'failed'},
+        kr_parent: {...keyResult, state: 'failed', obj_state: 'failed'},
+      },
+    })
+    const editors = wrapper.findAllComponents(Editable)
+    const nameEditor = editors.find((editor) => editor.props('label') === 'Name')
+    const createdEditor = editors.find((editor) => editor.props('label') === 'Created')
+    const reviewedEditor = editors.find((editor) => editor.props('label') === 'Failed')
+
+    expect(nameEditor.props('editable')).toBe(false)
+    expect(createdEditor.props()).toMatchObject({editable: true, datePicker: true})
+    expect(reviewedEditor.props()).toMatchObject({editable: true, datePicker: true})
+  })
+
+  it('updates Key Result dates without closing the dialog', async () => {
+    const updatedDates = {date_created: '2025-12-20', date_reviewed: '2026-01-01'}
+    api.put.mockResolvedValue(updatedDates)
+    const wrapper = shallowMount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult, state: 'completed'},
+        kr_parent: {...keyResult, state: 'completed', obj_state: 'achieved'},
+      },
+    })
+
+    expect(await wrapper.vm.updateKeyResultDate('date_created', updatedDates.date_created)).toBe(true)
+
+    expect(api.put).toHaveBeenCalledWith('/key_result/2/dates', updatedDates)
+    expect(wrapper.vm.keyResult.date_created).toBe('2025-12-20')
+    expect(wrapper.vm.keyResultParent.date_created).toBe('2025-12-20')
+    expect(wrapper.emitted('updated')).toContainEqual([expect.objectContaining(updatedDates)])
+    expect(wrapper.emitted('close')).toBeUndefined()
+  })
+
+  it('keeps the previous Key Result dates when correction fails', async () => {
+    api.put.mockRejectedValue(new Error('Date update failed'))
+    const wrapper = shallowMount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult},
+        kr_parent: {...keyResult, obj_state: 'active'},
+      },
+    })
+
+    expect(await wrapper.vm.updateKeyResultDate('date_reviewed', '2025-12-20')).toBe(false)
+
+    expect(wrapper.vm.keyResult.date_reviewed).toBe('2026-01-01')
+    expect(wrapper.vm.submissionError).toBe('Date update failed')
+    expect(wrapper.emitted('updated')).toBeUndefined()
+  })
+
   it.each(['failed', 'completed'])('closes after the Key Result is marked %s', async (state) => {
     api.put.mockResolvedValue(state)
     api.get.mockResolvedValue({date_reviewed: '2026-01-02'})

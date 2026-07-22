@@ -109,6 +109,14 @@ class Service:
             database.update_key_result(id, data["name"], data["description"], data["s"], data["m"], data["a"], data["r"], data["t"], today)
         return today
 
+    def update_key_result_dates(self, id, date_created, date_reviewed):
+        with self.database_manager.open() as database:
+            date_created, date_reviewed = database.update_key_result_dates(id, date_created, date_reviewed)
+        return {
+            'date_created': date_created,
+            'date_reviewed': date_reviewed,
+        }
+
     def delete_key_result(self, id):
         with self.database_manager.open() as database:
             database.delete_key_result(id)
@@ -186,6 +194,14 @@ class Service:
     def update_objective(self, id, name, description):
         with self.database_manager.open() as database:
             database.update_objective(id, name, description)
+
+    def update_objective_dates(self, id, date_created, date_finished):
+        with self.database_manager.open() as database:
+            date_created, date_finished = database.update_objective_dates(id, date_created, date_finished)
+        return {
+            'date_created': date_created,
+            'date_finished': date_finished,
+        }
 
     def check_objective_has_kr(self, id):
         with self.database_manager.open() as database:

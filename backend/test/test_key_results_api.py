@@ -243,6 +243,49 @@ class TestKeyResultsApi(ApiTestCase):
         # 500 because it's same url as create kr, just invalid payload
         self.assertIn(status, (400, 422), message)
 
+    def test_update_dates_of_inactive_key_result(self):
+        before_status, before, before_message = get_request('/key_result/2')
+        self.assertEqual(before_status, 200, before_message)
+        self.assertEqual(before['state'], 'completed', before_message)
+
+        payload = json.dumps({'date_created': '2022-06-01', 'date_reviewed': '2022-07-02'})
+        status, dates, message = put_request('/key_result/2/dates', payload)
+
+        self.assertEqual(status, 200, message)
+        self.assertEqual(dates, {'date_created': '2022-06-01', 'date_reviewed': '2022-07-02'}, message)
+
+        after_status, after, after_message = get_request('/key_result/2')
+        self.assertEqual(after_status, 200, after_message)
+        self.assertEqual(after['date_created'], '2022-06-01', after_message)
+        self.assertEqual(after['date_reviewed'], '2022-07-02', after_message)
+        for field in ('id', 'objective_id', 'state', 'name', 'description', 's', 'm', 'a', 'r', 't', 'tasks'):
+            self.assertEqual(after[field], before[field], f'{field} changed: {after_message}')
+
+    def test_update_key_result_dates_rejects_invalid_or_missing_dates(self):
+        invalid_payloads = (
+            {'date_created': 'not-a-date', 'date_reviewed': '2022-07-02'},
+            {'date_created': '2022-06-01', 'date_reviewed': '02/07/2022'},
+            {'date_reviewed': '2022-07-02'},
+            {'date_created': '2022-06-01'},
+        )
+
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload):
+                status, error, message = put_request('/key_result/2/dates', json.dumps(payload))
+                self.assertEqual(status, 400, message)
+
+        status, key_result, message = get_request('/key_result/2')
+        self.assertEqual(status, 200, message)
+        self.assertEqual(key_result['date_created'], '2023-03-10', message)
+        self.assertEqual(key_result['date_reviewed'], '2023-03-10', message)
+
+    def test_update_key_result_dates_for_nonexistent_key_result(self):
+        payload = json.dumps({'date_created': '2022-06-01', 'date_reviewed': '2022-07-02'})
+        status, error, message = put_request('/key_result/333/dates', payload)
+
+        self.assertEqual(status, 404, message)
+        self.assertIn("key result with id '333' not found", error, message)
+
     def test_review_key_result(self):
         before_status, before_key_result, before_message = get_request("/key_result/13")
         self.assertEqual(before_status, 200, before_message)

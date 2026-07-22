@@ -355,6 +355,29 @@ class KeyResult(Resource):
             return create_exception_response(e)
 
 
+@key_result.route('/<id>/dates')
+@key_result.response(404, 'Key Result not found')
+@key_result.param('id', 'Key Result identifier')
+class KeyResultDates(Resource):
+    @key_result.doc(security="SessionCookie")
+    @authenticated
+    @key_result.expect(api.model('KeyResultDatesUpdate', {
+        'date_created': fields.String(required=True, example='2026-07-01'),
+        'date_reviewed': fields.String(required=True, example='2026-07-20'),
+    }))
+    @key_result.response(200, 'Success')
+    def put(self, id):
+        try:
+            if not Service().check_key_result_exist(id):
+                return create_response("key result with id '" + id + "' not found", 404)
+
+            data: dict = api.payload
+            dates = Service().update_key_result_dates(id, data['date_created'], data['date_reviewed'])
+            return create_response(dates, 200)
+        except Exception as e:
+            return create_exception_response(e)
+
+
 @key_result.route('/<id>/review')
 @key_result.response(404, 'Key Result not found')
 @key_result.param('id', 'Key Result identifier')
@@ -590,6 +613,29 @@ class Objective(Resource):
 
             Service().delete_objective(id)
             return create_response(None, 204)
+        except Exception as e:
+            return create_exception_response(e)
+
+
+@objective.route('/<id>/dates')
+@objective.response(404, 'Objective not found')
+@objective.param('id', 'Objective identifier')
+class ObjectiveDates(Resource):
+    @objective.doc(security="SessionCookie")
+    @authenticated
+    @objective.expect(api.model('ObjectiveDatesUpdate', {
+        'date_created': fields.String(required=True, example='2026-07-01'),
+        'date_finished': fields.String(required=True, example='2026-07-20'),
+    }))
+    @objective.response(200, 'Success')
+    def put(self, id):
+        try:
+            if not Service().check_objective_exist(id):
+                return create_response("objective with id '" + str(id) + "' not found", 404)
+
+            data: dict = api.payload
+            dates = Service().update_objective_dates(id, data['date_created'], data['date_finished'])
+            return create_response(dates, 200)
         except Exception as e:
             return create_exception_response(e)
 

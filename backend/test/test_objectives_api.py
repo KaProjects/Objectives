@@ -121,6 +121,59 @@ class TestObjectivesApi(ApiTestCase):
         status, error, message = put_request("/objective", payload)
         assert_method_not_allowed(self, status, error, message)
 
+    def test_update_dates_of_inactive_objective(self):
+        before_status, before_value, before_message = get_request('/value/3')
+        self.assertEqual(before_status, 200, before_message)
+        before = next(objective for objective in before_value['objectives'] if objective['id'] == 1)
+        self.assertEqual(before['state'], 'achieved', before_message)
+
+        payload = json.dumps({'date_created': '2021-01-10', 'date_finished': '2021-12-20'})
+        status, dates, message = put_request('/objective/1/dates', payload)
+
+        self.assertEqual(status, 200, message)
+        self.assertEqual(dates, {'date_created': '2021-01-10', 'date_finished': '2021-12-20'}, message)
+
+        after_status, after_value, after_message = get_request('/value/3')
+        self.assertEqual(after_status, 200, after_message)
+        after = next(objective for objective in after_value['objectives'] if objective['id'] == 1)
+        self.assertEqual(after['date_created'], '2021-01-10', after_message)
+        self.assertEqual(after['date_finished'], '2021-12-20', after_message)
+        for field in ('id', 'value_id', 'state', 'name', 'description', 'ideas_count', 'key_results'):
+            self.assertEqual(after[field], before[field], f'{field} changed: {after_message}')
+
+    def test_update_objective_dates_allows_empty_finished_date(self):
+        payload = json.dumps({'date_created': '2021-01-10', 'date_finished': ''})
+        status, dates, message = put_request('/objective/1/dates', payload)
+
+        self.assertEqual(status, 200, message)
+        self.assertEqual(dates, {'date_created': '2021-01-10', 'date_finished': ''}, message)
+
+    def test_update_objective_dates_rejects_invalid_or_missing_dates(self):
+        invalid_payloads = (
+            {'date_created': 'invalid', 'date_finished': '2021-12-20'},
+            {'date_created': '2021-01-10', 'date_finished': '20/12/2021'},
+            {'date_finished': '2021-12-20'},
+            {'date_created': '2021-01-10'},
+        )
+
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload):
+                status, error, message = put_request('/objective/1/dates', json.dumps(payload))
+                self.assertEqual(status, 400, message)
+
+        status, value, message = get_request('/value/3')
+        self.assertEqual(status, 200, message)
+        objective = next(item for item in value['objectives'] if item['id'] == 1)
+        self.assertEqual(objective['date_created'], '2023-03-10', message)
+        self.assertEqual(objective['date_finished'], '2023-03-12', message)
+
+    def test_update_objective_dates_for_nonexistent_objective(self):
+        payload = json.dumps({'date_created': '2021-01-10', 'date_finished': '2021-12-20'})
+        status, error, message = put_request('/objective/333/dates', payload)
+
+        self.assertEqual(status, 404, message)
+        self.assertIn("objective with id '333' not found", error, message)
+
     def test_update_objective_state(self):
         before_status, before_value, before_message = get_request("/value/4")
         self.assertEqual(before_status, 200, before_message)

@@ -188,6 +188,16 @@ class DatabaseManager:
             cursor.execute(sql('update KeyResults set name=?,description=?,s=?,m=?,a=?,r=?,t=?,date_reviewed=? where id=?'),
                               (name, description, s, m, a, r, t, date_reviewed, int(id)))
 
+    def update_key_result_dates(self, id, date_created, date_reviewed):
+        date_created = validate_iso_date(date_created)
+        date_reviewed = validate_iso_date(date_reviewed)
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(
+                sql('update KeyResults set date_created=?,date_reviewed=? where id=?'),
+                (date_created, date_reviewed, int(id)),
+            )
+        return date_created, date_reviewed
+
     def delete_key_result(self, id):
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('delete from KeyResults where id=?'), (int(id),))
@@ -283,6 +293,16 @@ class DatabaseManager:
     def update_objective(self, id, name, description):
         with self.cursor(commit=True) as cursor:
             cursor.execute(sql('update Objectives set name=?,description=? where id=?'), (name, description, int(id)))
+
+    def update_objective_dates(self, id, date_created, date_finished):
+        date_created = validate_iso_date(date_created)
+        date_finished = validate_iso_date(date_finished, allow_empty=True)
+        with self.cursor(commit=True) as cursor:
+            cursor.execute(
+                sql('update Objectives set date_created=?,date_finished=? where id=?'),
+                (date_created, date_finished, int(id)),
+            )
+        return date_created, date_finished
 
     def update_objective_state(self, id, state, date):
         validate_iso_date(date, allow_empty=True)

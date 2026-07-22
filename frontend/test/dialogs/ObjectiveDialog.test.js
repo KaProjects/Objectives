@@ -1,5 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
-import {flushPromises, shallowMount} from '@vue/test-utils'
+import {flushPromises, mount, shallowMount} from '@vue/test-utils'
 import {nextTick, reactive} from 'vue'
 
 const {api} = vi.hoisted(() => ({
@@ -11,6 +11,7 @@ const {api} = vi.hoisted(() => ({
 vi.mock('@/services/apiClient', () => ({api}))
 
 import ObjectiveDialog from '@/dialogs/ObjectiveDialog.vue'
+import Editable from '@/components/Editable.vue'
 
 const objective = {
   id: 1,
@@ -18,6 +19,7 @@ const objective = {
   description: 'Move more',
   state: 'active',
   date_created: '2026-01-01',
+  date_finished: '',
   ideas_count: 0,
   key_results: [],
 }
@@ -69,6 +71,53 @@ describe('ObjectiveDialog', () => {
     expect(wrapper.vm.draftObjective.name).toBe('Exercise')
     expect(wrapper.vm.objective.name).toBe('Exercise')
     expect(wrapper.vm.submissionError).toBe('Network unavailable')
+    expect(wrapper.emitted('updated')).toBeUndefined()
+  })
+
+  it('keeps both date pickers editable after the Objective is achieved', () => {
+    const wrapper = mount(ObjectiveDialog, {
+      props: {
+        modelValue: true,
+        obj: {...objective, state: 'achieved', date_finished: '2026-02-01'},
+      },
+    })
+    const editors = wrapper.findAllComponents(Editable)
+    const nameEditor = editors.find((editor) => editor.props('label') === 'Name')
+    const createdEditor = editors.find((editor) => editor.props('label') === 'Created')
+    const finishedEditor = editors.find((editor) => editor.props('label') === 'Achieved')
+
+    expect(nameEditor.props('editable')).toBe(false)
+    expect(createdEditor.props()).toMatchObject({editable: true, datePicker: true})
+    expect(finishedEditor.props()).toMatchObject({editable: true, datePicker: true})
+  })
+
+  it('updates Objective dates without mutating the supplied Objective', async () => {
+    const inputObjective = {...objective, state: 'failed', date_finished: '2026-02-01'}
+    const updatedDates = {date_created: '2025-12-20', date_finished: '2026-02-01'}
+    api.put.mockResolvedValue(updatedDates)
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: inputObjective},
+    })
+
+    expect(await wrapper.vm.updateObjectiveDate('date_created', updatedDates.date_created)).toBe(true)
+
+    expect(api.put).toHaveBeenCalledWith('/objective/1/dates', updatedDates)
+    expect(wrapper.vm.objective.date_created).toBe('2025-12-20')
+    expect(inputObjective.date_created).toBe('2026-01-01')
+    expect(wrapper.emitted('updated')).toContainEqual([{id: 1, ...updatedDates}])
+    expect(wrapper.emitted('close')).toBeUndefined()
+  })
+
+  it('keeps the previous Objective dates when correction fails', async () => {
+    api.put.mockRejectedValue(new Error('Date update failed'))
+    const wrapper = shallowMount(ObjectiveDialog, {
+      props: {modelValue: true, obj: {...objective}},
+    })
+
+    expect(await wrapper.vm.updateObjectiveDate('date_created', '2025-12-20')).toBe(false)
+
+    expect(wrapper.vm.objective.date_created).toBe('2026-01-01')
+    expect(wrapper.vm.submissionError).toBe('Date update failed')
     expect(wrapper.emitted('updated')).toBeUndefined()
   })
 
