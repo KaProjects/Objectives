@@ -1,5 +1,6 @@
 package org.kaleta.objectives.ui
 
+import android.graphics.Rect
 import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
@@ -18,6 +19,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
@@ -32,9 +34,11 @@ import org.kaleta.objectives.data.Idea
 import org.kaleta.objectives.data.SubvalueOption
 import org.kaleta.objectives.data.ValueOption
 import org.kaleta.objectives.repository.AppRepositoryProvider
+import kotlin.math.max
 
 class MainFragment : Fragment() {
     private lateinit var viewModel: MainViewModel
+    private var edgeRollEffect: EdgeRollEffect? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,6 +83,7 @@ class MainFragment : Fragment() {
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = ideasAdapter
+        edgeRollEffect = EdgeRollEffect(recyclerView).also { it.attach() }
         recyclerView.isClickable = true
         recyclerView.setOnClickListener { ideasAdapter.stopEditing() }
         recyclerView.setOnTouchListener { _, event ->
@@ -92,17 +97,58 @@ class MainFragment : Fragment() {
         }
 
         val buttonMargin = resources.getDimensionPixelOffset(R.dimen.dp_10)
-        val listBottomPadding = resources.getDimensionPixelOffset(R.dimen.idea_list_bottom_padding)
-        ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
+        val focusedIdeaMargin = resources.getDimensionPixelOffset(R.dimen.dp_10)
+        val revealFocusedIdea = Runnable {
+            val focusedView = recyclerView.findFocus() ?: return@Runnable
+            val ideaView = recyclerView.findContainingItemView(focusedView) ?: return@Runnable
+            recyclerView.requestChildRectangleOnScreen(
+                ideaView,
+                Rect(0, 0, ideaView.width, ideaView.height + focusedIdeaMargin),
+                true,
+            )
+        }
+
+        fun applyWindowInsets(insets: WindowInsetsCompat) {
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val keyboardPadding = max(ime.bottom - systemBars.bottom, 0)
             topAppBar.updatePadding(top = systemBars.top)
             valueSpinnerFrame.updatePadding(bottom = systemBars.bottom)
-            recyclerView.updatePadding(bottom = listBottomPadding)
             addButton.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 bottomMargin = buttonMargin + systemBars.bottom
             }
+            if (view.paddingBottom != keyboardPadding) {
+                view.updatePadding(bottom = keyboardPadding)
+                if (keyboardPadding > 0) {
+                    recyclerView.removeCallbacks(revealFocusedIdea)
+                    recyclerView.post(revealFocusedIdea)
+                }
+            }
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
+            applyWindowInsets(insets)
             insets
         }
+        ViewCompat.setWindowInsetsAnimationCallback(
+            view,
+            object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
+                override fun onProgress(
+                    insets: WindowInsetsCompat,
+                    runningAnimations: MutableList<WindowInsetsAnimationCompat>,
+                ): WindowInsetsCompat {
+                    applyWindowInsets(insets)
+                    return insets
+                }
+
+                override fun onEnd(animation: WindowInsetsAnimationCompat) {
+                    if (animation.typeMask and WindowInsetsCompat.Type.ime() != 0) {
+                        recyclerView.removeCallbacks(revealFocusedIdea)
+                        recyclerView.post(revealFocusedIdea)
+                    }
+                }
+            },
+        )
         ViewCompat.requestApplyInsets(view)
 
         valueSpinner.adapter = valuesAdapter
@@ -191,6 +237,12 @@ class MainFragment : Fragment() {
                 viewModel.clearError()
             }
         }
+    }
+
+    override fun onDestroyView() {
+        edgeRollEffect?.detach()
+        edgeRollEffect = null
+        super.onDestroyView()
     }
 
     private fun showAddIdeaDialog() {

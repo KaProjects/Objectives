@@ -1,5 +1,6 @@
 package org.kaleta.objectives.adapter
 
+import android.graphics.Rect
 import android.text.SpannableStringBuilder
 import android.view.LayoutInflater
 import android.view.View
@@ -19,6 +20,7 @@ class IdeasAdapter(
     private val onEditRequested: (Idea, String, String) -> Boolean,
 ) : ListAdapter<Idea, IdeasAdapter.ViewHolder>(IdeaDiffCallback) {
     private var editingIdeaId: String? = null
+    private var ideaToFocusId: String? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.idea_item, parent, false)
@@ -27,7 +29,18 @@ class IdeasAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val idea = getItem(position)
-        holder.bind(idea, isEditing = idea.id == editingIdeaId, isFirst = position == 0)
+        val shouldFocusEditor = idea.id == ideaToFocusId
+        holder.bind(
+            idea,
+            isEditing = idea.id == editingIdeaId,
+            shouldFocusEditor = shouldFocusEditor,
+        )
+        if (shouldFocusEditor) ideaToFocusId = null
+    }
+
+    override fun onViewRecycled(holder: ViewHolder) {
+        holder.recycle()
+        super.onViewRecycled(holder)
     }
 
     fun stopEditing() {
@@ -50,7 +63,6 @@ class IdeasAdapter(
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val ideaContent: View = itemView.findViewById(R.id.ideaContent)
-        private val firstIdeaSeparator: View = itemView.findViewById(R.id.firstIdeaSeparator)
         private val ideaName: TextView = itemView.findViewById(R.id.ideaName)
         private val ideaDescription: TextView = itemView.findViewById(R.id.ideaDescription)
         private val ideaEditor: View = itemView.findViewById(R.id.ideaEditor)
@@ -58,19 +70,23 @@ class IdeasAdapter(
         private val ideaDescriptionEdit: TextInputEditText = itemView.findViewById(R.id.ideaDescriptionEdit)
         private val deleteButton: ImageView = itemView.findViewById(R.id.deleteIdea)
         private val confirmEditButton: ImageView = itemView.findViewById(R.id.confirmEditIdea)
+        private var boundIdeaId: String? = null
+        private var focusEditorRunnable: Runnable? = null
 
-        fun bind(idea: Idea, isEditing: Boolean, isFirst: Boolean) {
+        fun bind(idea: Idea, isEditing: Boolean, shouldFocusEditor: Boolean) {
+            cancelPendingEditorFocus()
+            boundIdeaId = idea.id
+            resetEdgeRoll()
             ideaName.text = idea.name
             ideaDescription.text = idea.description
             ideaDescription.visibility = if (idea.description.isBlank()) View.GONE else View.VISIBLE
             ideaEdit.text = SpannableStringBuilder(idea.name)
             ideaDescriptionEdit.text = SpannableStringBuilder(idea.description)
-            firstIdeaSeparator.visibility = if (isFirst) View.VISIBLE else View.GONE
             showEditingState(isEditing)
 
-            itemView.setOnClickListener { stopEditing() }
+            itemView.setOnClickListener { startEditing(idea) }
             itemView.setOnLongClickListener {
-                updateEditingIdea(idea.id)
+                startEditing(idea)
                 true
             }
             deleteButton.setOnClickListener {
@@ -89,6 +105,36 @@ class IdeasAdapter(
                     ideaEdit.error = itemView.context.getString(R.string.idea_required)
                 }
             }
+
+            if (isEditing && shouldFocusEditor) {
+                val focusRunnable = Runnable {
+                    focusEditorRunnable = null
+                    if (boundIdeaId != idea.id || editingIdeaId != idea.id) return@Runnable
+                    ideaEdit.requestFocus()
+                    ideaEdit.setSelection(ideaEdit.text?.length ?: 0)
+                    itemView.context
+                        .getSystemService(InputMethodManager::class.java)
+                        ?.showSoftInput(ideaEdit, InputMethodManager.SHOW_IMPLICIT)
+                    itemView.requestRectangleOnScreen(
+                        Rect(0, 0, itemView.width, itemView.height),
+                        true,
+                    )
+                }
+                focusEditorRunnable = focusRunnable
+                ideaEdit.post(focusRunnable)
+            }
+        }
+
+        fun recycle() {
+            cancelPendingEditorFocus()
+            boundIdeaId = null
+            resetEdgeRoll()
+        }
+
+        fun resetEdgeRoll() {
+            itemView.rotationX = 0f
+            itemView.pivotX = itemView.width / 2f
+            itemView.pivotY = itemView.height / 2f
         }
 
         private fun showEditingState(isEditing: Boolean) {
@@ -105,6 +151,17 @@ class IdeasAdapter(
             itemView.context
                 .getSystemService(InputMethodManager::class.java)
                 ?.hideSoftInputFromWindow(itemView.windowToken, 0)
+        }
+
+        private fun startEditing(idea: Idea) {
+            if (editingIdeaId == idea.id) return
+            ideaToFocusId = idea.id
+            updateEditingIdea(idea.id)
+        }
+
+        private fun cancelPendingEditorFocus() {
+            focusEditorRunnable?.let(ideaEdit::removeCallbacks)
+            focusEditorRunnable = null
         }
     }
 

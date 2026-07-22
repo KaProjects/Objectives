@@ -9,5 +9,5 @@
     android:maxLines="1"
     android:paddingStart="8dp"
     android:paddingEnd="8dp"
-    android:textColor="@color/black"
+    android:textColor="@color/selector_content"
     android:textSize="20sp" />

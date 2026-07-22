@@ -8,7 +8,27 @@
           "ideas": {
             "idea-1": { "name": "Drink water throughout the day", "description": "Keep a bottle nearby." },
             "idea-2": { "name": "Prepare healthy snacks", "description": "Fruit, nuts, or yogurt." },
-            "idea-3": { "name": "Plan meals for the week", "description": "" }
+            "idea-3": { "name": "Plan meals for the week", "description": "" },
+            "idea-z01": { "name": "Schedule an annual preventive health check", "description": "Write down questions and symptoms beforehand so the appointment is easier to use well." },
+            "idea-z02": { "name": "Build a simple morning mobility routine", "description": "Start with five minutes for shoulders, hips, and ankles." },
+            "idea-z03": { "name": "Prepare a weekly medication and supplement organizer", "description": "Refill it every Sunday evening and make a note before anything runs low." },
+            "idea-z04": { "name": "Add vegetables to lunch", "description": "" },
+            "idea-z05": { "name": "Track energy levels after meals for two weeks", "description": "Record the meal, time, energy level, and anything unusual without trying to make the notes perfect." },
+            "idea-z06": { "name": "Book a dental hygiene appointment", "description": "Check whether a follow-up examination is due as well." },
+            "idea-z07": { "name": "Create a calmer evening wind-down routine without phones or work notifications", "description": "Dim the lights, prepare tomorrow's essentials, and read something relaxing for at least fifteen minutes." },
+            "idea-z08": { "name": "Keep fruit visible on the kitchen counter", "description": "Make the easy choice the healthy choice." },
+            "idea-z09": { "name": "Review caffeine timing", "description": "Try moving the final coffee earlier and observe whether falling asleep becomes easier." },
+            "idea-z10": { "name": "Learn one balanced breakfast that takes less than five minutes to prepare", "description": "Choose ingredients that can stay stocked and require almost no cleanup on a busy morning." },
+            "idea-z11": { "name": "Take a short daylight walk", "description": "Especially useful on days spent mostly indoors." },
+            "idea-z12": { "name": "Create an emergency healthy meal for the freezer", "description": "Prepare enough portions for the days when there is no time or energy to cook." },
+            "idea-z13": { "name": "Measure resting heart rate consistently for one month", "description": "Use the same time and conditions, then look at the trend rather than individual readings." },
+            "idea-z14": { "name": "Try a screen-free lunch once a week", "description": "" },
+            "idea-z15": { "name": "Write a reusable grocery list organized by store section", "description": "Include reliable sources of protein, vegetables, fruit, whole grains, and quick snacks." },
+            "idea-z16": { "name": "Check desk ergonomics and monitor height", "description": "Adjust the chair, screen, keyboard, and lighting, then notice whether neck or wrist tension changes." },
+            "idea-z17": { "name": "Plan recovery time after especially demanding weeks", "description": "Protect at least one quiet block for sleep, food preparation, movement, and genuinely restorative downtime." },
+            "idea-z18": { "name": "Keep a compact first-aid kit stocked", "description": "Check expiration dates and replace anything that has been used." },
+            "idea-z19": { "name": "Practice slow breathing before stressful meetings", "description": "Use a short, repeatable pattern that is easy to remember and discreet enough to do anywhere." },
+            "idea-z20": { "name": "Choose one sustainable health habit instead of attempting a complete lifestyle overhaul all at once", "description": "Pick the smallest behavior that would still matter, define when it happens, and keep it easy enough to repeat on difficult days." }
           }
         },
         "1": {
