@@ -181,6 +181,10 @@ function returnToValues() {
   router.push({name: 'values'})
 }
 
+function openKeyResults() {
+  router.push({name: 'key-results'})
+}
+
 function selectTab(state) {
   tab.value = state === OBJECTIVE_STATE.ACTIVE ? OBJECTIVE_TAB.ACTIVE : OBJECTIVE_TAB.DONE
 }
@@ -212,9 +216,15 @@ function removeObjective(objective) {
   if (index !== -1) value.value.objectives.splice(index, 1)
 }
 
-watch(valueId, loadData, {immediate: true})
-watch(valueId, () => activeObjectiveIndex.value = 0)
+watch(valueId, (nextValueId) => {
+  if (route.name !== 'value' || nextValueId == null) return
+  loadData()
+}, {immediate: true})
+watch(valueId, (nextValueId) => {
+  if (nextValueId != null) activeObjectiveIndex.value = 0
+})
 watch(() => route.params.tab, (routeTab) => {
+  if (route.name !== 'value' || valueId.value == null) return
   const selectedTab = normalizeTab(routeTab)
   if (routeTab !== selectedTab) {
     router.replace({
@@ -226,6 +236,7 @@ watch(() => route.params.tab, (routeTab) => {
   tab.value = selectedTab
 }, {immediate: true})
 watch(tab, (selectedTab) => {
+  if (route.name !== 'value' || valueId.value == null) return
   if (route.params.tab === selectedTab) return
   router.push({
     name: 'value',
@@ -273,6 +284,11 @@ watch(openAddObjDialog, (open) => {
             @created="addSubvalue"
         />
       </div>
+      <v-btn class="button keyResultsButton" variant="tonal" rounded="lg"
+             aria-label="Open Key Results Overview" @click="openKeyResults">
+        <v-icon icon="mdi-format-list-bulleted"/>
+        <span class="keyResultsLabel">Key Results</span>
+      </v-btn>
     </div>
 
     <v-alert v-if="conversionError" class="conversionError" title="Cleanup failed" type="warning">
@@ -355,6 +371,7 @@ watch(openAddObjDialog, (open) => {
 .appbar {
   display: inline-flex;
   align-items: center;
+  width: 100%;
 }
 
 .title {
@@ -364,6 +381,10 @@ watch(openAddObjDialog, (open) => {
 .button {
   margin-left: 10px;
   margin-right: 10px;
+}
+
+.keyResultsButton {
+  margin-left: auto;
 }
 
 .activeObjectives,
@@ -573,9 +594,9 @@ watch(openAddObjDialog, (open) => {
     display: grid;
     width: 100%;
     grid-template-areas:
-      "back title add"
-      "tabs tabs tabs";
-    grid-template-columns: auto minmax(0, 1fr) auto;
+      "back title add overview"
+      "tabs tabs tabs tabs";
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
   }
 
   .backButton {
@@ -622,6 +643,19 @@ watch(openAddObjDialog, (open) => {
     min-width: 36px;
     padding-inline: 8px;
     width: 36px;
+  }
+
+  .keyResultsButton {
+    grid-area: overview;
+    margin-left: 0;
+    margin-right: 4px;
+    min-width: 36px;
+    padding: 0;
+    width: 36px;
+  }
+
+  .keyResultsLabel {
+    display: none;
   }
 }
 </style>

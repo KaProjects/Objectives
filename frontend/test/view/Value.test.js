@@ -132,4 +132,18 @@ describe('Value view', () => {
     await flushPromises()
     expect(wrapper.vm.tab).toBe('active')
   })
+
+  it('opens the Key Results overview from the app bar', async () => {
+    api.get.mockImplementation((path) => path.endsWith('/subvalue')
+        ? Promise.resolve([])
+        : Promise.resolve({id: 1, name: 'Health', objectives: []}))
+    await router.push('/value/1/active')
+    const wrapper = shallowMount(Value, {global: {plugins: [router]}})
+    await flushPromises()
+
+    await wrapper.get('.keyResultsButton').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('key-results')
+  })
 })
