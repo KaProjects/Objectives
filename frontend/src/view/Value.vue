@@ -11,11 +11,19 @@ import AddObjectiveDialog from '@/dialogs/AddObjectiveDialog.vue'
 import AddSubvalueDialog from '@/dialogs/AddSubvalueDialog.vue'
 import CarouselPager from '@/components/CarouselPager.vue'
 import {useHorizontalCarousel} from '@/composables/useHorizontalCarousel'
+import {
+  DIALOG_QUERY_PARAM,
+  parseDialogId,
+  withDialogQuery,
+  withoutDialogQuery,
+} from '@/router/dialogQuery'
 
 const value = ref({objectives: []})
 const route = useRoute()
 const router = useRouter()
 const valueId = computed(() => route.params.valueId)
+const objectiveDialogId = computed(() => parseDialogId(route.query[DIALOG_QUERY_PARAM.OBJECTIVE]))
+const keyResultDialogId = computed(() => parseDialogId(route.query[DIALOG_QUERY_PARAM.KEY_RESULT]))
 const tab = ref(OBJECTIVE_TAB.ACTIVE)
 const openAddObjDialog = ref(false)
 const objectiveDraft = ref(null)
@@ -26,6 +34,7 @@ const openAddSubvalueDialog = ref(false)
 const subvalues = ref([])
 const doneTimelineElement = ref(null)
 const focusedObjectiveId = ref(null)
+const valueLoaded = ref(false)
 let focusResetTimer = null
 
 function normalizeTab(tab) {
@@ -33,6 +42,7 @@ function normalizeTab(tab) {
 }
 
 async function loadData() {
+  valueLoaded.value = false
   try {
     const [loadedValue, loadedSubvalues] = await Promise.all([
       api.get('/value/' + valueId.value),
@@ -40,6 +50,8 @@ async function loadData() {
     ])
     value.value = loadedValue
     subvalues.value = loadedSubvalues
+    valueLoaded.value = true
+    await syncDialogTarget()
     await nextTick()
     if (route.query.objective != null) await focusObjectiveCard(route.query.objective)
   } catch (error) {
@@ -191,7 +203,14 @@ function openKeyResults() {
 }
 
 function selectTab(state) {
-  tab.value = state === OBJECTIVE_STATE.ACTIVE ? OBJECTIVE_TAB.ACTIVE : OBJECTIVE_TAB.DONE
+  const selectedTab = state === OBJECTIVE_STATE.ACTIVE ? OBJECTIVE_TAB.ACTIVE : OBJECTIVE_TAB.DONE
+  const queryWithoutObjectiveDialog = withoutDialogQuery(route.query, DIALOG_QUERY_PARAM.OBJECTIVE)
+  const query = withoutDialogQuery(queryWithoutObjectiveDialog, DIALOG_QUERY_PARAM.KEY_RESULT)
+  router.push({
+    name: 'value',
+    params: {valueId: valueId.value, tab: selectedTab},
+    query,
+  })
 }
 
 function updateObjective(updatedObjective) {
@@ -223,6 +242,71 @@ function removeObjective(objective) {
 
 function idsMatch(left, right) {
   return left != null && right != null && String(left) === String(right)
+}
+
+function dialogParameter(type) {
+  return type === 'objective' ? DIALOG_QUERY_PARAM.OBJECTIVE : DIALOG_QUERY_PARAM.KEY_RESULT
+}
+
+async function openDialogRoute({type, id}) {
+  if (id == null) return
+  const parameter = dialogParameter(type)
+  const query = withDialogQuery(route.query, parameter, id)
+  if (parseDialogId(route.query[parameter]) === Number(id)
+      && Object.keys(query).length === Object.keys(route.query).length) return
+  await router.push({query})
+}
+
+async function closeDialogRoute({type, id}) {
+  const parameter = dialogParameter(type)
+  if (!idsMatch(parseDialogId(route.query[parameter]), id)) return
+  await router.replace({query: withoutDialogQuery(route.query, parameter)})
+}
+
+async function syncDialogTarget() {
+  if (!valueLoaded.value || route.name !== 'value') return
+
+  const rawObjectiveDialogId = route.query[DIALOG_QUERY_PARAM.OBJECTIVE]
+  const rawKeyResultDialogId = route.query[DIALOG_QUERY_PARAM.KEY_RESULT]
+  let targetObjective = null
+  let invalidParameter = null
+
+  if (rawObjectiveDialogId != null && keyResultDialogId.value != null) {
+    await router.replace({
+      query: withDialogQuery(
+          route.query,
+          DIALOG_QUERY_PARAM.KEY_RESULT,
+          keyResultDialogId.value,
+      ),
+    })
+    return
+  }
+
+  if (rawKeyResultDialogId != null) {
+    targetObjective = value.value.objectives.find((objective) =>
+      (objective.key_results ?? []).some((keyResult) => idsMatch(keyResult.id, keyResultDialogId.value)))
+    if (keyResultDialogId.value == null || !targetObjective) invalidParameter = DIALOG_QUERY_PARAM.KEY_RESULT
+  } else if (rawObjectiveDialogId != null) {
+    targetObjective = value.value.objectives.find((objective) => idsMatch(objective.id, objectiveDialogId.value))
+    if (objectiveDialogId.value == null || !targetObjective) invalidParameter = DIALOG_QUERY_PARAM.OBJECTIVE
+  }
+
+  if (invalidParameter) {
+    await router.replace({query: withoutDialogQuery(route.query, invalidParameter)})
+    return
+  }
+  if (!targetObjective) return
+
+  const targetTab = targetObjective.state === OBJECTIVE_STATE.ACTIVE
+    ? OBJECTIVE_TAB.ACTIVE
+    : OBJECTIVE_TAB.DONE
+  if (route.params.tab !== targetTab) {
+    await router.replace({
+      name: 'value',
+      params: {valueId: valueId.value, tab: targetTab},
+      query: {...route.query},
+    })
+  }
 }
 
 function findObjectiveElement(container, objectiveId) {
@@ -292,6 +376,7 @@ watch(() => route.params.tab, (routeTab) => {
     router.replace({
       name: 'value',
       params: {valueId: valueId.value, tab: selectedTab},
+      query: {...route.query},
     })
     return
   }
@@ -303,6 +388,7 @@ watch(tab, (selectedTab) => {
   router.push({
     name: 'value',
     params: {valueId: valueId.value, tab: selectedTab},
+    query: {...route.query},
   })
 })
 watch(() => route.query.objective, async (objectiveId) => {
@@ -310,6 +396,10 @@ watch(() => route.query.objective, async (objectiveId) => {
   await nextTick()
   await focusObjectiveCard(objectiveId)
 })
+watch(
+    () => [route.query[DIALOG_QUERY_PARAM.OBJECTIVE], route.query[DIALOG_QUERY_PARAM.KEY_RESULT]],
+    syncDialogTarget,
+)
 watch(openAddObjDialog, (open) => {
   if (!open) {
     objectiveDraft.value = null
@@ -379,12 +469,16 @@ onBeforeUnmount(() => clearTimeout(focusResetTimer))
                    :key="objective.id"
                    :objective="objective"
                    :focused="idsMatch(focusedObjectiveId, objective.id)"
+                   :objective-dialog-id="objectiveDialogId"
+                   :key-result-dialog-id="keyResultDialogId"
                    @deleted="removeObjective"
                    @state-changed="selectTab"
                    @updated="updateObjective"
                    @key-result-created="addKeyResult"
                    @key-result-updated="updateKeyResult"
                    @key-result-deleted="removeKeyResult"
+                   @dialog-opened="openDialogRoute"
+                   @dialog-closed="closeDialogRoute"
                    @locate-objective="locateObjective"/>
       </div>
       <CarouselPager :count="activeObjectives.length" :active-index="activeObjectiveIndex"
@@ -411,12 +505,16 @@ onBeforeUnmount(() => clearTimeout(focusResetTimer))
                      class="timelineObjective"
                      :objective="objective"
                      :focused="idsMatch(focusedObjectiveId, objective.id)"
+                     :objective-dialog-id="objectiveDialogId"
+                     :key-result-dialog-id="keyResultDialogId"
                      @deleted="removeObjective"
                      @state-changed="selectTab"
                      @updated="updateObjective"
                      @key-result-created="addKeyResult"
                      @key-result-updated="updateKeyResult"
                      @key-result-deleted="removeKeyResult"
+                     @dialog-opened="openDialogRoute"
+                     @dialog-closed="closeDialogRoute"
                      @locate-objective="locateObjective"/>
         </div>
       </div>

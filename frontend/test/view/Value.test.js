@@ -7,6 +7,7 @@ const {api} = vi.hoisted(() => ({
 vi.mock('@/services/apiClient', () => ({api}))
 
 import Value from '@/view/Value.vue'
+import Objective from '@/components/Objective.vue'
 import router from '@/router'
 
 describe('Value view', () => {
@@ -145,6 +146,83 @@ describe('Value view', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('key-results')
+  })
+
+  it('stores dialog IDs in the URL and removes only the closed dialog parameter', async () => {
+    api.get.mockImplementation((path) => path.endsWith('/subvalue')
+        ? Promise.resolve([])
+        : Promise.resolve({
+          id: 1,
+          name: 'Health',
+          objectives: [{
+            id: 2, state: 'active', date_created: '2026-01-01',
+            key_results: [{id: 3, state: 'active'}],
+          }],
+        }))
+    await router.push('/value/1/active?objective=2')
+    const wrapper = shallowMount(Value, {global: {plugins: [router]}})
+    await flushPromises()
+    const objectiveCard = wrapper.getComponent(Objective)
+
+    objectiveCard.vm.$emit('dialog-opened', {type: 'objective', id: 2})
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({objective: '2', objDialog: '2'})
+
+    objectiveCard.vm.$emit('dialog-closed', {type: 'objective', id: 2})
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({objective: '2'})
+
+    objectiveCard.vm.$emit('dialog-opened', {type: 'key-result', id: 3})
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({objective: '2', krDialog: '3'})
+
+    objectiveCard.vm.$emit('dialog-closed', {type: 'key-result', id: 3})
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({objective: '2'})
+  })
+
+  it('passes URL-requested dialog IDs to its Objective cards', async () => {
+    api.get.mockImplementation((path) => path.endsWith('/subvalue')
+        ? Promise.resolve([])
+        : Promise.resolve({
+          id: 1,
+          name: 'Health',
+          objectives: [{
+            id: 2, state: 'active', date_created: '2026-01-01',
+            key_results: [{id: 3, state: 'active'}],
+          }],
+        }))
+    await router.push('/value/1/active?krDialog=3')
+    const wrapper = shallowMount(Value, {global: {plugins: [router]}})
+    await flushPromises()
+
+    const objectiveCard = wrapper.getComponent(Objective)
+    expect(objectiveCard.props('keyResultDialogId')).toBe(3)
+    expect(objectiveCard.props('objectiveDialogId')).toBeNull()
+  })
+
+  it('removes the Objective dialog query while moving a reviewed Objective to Done', async () => {
+    api.get.mockImplementation((path) => path.endsWith('/subvalue')
+        ? Promise.resolve([])
+        : Promise.resolve({
+          id: 1,
+          name: 'Health',
+          objectives: [{
+            id: 2, state: 'active', date_created: '2026-01-01', key_results: [],
+          }],
+        }))
+    await router.push('/value/1/active?objective=2&objDialog=2')
+    const wrapper = shallowMount(Value, {global: {plugins: [router]}})
+    await flushPromises()
+    const objectiveCard = wrapper.getComponent(Objective)
+
+    objectiveCard.vm.$emit('updated', {id: 2, state: 'failed', date_finished: '2026-08-01'})
+    objectiveCard.vm.$emit('dialog-closed', {type: 'objective', id: 2})
+    objectiveCard.vm.$emit('state-changed', 'failed')
+    await flushPromises()
+
+    expect(router.currentRoute.value.params.tab).toBe('done')
+    expect(router.currentRoute.value.query).toEqual({objective: '2'})
   })
 
   it('selects, scrolls to, and highlights an Objective requested in the URL', async () => {

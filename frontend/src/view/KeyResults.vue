@@ -1,22 +1,32 @@
 <script setup lang="ts">
-import {onMounted, ref} from 'vue'
-import {useRouter} from 'vue-router'
+import {onMounted, ref, watch} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 import {setError} from '@/state/appState'
 import {api} from '@/services/apiClient'
 import {formatDate, isDeadlineClose, isDueOrOverdue, parseIsoDate, sortKeyResultsByDeadline} from '@/utils'
 import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
 import {KEY_RESULT_STATE, TASK_STATE} from '@/constants/states'
 import type {KeyResult, KeyResultOverview, KeyResultParent} from '@/types/domain'
+import {
+  DIALOG_QUERY_PARAM,
+  parseDialogId,
+  withDialogQuery,
+  withoutDialogQuery,
+} from '@/router/dialogQuery'
 
 const keyResults = ref<KeyResultOverview[]>([])
+const route = useRoute()
 const router = useRouter()
 const selectedKeyResult = ref<KeyResult | null>(null)
 const selectedKeyResultParent = ref<KeyResultParent | null>(null)
 const openKeyResultDialog = ref(false)
+const keyResultsLoaded = ref(false)
 
 async function loadKeyResults() {
   try {
     keyResults.value = sortKeyResultsByDeadline(await api.get<KeyResultOverview[]>('/key_result/overview'))
+    keyResultsLoaded.value = true
+    await syncKeyResultDialog()
   } catch (error) {
     setError(error)
   }
@@ -38,9 +48,10 @@ function deadlineIsMissing(keyResult: KeyResultOverview) {
   return deadline(keyResult) === null
 }
 
-async function openKeyResult(keyResult: KeyResultOverview) {
+async function openKeyResult(keyResult: KeyResultOverview, updateRoute = true) {
   try {
     const fullKeyResult = await api.get<KeyResult>('/key_result/' + keyResult.id)
+    if (!updateRoute && parseDialogId(route.query[DIALOG_QUERY_PARAM.KEY_RESULT]) !== keyResult.id) return
     selectedKeyResult.value = fullKeyResult
     selectedKeyResultParent.value = {
       ...fullKeyResult,
@@ -50,9 +61,44 @@ async function openKeyResult(keyResult: KeyResultOverview) {
       resolved_tasks_count: fullKeyResult.tasks.filter((task) => task.state !== TASK_STATE.ACTIVE).length,
     }
     openKeyResultDialog.value = true
+    if (updateRoute) {
+      await router.push({
+        query: withDialogQuery(route.query, DIALOG_QUERY_PARAM.KEY_RESULT, keyResult.id),
+      })
+    }
   } catch (error) {
     setError(error)
   }
+}
+
+async function syncKeyResultDialog() {
+  if (!keyResultsLoaded.value || route.name !== 'key-results') return
+  const rawKeyResultId = route.query[DIALOG_QUERY_PARAM.KEY_RESULT]
+  if (rawKeyResultId == null) {
+    openKeyResultDialog.value = false
+    return
+  }
+
+  const keyResultId = parseDialogId(rawKeyResultId)
+  const keyResult = keyResults.value.find((item) => item.id === keyResultId)
+  if (keyResultId == null || !keyResult) {
+    await router.replace({
+      query: withoutDialogQuery(route.query, DIALOG_QUERY_PARAM.KEY_RESULT),
+    })
+    return
+  }
+  if (openKeyResultDialog.value && selectedKeyResult.value?.id === keyResultId) return
+  await openKeyResult(keyResult, false)
+}
+
+async function setKeyResultDialogOpen(open: boolean) {
+  openKeyResultDialog.value = open
+  if (open) return
+  const routeKeyResultId = parseDialogId(route.query[DIALOG_QUERY_PARAM.KEY_RESULT])
+  if (routeKeyResultId !== selectedKeyResult.value?.id) return
+  await router.replace({
+    query: withoutDialogQuery(route.query, DIALOG_QUERY_PARAM.KEY_RESULT),
+  })
 }
 
 function updateKeyResult(updatedKeyResult: KeyResultParent) {
@@ -85,6 +131,7 @@ function locateObjective({valueId, objectiveId}: {valueId: number; objectiveId: 
   })
 }
 
+watch(() => route.query[DIALOG_QUERY_PARAM.KEY_RESULT], syncKeyResultDialog)
 onMounted(loadKeyResults)
 </script>
 
@@ -142,7 +189,8 @@ onMounted(loadKeyResults)
     </section>
 
     <KeyResultDialog v-if="selectedKeyResult && selectedKeyResultParent"
-                     v-model="openKeyResultDialog"
+                     :model-value="openKeyResultDialog"
+                     @update:model-value="setKeyResultDialogOpen"
                      :kr="selectedKeyResult"
                      :kr_parent="selectedKeyResultParent"
                      show-locate-objective

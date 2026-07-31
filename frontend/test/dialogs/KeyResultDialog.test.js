@@ -133,7 +133,7 @@ describe('KeyResultDialog', () => {
     expect(wrapper.emitted('updated')).toBeUndefined()
   })
 
-  it.each(['failed', 'completed'])('closes after the Key Result is marked %s', async (state) => {
+  it.each(['failed', 'completed'])('requests its Objective after the Key Result is marked %s', async (state) => {
     api.put.mockResolvedValue(state)
     api.get.mockResolvedValue({date_reviewed: '2026-01-02'})
     const wrapper = shallowMount(KeyResultDialog, {
@@ -148,14 +148,12 @@ describe('KeyResultDialog', () => {
 
     expect(api.put).toHaveBeenCalledWith('/key_result/2/state', {state})
     expect(wrapper.emitted('updated')).toContainEqual([expect.objectContaining({id: 2, state})])
-    expect(wrapper.emitted('close')).toHaveLength(1)
-    expect(wrapper.emitted('update:modelValue')).toContainEqual([false])
     expect(wrapper.emitted('locate-objective')).toEqual([[
       {objectiveId: 7, valueId: 3, objectiveState: 'active'},
     ]])
   })
 
-  it('closes and requests its parent Objective from the locate button', async () => {
+  it('requests its parent Objective from the locate button', async () => {
     const wrapper = mount(KeyResultDialog, {
       props: {
         modelValue: true,
@@ -170,8 +168,6 @@ describe('KeyResultDialog', () => {
     expect(wrapper.emitted('locate-objective')).toEqual([[
       {objectiveId: 7, valueId: 3, objectiveState: 'active'},
     ]])
-    expect(wrapper.emitted('close')).toHaveLength(1)
-    expect(wrapper.emitted('update:modelValue')).toContainEqual([false])
   })
 
   it('hides the locate button unless its parent view enables it', () => {

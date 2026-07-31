@@ -154,7 +154,6 @@ function showObjective() {
     valueId: keyResultParent.value.value_id,
     objectiveState: keyResultParent.value.obj_state,
   }
-  closeDialog()
   emit('locate-objective', location)
 }
 

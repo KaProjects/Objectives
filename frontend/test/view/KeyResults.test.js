@@ -58,6 +58,28 @@ describe('Key Results overview', () => {
     expect(wrapper.vm.selectedKeyResultParent.obj_state).toBe('active')
     expect(wrapper.vm.selectedKeyResultParent.value_id).toBe(7)
     expect(wrapper.getComponent(KeyResultDialog).props('showLocateObjective')).toBe(true)
+    expect(router.currentRoute.value.query.krDialog).toBe('3')
+  })
+
+  it('restores a Key Result dialog from the URL and removes its query parameter on close', async () => {
+    api.get.mockImplementation((path) => path === '/key_result/overview'
+        ? Promise.resolve([{
+          id: 3, name: 'Sooner', value_id: 7, value_name: 'Health', objective_id: 11,
+          objective_name: 'Energy', objective_state: 'active', t: '2026-08-01',
+        }])
+        : Promise.resolve({id: 3, objective_id: 11, name: 'Sooner', state: 'active', tasks: []}))
+    await router.push('/key-results?source=history&krDialog=3')
+    const wrapper = shallowMount(KeyResults, {global: {plugins: [router]}})
+    await flushPromises()
+
+    expect(api.get).toHaveBeenCalledWith('/key_result/3')
+    expect(wrapper.vm.openKeyResultDialog).toBe(true)
+
+    wrapper.getComponent(KeyResultDialog).vm.$emit('update:modelValue', false)
+    await flushPromises()
+
+    expect(router.currentRoute.value.query).toEqual({source: 'history'})
+    expect(wrapper.vm.openKeyResultDialog).toBe(false)
   })
 
   it('opens the parent Value and Objective requested by the dialog', async () => {
@@ -73,6 +95,8 @@ describe('Key Results overview', () => {
     await wrapper.get('.keyResultCard').trigger('click')
     await flushPromises()
 
+    expect(router.currentRoute.value.fullPath).toBe('/key-results?krDialog=3')
+
     wrapper.getComponent(KeyResultDialog).vm.$emit('locate-objective', {
       valueId: 7,
       objectiveId: 11,
@@ -82,6 +106,12 @@ describe('Key Results overview', () => {
     expect(router.currentRoute.value.name).toBe('value')
     expect(router.currentRoute.value.params).toMatchObject({valueId: '7', tab: 'active'})
     expect(router.currentRoute.value.query.objective).toBe('11')
+
+    router.back()
+    await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/key-results?krDialog=3'))
+    await flushPromises()
+
+    expect(wrapper.vm.openKeyResultDialog).toBe(true)
   })
 
   it('keeps an edited active Key Result open and reorders it after a deadline change', async () => {

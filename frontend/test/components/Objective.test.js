@@ -68,6 +68,7 @@ describe('Objective', () => {
 
     expect(api.get).toHaveBeenCalledWith('/key_result/2')
     expect(wrapper.vm.openKrDialog).toBe(true)
+    expect(wrapper.emitted('dialog-opened')).toEqual([[{type: 'key-result', id: 2}]])
   })
 
   it('uses a replacement objective prop when opening its dialog', async () => {
@@ -80,6 +81,44 @@ describe('Objective', () => {
     wrapper.vm.openObjective()
 
     expect(wrapper.vm.selectedObj).toEqual(replacement)
+    expect(wrapper.emitted('dialog-opened')).toEqual([[{type: 'objective', id: 8}]])
+  })
+
+  it('restores and closes an Objective dialog from route-derived props', async () => {
+    const wrapper = shallowMount(Objective, {
+      props: {objective: {...objective}, objectiveDialogId: 1},
+    })
+
+    expect(wrapper.vm.openObjDialog).toBe(true)
+    expect(wrapper.vm.selectedObj).toEqual(objective)
+
+    wrapper.getComponent({name: 'ObjectiveDialog'}).vm.$emit('update:modelValue', false)
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.emitted('dialog-closed')).toEqual([[{type: 'objective', id: 1}]])
+
+    await wrapper.setProps({objectiveDialogId: null})
+    expect(wrapper.vm.openObjDialog).toBe(false)
+  })
+
+  it('loads only the Key Result requested by its route-derived prop', async () => {
+    api.get.mockResolvedValue(keyResult)
+    const wrapper = shallowMount(Objective, {
+      props: {
+        objective: {
+          ...objective,
+          key_results: [{id: 2, name: 'Walk', state: 'active'}],
+        },
+        keyResultDialogId: 2,
+      },
+    })
+    await flushPromises()
+
+    expect(api.get).toHaveBeenCalledWith('/key_result/2')
+    expect(wrapper.vm.openKrDialog).toBe(true)
+
+    await wrapper.setProps({keyResultDialogId: null})
+    expect(wrapper.vm.openKrDialog).toBe(false)
   })
 
   it('marks its DOM card and bubbles Key Result locate requests with its parent identity', async () => {

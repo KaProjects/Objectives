@@ -15,10 +15,12 @@ import failStamp from '@/assets/fail-stamp.png'
 const props = defineProps({
   objective: {type: Object, required: true},
   focused: {type: Boolean, default: false},
+  objectiveDialogId: {type: Number, default: null},
+  keyResultDialogId: {type: Number, default: null},
 })
 const emit = defineEmits([
   'deleted', 'state-changed', 'updated', 'key-result-created', 'key-result-updated',
-  'key-result-deleted', 'locate-objective',
+  'key-result-deleted', 'locate-objective', 'dialog-opened', 'dialog-closed',
 ])
 
 const objective = toRef(props, 'objective')
@@ -41,6 +43,29 @@ const keyResultStatus = Object.freeze({
 })
 
 watch(() => props.objective.key_results.length, () => nextTick(updateKeyResultsRoll))
+
+function idsMatch(left, right) {
+  return left != null && right != null && String(left) === String(right)
+}
+
+watch(() => props.objectiveDialogId, (objectiveDialogId) => {
+  if (idsMatch(objectiveDialogId, objective.value.id)) {
+    selectedObj.value = objective.value
+    openObjDialog.value = true
+    return
+  }
+  openObjDialog.value = false
+}, {immediate: true})
+
+watch(() => props.keyResultDialogId, async (keyResultDialogId) => {
+  const keyResult = objective.value.key_results.find((item) => idsMatch(item.id, keyResultDialogId))
+  if (!keyResult) {
+    openKrDialog.value = false
+    return
+  }
+  if (openKrDialog.value && idsMatch(selectedKr.value?.id, keyResult.id)) return
+  await openKeyResult(keyResult, objective.value.state, false)
+}, {immediate: true})
 
 function compareKeyResults(a, b) {
   const aIsActive = a.state === KEY_RESULT_STATE.ACTIVE
@@ -79,11 +104,14 @@ function keyResultMetaDate(keyResult) {
   return deadline === null ? 'Not set' : formatDate(deadline)
 }
 
-async function openKeyResult(keyResult, objectiveState) {
+async function openKeyResult(keyResult, objectiveState, updateRoute = true) {
   try {
-    selectedKr.value = await api.get('/key_result/' + keyResult.id)
+    const loadedKeyResult = await api.get('/key_result/' + keyResult.id)
+    if (!updateRoute && !idsMatch(props.keyResultDialogId, keyResult.id)) return
+    selectedKr.value = loadedKeyResult
     selectedKr_parent.value = {...keyResult, obj_state: objectiveState}
     openKrDialog.value = true
+    if (updateRoute) emit('dialog-opened', {type: 'key-result', id: keyResult.id})
   } catch (error) {
     setError(error)
   }
@@ -92,6 +120,19 @@ async function openKeyResult(keyResult, objectiveState) {
 function openObjective() {
   selectedObj.value = objective.value
   openObjDialog.value = true
+  emit('dialog-opened', {type: 'objective', id: objective.value.id})
+}
+
+function setObjectiveDialogOpen(open) {
+  if (openObjDialog.value === open) return
+  openObjDialog.value = open
+  if (!open) emit('dialog-closed', {type: 'objective', id: objective.value.id})
+}
+
+function setKeyResultDialogOpen(open) {
+  if (openKrDialog.value === open) return
+  openKrDialog.value = open
+  if (!open) emit('dialog-closed', {type: 'key-result', id: selectedKr.value?.id})
 }
 
 function keyResultDeleted(keyResult) {
@@ -99,7 +140,6 @@ function keyResultDeleted(keyResult) {
 }
 
 function locateObjective() {
-  openKrDialog.value = false
   emit('locate-objective', {
     valueId: objective.value.value_id,
     objectiveId: objective.value.id,
@@ -110,12 +150,13 @@ function locateObjective() {
 <template>
   <v-card class="obj" :class="[objective.state, {objectiveFocused: props.focused}]"
           :data-objective-id="objective.id" width="330" elevation="3" shaped :key="objective.id">
-    <ObjectiveDialog :obj="selectedObj" v-model="openObjDialog" @close="openObjDialog = false"
+    <ObjectiveDialog :obj="selectedObj" :model-value="openObjDialog"
+                     @update:model-value="setObjectiveDialogOpen" @close="setObjectiveDialogOpen(false)"
                      @deleted="emit('deleted', $event)" @updated="emit('updated', $event)"
                      @state-changed="emit('state-changed', $event)"
                      @key-result-created="emit('key-result-created', {objectiveId: objective.id, keyResult: $event})"/>
-    <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" v-model="openKrDialog"
-                     @close="openKrDialog = false"
+    <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" :model-value="openKrDialog"
+                     @update:model-value="setKeyResultDialogOpen" @close="setKeyResultDialogOpen(false)"
                      @updated="emit('key-result-updated', {objectiveId: objective.id, keyResult: $event})"
                      @deleted="keyResultDeleted"
                      @locate-objective="locateObjective"/>
