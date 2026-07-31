@@ -30,6 +30,7 @@ export interface Objective {
 
 export interface KeyResultSummary {
   id: number
+  objective_id: number
   name: string
   description: string
   state: KeyResultState
@@ -48,14 +49,20 @@ export interface KeyResult extends KeyResultSummary {
   tasks: Task[]
 }
 
-export interface KeyResultOverview extends KeyResultSummary {
+export interface KeyResultOverview {
+  id: number
+  name: string
+  t: string
+  objective_id: number
   value_name: string
   objective_name: string
   objective_state: ObjectiveState
+  value_id: number
 }
 
 export interface KeyResultParent extends KeyResultSummary {
   obj_state: ObjectiveState
+  value_id?: number
 }
 
 export interface Task {

@@ -12,8 +12,9 @@ const props = defineProps({
   modelValue: Boolean,
   kr: Object,
   kr_parent: Object,
+  showLocateObjective: {type: Boolean, default: false},
 })
-const emit = defineEmits(['update:modelValue', 'close', 'updated', 'deleted'])
+const emit = defineEmits(['update:modelValue', 'close', 'updated', 'deleted', 'locate-objective'])
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
@@ -146,6 +147,17 @@ function closeDialog() {
   emit('close')
 }
 
+function showObjective() {
+  const objectiveId = keyResult.value.objective_id ?? keyResultParent.value.objective_id
+  const location = {
+    objectiveId,
+    valueId: keyResultParent.value.value_id,
+    objectiveState: keyResultParent.value.obj_state,
+  }
+  closeDialog()
+  emit('locate-objective', location)
+}
+
 async function addCreatedTasks(tasks) {
   keyResult.value.tasks.push(...tasks)
   keyResultParent.value.all_tasks_count += tasks.length
@@ -197,7 +209,7 @@ async function updateKeyResultState(state) {
       await retrieveKeyResultReviewDate();
       emit('updated', {...keyResultParent.value});
       statePendingConfirmation.value = null
-      if (body === KEY_RESULT_STATE.FAILED || body === KEY_RESULT_STATE.COMPLETED) closeDialog()
+      if (body === KEY_RESULT_STATE.FAILED || body === KEY_RESULT_STATE.COMPLETED) showObjective()
     } catch (error) {
       submissionError.value = error.message
     }
@@ -273,20 +285,24 @@ async function deleteKeyResult() {
           </template>
         </Editable>
         <span class="detailsSpacer"/>
-        <v-dialog v-model="confirmDeleteKrDialog" width="300">
-          <template v-slot:activator="{ props }">
-            <v-btn variant="plain" rounded="lg" icon="mdi-trash-can" size="small"
-                   aria-label="Delete Key Result" v-bind="props"/>
-          </template>
-          <v-card>
-            <v-card-title class="text-h5 grey lighten-2">
-              Delete permanently?
-            </v-card-title>
-            <v-card-actions>
-              <v-btn block :disabled="isSubmitting" @click="deleteKeyResult()">Confirm</v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
+        <div class="detailActions">
+          <v-btn v-if="showLocateObjective" class="locateObjectiveButton" variant="plain" rounded="lg"
+                 icon="mdi-target" size="small" aria-label="Show Key Result objective" @click="showObjective"/>
+          <v-dialog v-model="confirmDeleteKrDialog" width="300">
+            <template v-slot:activator="{ props }">
+              <v-btn variant="plain" rounded="lg" icon="mdi-trash-can" size="small"
+                     aria-label="Delete Key Result" v-bind="props"/>
+            </template>
+            <v-card>
+              <v-card-title class="text-h5 grey lighten-2">
+                Delete permanently?
+              </v-card-title>
+              <v-card-actions>
+                <v-btn block :disabled="isSubmitting" @click="deleteKeyResult()">Confirm</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+        </div>
       </div>
 
 
@@ -580,7 +596,7 @@ async function deleteKeyResult() {
 .keyResultDetails {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 12px;
   padding: 0 12px;
   font-size: 12px;
@@ -606,5 +622,31 @@ async function deleteKeyResult() {
 
 .detailsSpacer {
   flex: 1;
+  min-width: 0;
+}
+
+.detailActions {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 600px) {
+  .keyResultDetails {
+    font-size: 10px;
+    gap: 4px;
+    padding: 0 6px;
+  }
+
+  .dateDisplay {
+    white-space: nowrap;
+  }
+
+  .detailActions :deep(.v-btn) {
+    height: 28px;
+    min-width: 28px;
+    padding: 0;
+    width: 28px;
+  }
 }
 </style>

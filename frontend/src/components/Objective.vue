@@ -14,8 +14,12 @@ import failStamp from '@/assets/fail-stamp.png'
 
 const props = defineProps({
   objective: {type: Object, required: true},
+  focused: {type: Boolean, default: false},
 })
-const emit = defineEmits(['deleted', 'state-changed', 'updated', 'key-result-created', 'key-result-updated', 'key-result-deleted'])
+const emit = defineEmits([
+  'deleted', 'state-changed', 'updated', 'key-result-created', 'key-result-updated',
+  'key-result-deleted', 'locate-objective',
+])
 
 const objective = toRef(props, 'objective')
 const openObjDialog = ref(false)
@@ -93,9 +97,19 @@ function openObjective() {
 function keyResultDeleted(keyResult) {
   emit('key-result-deleted', {objectiveId: objective.value.id, keyResultId: keyResult.id})
 }
+
+function locateObjective() {
+  openKrDialog.value = false
+  emit('locate-objective', {
+    valueId: objective.value.value_id,
+    objectiveId: objective.value.id,
+    objectiveState: objective.value.state,
+  })
+}
 </script>
 <template>
-  <v-card class="obj" :class="objective.state" width="330" elevation="3" shaped :key="objective.id">
+  <v-card class="obj" :class="[objective.state, {objectiveFocused: props.focused}]"
+          :data-objective-id="objective.id" width="330" elevation="3" shaped :key="objective.id">
     <ObjectiveDialog :obj="selectedObj" v-model="openObjDialog" @close="openObjDialog = false"
                      @deleted="emit('deleted', $event)" @updated="emit('updated', $event)"
                      @state-changed="emit('state-changed', $event)"
@@ -103,7 +117,8 @@ function keyResultDeleted(keyResult) {
     <KeyResultDialog :kr="selectedKr" :kr_parent="selectedKr_parent" v-model="openKrDialog"
                      @close="openKrDialog = false"
                      @updated="emit('key-result-updated', {objectiveId: objective.id, keyResult: $event})"
-                     @deleted="keyResultDeleted"/>
+                     @deleted="keyResultDeleted"
+                     @locate-objective="locateObjective"/>
 
     <div class="objHeader">
       <v-card-title>{{ objective.name }}</v-card-title>

@@ -14,6 +14,7 @@ import Editable from '@/components/Editable.vue'
 
 const keyResult = {
   id: 2,
+  objective_id: 7,
   name: 'Walk',
   description: 'Walk daily',
   state: 'active',
@@ -139,7 +140,7 @@ describe('KeyResultDialog', () => {
       props: {
         modelValue: true,
         kr: {...keyResult},
-        kr_parent: {...keyResult, obj_state: 'active'},
+        kr_parent: {...keyResult, value_id: 3, obj_state: 'active'},
       },
     })
 
@@ -149,6 +150,57 @@ describe('KeyResultDialog', () => {
     expect(wrapper.emitted('updated')).toContainEqual([expect.objectContaining({id: 2, state})])
     expect(wrapper.emitted('close')).toHaveLength(1)
     expect(wrapper.emitted('update:modelValue')).toContainEqual([false])
+    expect(wrapper.emitted('locate-objective')).toEqual([[
+      {objectiveId: 7, valueId: 3, objectiveState: 'active'},
+    ]])
+  })
+
+  it('closes and requests its parent Objective from the locate button', async () => {
+    const wrapper = mount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult},
+        kr_parent: {...keyResult, value_id: 3, obj_state: 'active'},
+        showLocateObjective: true,
+      },
+    })
+
+    await wrapper.get('.locateObjectiveButton').trigger('click')
+
+    expect(wrapper.emitted('locate-objective')).toEqual([[
+      {objectiveId: 7, valueId: 3, objectiveState: 'active'},
+    ]])
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('update:modelValue')).toContainEqual([false])
+  })
+
+  it('hides the locate button unless its parent view enables it', () => {
+    const wrapper = mount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult},
+        kr_parent: {...keyResult, obj_state: 'active'},
+      },
+    })
+
+    expect(wrapper.find('.locateObjectiveButton').exists()).toBe(false)
+  })
+
+  it('does not request its Objective when a terminal state update fails', async () => {
+    api.put.mockRejectedValue(new Error('State update failed'))
+    const wrapper = shallowMount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult},
+        kr_parent: {...keyResult, value_id: 3, obj_state: 'active'},
+      },
+    })
+
+    await wrapper.vm.updateKeyResultState('failed')
+
+    expect(wrapper.emitted('locate-objective')).toBeUndefined()
+    expect(wrapper.emitted('close')).toBeUndefined()
+    expect(wrapper.vm.submissionError).toBe('State update failed')
   })
 
   it('sends named draft fields in its update payload', async () => {

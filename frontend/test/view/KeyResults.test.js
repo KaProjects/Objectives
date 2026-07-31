@@ -5,6 +5,7 @@ const {api} = vi.hoisted(() => ({api: {get: vi.fn()}}))
 vi.mock('@/services/apiClient', () => ({api}))
 
 import KeyResults from '@/view/KeyResults.vue'
+import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
 import router from '@/router'
 
 describe('Key Results overview', () => {
@@ -32,8 +33,11 @@ describe('Key Results overview', () => {
 
   it('opens the existing Key Result dialog with full Key Result data', async () => {
     api.get.mockImplementation((path) => path === '/key_result/overview'
-        ? Promise.resolve([{id: 3, name: 'Sooner', value_name: 'Health', objective_name: 'Energy', objective_state: 'active', t: '2000-08-01'}])
-        : Promise.resolve({id: 3, name: 'Sooner', state: 'active', tasks: []}))
+        ? Promise.resolve([{
+          id: 3, name: 'Sooner', value_id: 7, value_name: 'Health', objective_id: 11,
+          objective_name: 'Energy', objective_state: 'active', t: '2000-08-01',
+        }])
+        : Promise.resolve({id: 3, objective_id: 11, name: 'Sooner', state: 'active', tasks: []}))
     await router.push('/key-results')
     const wrapper = shallowMount(KeyResults, {global: {plugins: [router]}})
     await flushPromises()
@@ -52,6 +56,32 @@ describe('Key Results overview', () => {
     expect(wrapper.vm.openKeyResultDialog).toBe(true)
     expect(wrapper.vm.selectedKeyResultParent.state).toBe('active')
     expect(wrapper.vm.selectedKeyResultParent.obj_state).toBe('active')
+    expect(wrapper.vm.selectedKeyResultParent.value_id).toBe(7)
+    expect(wrapper.getComponent(KeyResultDialog).props('showLocateObjective')).toBe(true)
+  })
+
+  it('opens the parent Value and Objective requested by the dialog', async () => {
+    api.get.mockImplementation((path) => path === '/key_result/overview'
+        ? Promise.resolve([{
+          id: 3, name: 'Sooner', value_id: 7, value_name: 'Health', objective_id: 11,
+          objective_name: 'Energy', objective_state: 'active', t: '2026-08-01',
+        }])
+        : Promise.resolve({id: 3, objective_id: 11, name: 'Sooner', state: 'active', tasks: []}))
+    await router.push('/key-results')
+    const wrapper = shallowMount(KeyResults, {global: {plugins: [router]}})
+    await flushPromises()
+    await wrapper.get('.keyResultCard').trigger('click')
+    await flushPromises()
+
+    wrapper.getComponent(KeyResultDialog).vm.$emit('locate-objective', {
+      valueId: 7,
+      objectiveId: 11,
+    })
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('value')
+    expect(router.currentRoute.value.params).toMatchObject({valueId: '7', tab: 'active'})
+    expect(router.currentRoute.value.query.objective).toBe('11')
   })
 
   it('keeps an edited active Key Result open and reorders it after a deadline change', async () => {

@@ -43,8 +43,8 @@ async function openKeyResult(keyResult: KeyResultOverview) {
     const fullKeyResult = await api.get<KeyResult>('/key_result/' + keyResult.id)
     selectedKeyResult.value = fullKeyResult
     selectedKeyResultParent.value = {
-      ...keyResult,
-      state: fullKeyResult.state,
+      ...fullKeyResult,
+      value_id: keyResult.value_id,
       obj_state: keyResult.objective_state,
       all_tasks_count: fullKeyResult.tasks.length,
       resolved_tasks_count: fullKeyResult.tasks.filter((task) => task.state !== TASK_STATE.ACTIVE).length,
@@ -74,6 +74,15 @@ function removeKeyResult(keyResult: KeyResultParent) {
 
 function returnToValues() {
   router.push({name: 'values'})
+}
+
+function locateObjective({valueId, objectiveId}: {valueId: number; objectiveId: number}) {
+  if (valueId == null || objectiveId == null) return
+  router.push({
+    name: 'value',
+    params: {valueId, tab: 'active'},
+    query: {objective: String(objectiveId)},
+  })
 }
 
 onMounted(loadKeyResults)
@@ -136,8 +145,10 @@ onMounted(loadKeyResults)
                      v-model="openKeyResultDialog"
                      :kr="selectedKeyResult"
                      :kr_parent="selectedKeyResultParent"
+                     show-locate-objective
                      @updated="updateKeyResult"
-                     @deleted="removeKeyResult"/>
+                     @deleted="removeKeyResult"
+                     @locate-objective="locateObjective"/>
   </main>
 </template>
 

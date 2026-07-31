@@ -10,6 +10,7 @@ const {api} = vi.hoisted(() => ({
 vi.mock('@/services/apiClient', () => ({api}))
 
 import Objective from '@/components/Objective.vue'
+import KeyResultDialog from '@/dialogs/KeyResultDialog.vue'
 
 const objective = {
   id: 1,
@@ -79,6 +80,22 @@ describe('Objective', () => {
     wrapper.vm.openObjective()
 
     expect(wrapper.vm.selectedObj).toEqual(replacement)
+  })
+
+  it('marks its DOM card and bubbles Key Result locate requests with its parent identity', async () => {
+    const wrapper = shallowMount(Objective, {
+      props: {objective: {...objective, value_id: 4}, focused: true},
+    })
+
+    expect(wrapper.get('.obj').attributes('data-objective-id')).toBe('1')
+    expect(wrapper.get('.obj').classes()).toContain('objectiveFocused')
+
+    wrapper.getComponent(KeyResultDialog).vm.$emit('locate-objective')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.emitted('locate-objective')).toEqual([[
+      {valueId: 4, objectiveId: 1, objectiveState: 'active'},
+    ]])
   })
 
   it('sorts active key results by deadline before inactive ones', () => {

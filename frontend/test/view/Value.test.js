@@ -146,4 +146,46 @@ describe('Value view', () => {
 
     expect(router.currentRoute.value.name).toBe('key-results')
   })
+
+  it('selects, scrolls to, and highlights an Objective requested in the URL', async () => {
+    const scrollIntoView = vi.fn()
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView
+    HTMLElement.prototype.scrollIntoView = scrollIntoView
+    api.get.mockImplementation((path) => path.endsWith('/subvalue')
+        ? Promise.resolve([])
+        : Promise.resolve({
+          id: 1,
+          name: 'Health',
+          objectives: [
+            {id: 1, state: 'active', date_created: '2026-02-01', key_results: []},
+            {id: 2, state: 'active', date_created: '2026-01-01', key_results: []},
+          ],
+        }))
+    await router.push('/value/1/active?objective=2')
+    const wrapper = shallowMount(Value, {
+      global: {
+        plugins: [router],
+        stubs: {
+          Objective: {
+            props: ['objective', 'focused'],
+            template: '<article :data-objective-id="objective.id" :class="{objectiveFocused: focused}"/>',
+          },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.vm.activeObjectiveIndex).toBe(1)
+    expect(wrapper.vm.focusedObjectiveId).toBe(2)
+    expect(wrapper.get('[data-objective-id="2"]').classes()).toContain('objectiveFocused')
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    })
+
+    wrapper.unmount()
+    HTMLElement.prototype.scrollIntoView = originalScrollIntoView
+  })
 })

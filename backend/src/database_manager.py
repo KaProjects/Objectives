@@ -148,7 +148,8 @@ class DatabaseManager:
         with self.cursor() as cursor:
             cursor.execute(sql('''
                 select key_results.id, key_results.name, key_results.t,
-                       objectives.name as objective_name, objectives.state as objective_state,
+                       objectives.id as objective_id, objectives.name as objective_name,
+                       objectives.state as objective_state, values_table.id as value_id,
                        values_table.name as value_name
                 from KeyResults key_results
                 join Objectives objectives on objectives.id = key_results.objective_id
@@ -160,9 +161,11 @@ class DatabaseManager:
                     'id': row[0],
                     'name': row[1],
                     't': row[2],
-                    'objective_name': row[3],
-                    'objective_state': row[4],
-                    'value_name': row[5],
+                    'objective_id': row[3],
+                    'objective_name': row[4],
+                    'objective_state': row[5],
+                    'value_id': row[6],
+                    'value_name': row[7],
                 }
                 for row in cursor.fetchall()
             ]

@@ -14,9 +14,14 @@ class TestKeyResultsApi(ApiTestCase):
         self.assertGreater(len(key_results), 0, message)
         self.assertEqual(
             set(key_results[0]),
-            {'id', 'name', 't', 'objective_name', 'objective_state', 'value_name'},
+            {
+                'id', 'name', 't', 'objective_id', 'objective_name',
+                'objective_state', 'value_id', 'value_name',
+            },
             message,
         )
+        self.assertIsInstance(key_results[0]['objective_id'], int, message)
+        self.assertIsInstance(key_results[0]['value_id'], int, message)
         names = {key_result['name'] for key_result in key_results}
         self.assertIn('ccc', names, message)
         self.assertNotIn('aaa with description', names, message)

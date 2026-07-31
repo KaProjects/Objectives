@@ -1,5 +1,5 @@
 <script setup>
-import {computed, ref, watch} from 'vue'
+import {computed, nextTick, onBeforeUnmount, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {setError} from '@/state/appState'
 import Objective from '@/components/Objective.vue'
@@ -24,6 +24,9 @@ const pendingSourceIdeaDeletion = ref(null)
 const conversionError = ref(null)
 const openAddSubvalueDialog = ref(false)
 const subvalues = ref([])
+const doneTimelineElement = ref(null)
+const focusedObjectiveId = ref(null)
+let focusResetTimer = null
 
 function normalizeTab(tab) {
   return Object.values(OBJECTIVE_TAB).includes(tab) ? tab : OBJECTIVE_TAB.ACTIVE
@@ -37,6 +40,8 @@ async function loadData() {
     ])
     value.value = loadedValue
     subvalues.value = loadedSubvalues
+    await nextTick()
+    if (route.query.objective != null) await focusObjectiveCard(route.query.objective)
   } catch (error) {
     setError(error)
   }
@@ -216,6 +221,63 @@ function removeObjective(objective) {
   if (index !== -1) value.value.objectives.splice(index, 1)
 }
 
+function idsMatch(left, right) {
+  return left != null && right != null && String(left) === String(right)
+}
+
+function findObjectiveElement(container, objectiveId) {
+  if (!container) return null
+  return Array.from(container.querySelectorAll('[data-objective-id]'))
+      .find((element) => element.dataset.objectiveId === String(objectiveId)) ?? null
+}
+
+async function focusObjectiveCard(objectiveId) {
+  const targetObjective = (value.value.objectives ?? [])
+      .find((objective) => idsMatch(objective.id, objectiveId))
+  if (!targetObjective) return false
+
+  const targetTab = targetObjective.state === OBJECTIVE_STATE.ACTIVE
+    ? OBJECTIVE_TAB.ACTIVE
+    : OBJECTIVE_TAB.DONE
+  if (tab.value !== targetTab) return false
+
+  await nextTick()
+  const container = targetTab === OBJECTIVE_TAB.ACTIVE
+    ? activeObjectivesCarousel.value
+    : doneTimelineElement.value
+  const targetElement = findObjectiveElement(container, targetObjective.id)
+  if (!targetElement) return false
+
+  if (targetTab === OBJECTIVE_TAB.ACTIVE) {
+    const targetIndex = activeObjectives.value
+        .findIndex((objective) => idsMatch(objective.id, targetObjective.id))
+    if (targetIndex !== -1) activeObjectiveIndex.value = targetIndex
+  }
+  targetElement.scrollIntoView?.({behavior: 'smooth', block: 'nearest', inline: 'center'})
+
+  focusedObjectiveId.value = null
+  await nextTick()
+  focusedObjectiveId.value = targetObjective.id
+  clearTimeout(focusResetTimer)
+  focusResetTimer = setTimeout(() => focusedObjectiveId.value = null, 1300)
+  return true
+}
+
+async function locateObjective({objectiveId, objectiveState}) {
+  if (objectiveId == null) return
+  const loadedObjective = (value.value.objectives ?? [])
+      .find((objective) => idsMatch(objective.id, objectiveId))
+  const targetState = loadedObjective?.state ?? objectiveState
+  const targetTab = targetState === OBJECTIVE_STATE.ACTIVE ? OBJECTIVE_TAB.ACTIVE : OBJECTIVE_TAB.DONE
+  await router.push({
+    name: 'value',
+    params: {valueId: valueId.value, tab: targetTab},
+    query: {objective: String(objectiveId)},
+  })
+  await nextTick()
+  await focusObjectiveCard(objectiveId)
+}
+
 watch(valueId, (nextValueId) => {
   if (route.name !== 'value' || nextValueId == null) return
   loadData()
@@ -243,12 +305,18 @@ watch(tab, (selectedTab) => {
     params: {valueId: valueId.value, tab: selectedTab},
   })
 })
+watch(() => route.query.objective, async (objectiveId) => {
+  if (route.name !== 'value' || objectiveId == null) return
+  await nextTick()
+  await focusObjectiveCard(objectiveId)
+})
 watch(openAddObjDialog, (open) => {
   if (!open) {
     objectiveDraft.value = null
     ideaToDeleteAfterObjective.value = null
   }
 })
+onBeforeUnmount(() => clearTimeout(focusResetTimer))
 </script>
 
 <template>
@@ -310,18 +378,20 @@ watch(openAddObjDialog, (open) => {
         <Objective v-for="objective in activeObjectives"
                    :key="objective.id"
                    :objective="objective"
+                   :focused="idsMatch(focusedObjectiveId, objective.id)"
                    @deleted="removeObjective"
                    @state-changed="selectTab"
                    @updated="updateObjective"
                    @key-result-created="addKeyResult"
                    @key-result-updated="updateKeyResult"
-                   @key-result-deleted="removeKeyResult"/>
+                   @key-result-deleted="removeKeyResult"
+                   @locate-objective="locateObjective"/>
       </div>
       <CarouselPager :count="activeObjectives.length" :active-index="activeObjectiveIndex"
                      label="Objective card position"/>
     </div>
 
-    <section v-if="tab === OBJECTIVE_TAB.DONE" class="doneTimeline">
+    <section v-if="tab === OBJECTIVE_TAB.DONE" ref="doneTimelineElement" class="doneTimeline">
       <div v-for="group in doneObjectiveTimeline" :key="group.finishedDate ?? 'unknown'" class="timelineEvent">
         <template v-if="group.showYear">
           <div class="timelineYear">{{ group.year }}</div>
@@ -340,12 +410,14 @@ watch(openAddObjDialog, (open) => {
                      :key="objective.id"
                      class="timelineObjective"
                      :objective="objective"
+                     :focused="idsMatch(focusedObjectiveId, objective.id)"
                      @deleted="removeObjective"
                      @state-changed="selectTab"
                      @updated="updateObjective"
                      @key-result-created="addKeyResult"
                      @key-result-updated="updateKeyResult"
-                     @key-result-deleted="removeKeyResult"/>
+                     @key-result-deleted="removeKeyResult"
+                     @locate-objective="locateObjective"/>
         </div>
       </div>
     </section>
@@ -485,6 +557,32 @@ watch(openAddObjDialog, (open) => {
   display: grid;
   grid-column: 3;
   min-width: 0;
+}
+
+@keyframes objectiveFocusBlink {
+  0%, 100% {
+    filter: brightness(1);
+    outline-color: transparent;
+  }
+  50% {
+    filter: brightness(1.16);
+    outline-color: rgb(var(--v-theme-primary));
+  }
+}
+
+@media (min-width: 601px) {
+  .valueView :deep(.objectiveFocused) {
+    animation: objectiveFocusBlink 550ms ease-in-out 2;
+    outline: 4px solid transparent;
+    outline-offset: -4px;
+  }
+}
+
+@media (min-width: 601px) and (prefers-reduced-motion: reduce) {
+  .valueView :deep(.objectiveFocused) {
+    animation: none;
+    outline-color: rgb(var(--v-theme-primary));
+  }
 }
 
 @media (max-width: 600px) {
