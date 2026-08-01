@@ -1,0 +1,13 @@
+# Dependencies must be installed inside the Linux build stage. Copying the
+# host directory can replace npm's Linux symlinks and native packages.
+node_modules/
+
+# Generated and local-only files
+dist/
+coverage/
+test-results/
+playwright-report/
+.idea/
+.git/
+.DS_Store
+npm-debug.log*

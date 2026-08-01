@@ -5,7 +5,7 @@ COPY package*.json ./
 
 ARG VITE_BACKEND_URL='http://127.0.0.1:8080'
 
-RUN npm ci
+RUN npm ci --include=dev
 COPY . .
 RUN npm run build
 
