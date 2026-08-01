@@ -154,6 +154,10 @@ describe('KeyResultDialog', () => {
     expect(nameEditor.props('editable')).toBe(false)
     expect(createdEditor.props()).toMatchObject({editable: true, datePicker: true})
     expect(reviewedEditor.props()).toMatchObject({editable: true, datePicker: true})
+    expect(wrapper.find('.smartMarks').exists()).toBe(false)
+    expect(wrapper.find('.smartRow').exists()).toBe(false)
+    expect(wrapper.find('.smartDivider').exists()).toBe(false)
+    expect(wrapper.find('.taskSummary').exists()).toBe(true)
   })
 
   it('updates Key Result dates without closing the dialog', async () => {

@@ -334,63 +334,61 @@ async function deleteKeyResult() {
 
       <v-divider></v-divider>
 
-      <div v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE && keyResult.s && keyResult.r"
-           class="smartMarks">
-        <div class="smartMark">
-          <v-icon icon="mdi-check-bold" size="14"/>
-          SMART
+      <template v-if="canEdit()">
+        <div v-if="keyResult.s && keyResult.r" class="smartMarks">
+          <div class="smartMark">
+            <v-icon icon="mdi-check-bold" size="14"/>
+            SMART
+          </div>
         </div>
-      </div>
 
-      <v-divider class="smartDivider"/>
+        <v-divider class="smartDivider"/>
 
-      <Editable :value="draftKeyResult.measurable" :editable="canEdit()" :submit="(value) => update('measurable', value)" textarea hide-details
-                label="Acceptance Criteria">
-        <template #display="{startEditing}">
-          <div v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE"
-               class="smart smartRow" role="button" tabindex="0" aria-label="Edit Acceptance Criteria"
-               @click="startEditing"
-               @keydown.enter.prevent="startEditing"
-               @keydown.space.prevent="startEditing">
-        <v-icon class="smartIcon" icon="mdi-format-list-checks" size="18"/>
-        <div class="smartValue">{{ keyResult.m }}</div>
-      </div>
-        </template>
-      </Editable>
+        <Editable :value="draftKeyResult.measurable" :editable="canEdit()" :submit="(value) => update('measurable', value)" textarea hide-details
+                  label="Acceptance Criteria">
+          <template #display="{startEditing}">
+            <div class="smart smartRow" role="button" tabindex="0" aria-label="Edit Acceptance Criteria"
+                 @click="startEditing"
+                 @keydown.enter.prevent="startEditing"
+                 @keydown.space.prevent="startEditing">
+              <v-icon class="smartIcon" icon="mdi-format-list-checks" size="18"/>
+              <div class="smartValue">{{ keyResult.m }}</div>
+            </div>
+          </template>
+        </Editable>
 
-      <v-divider class="smartDivider"/>
+        <v-divider class="smartDivider"/>
 
-      <Editable :value="draftKeyResult.attainable" :editable="canEdit()" :submit="(value) => update('attainable', value)" textarea hide-details
-                label="Completion Risks">
-        <template #display="{startEditing}">
-          <div v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE"
-               class="smart smartRow smartRiskRow" role="button" tabindex="0" aria-label="Edit Completion Risks"
-               @click="startEditing"
-               @keydown.enter.prevent="startEditing"
-               @keydown.space.prevent="startEditing">
-        <v-icon class="smartIcon" icon="mdi-alert-outline" size="18"/>
-        <div class="smartValue">{{ keyResult.a }}</div>
-      </div>
-        </template>
-      </Editable>
+        <Editable :value="draftKeyResult.attainable" :editable="canEdit()" :submit="(value) => update('attainable', value)" textarea hide-details
+                  label="Completion Risks">
+          <template #display="{startEditing}">
+            <div class="smart smartRow smartRiskRow" role="button" tabindex="0" aria-label="Edit Completion Risks"
+                 @click="startEditing"
+                 @keydown.enter.prevent="startEditing"
+                 @keydown.space.prevent="startEditing">
+              <v-icon class="smartIcon" icon="mdi-alert-outline" size="18"/>
+              <div class="smartValue">{{ keyResult.a }}</div>
+            </div>
+          </template>
+        </Editable>
 
-      <v-divider class="smartDivider"/>
+        <v-divider class="smartDivider"/>
 
-      <Editable :value="draftKeyResult.timeBound" :editable="canEdit()" :submit="(value) => update('timeBound', value)" date-picker hide-details
-                label="Deadline">
-        <template #display="{startEditing}">
-          <div v-if="keyResult.state === KEY_RESULT_STATE.ACTIVE && keyResultParent.obj_state === OBJECTIVE_STATE.ACTIVE"
-               class="smart smartRow" role="button" tabindex="0" aria-label="Edit Deadline"
-               @click="startEditing"
-               @keydown.enter.prevent="startEditing"
-               @keydown.space.prevent="startEditing">
-        <v-icon class="smartIcon" icon="mdi-calendar" size="18"/>
-        <div class="smartValue">{{ keyResult.t }}</div>
-      </div>
-        </template>
-      </Editable>
+        <Editable :value="draftKeyResult.timeBound" :editable="canEdit()" :submit="(value) => update('timeBound', value)" date-picker hide-details
+                  label="Deadline">
+          <template #display="{startEditing}">
+            <div class="smart smartRow" role="button" tabindex="0" aria-label="Edit Deadline"
+                 @click="startEditing"
+                 @keydown.enter.prevent="startEditing"
+                 @keydown.space.prevent="startEditing">
+              <v-icon class="smartIcon" icon="mdi-calendar" size="18"/>
+              <div class="smartValue">{{ keyResult.t }}</div>
+            </div>
+          </template>
+        </Editable>
 
-      <v-divider></v-divider>
+        <v-divider></v-divider>
+      </template>
 
       <div
           class="taskSummary"
