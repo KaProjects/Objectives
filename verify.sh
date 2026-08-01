@@ -18,11 +18,11 @@ MYSQL_CONTAINER=""
 ORIGINAL_NODE_VERSION=""
 
 if [[ -t 1 ]]; then
-  GREEN='\033[32m'
-  RED='\033[31m'
-  YELLOW='\033[33m'
-  BOLD='\033[1m'
-  RESET='\033[0m'
+  GREEN=$'\033[32m'
+  RED=$'\033[31m'
+  YELLOW=$'\033[33m'
+  BOLD=$'\033[1m'
+  RESET=$'\033[0m'
 else
   GREEN=''
   RED=''
@@ -63,14 +63,128 @@ select_compatible_node() {
     [[ -x "$candidate" ]] || continue
     if node_is_supported "$candidate"; then
       export PATH="$(dirname "$candidate"):$PATH"
+      hash -r
       printf 'Using %s from %s (active %s is unsupported).\n' \
         "$(node --version)" "$(dirname "$candidate")" "${ORIGINAL_NODE_VERSION:-Node.js not found}"
       return 0
     fi
   done
+
+  return 1
 }
 
-select_compatible_node
+dependency_fingerprint() {
+  local directory="$1"
+  shift
+
+  (cd "$directory" && cksum "$@" | cksum | awk '{ print $1 ":" $2 }')
+}
+
+ensure_backend_dependencies() {
+  local install_required=0
+  local installed_requirements_fingerprint=''
+  local requirements_fingerprint
+  local requirements_stamp="$BACKEND_DIR/.venv/.objectives-requirements.checksum"
+
+  if [[ ! -x "$PYTHON" ]] || ! "$PYTHON" -c '' >/dev/null 2>&1; then
+    if ! command -v python3 >/dev/null 2>&1; then
+      printf '%sERROR:%s Python 3 is required to create the backend environment.\n' \
+        "$RED" "$RESET" >&2
+      return 127
+    fi
+
+    printf 'Creating backend virtual environment...\n'
+    python3 -m venv --clear "$BACKEND_DIR/.venv" || return 1
+    install_required=1
+  fi
+
+  requirements_fingerprint="$(
+    dependency_fingerprint "$BACKEND_DIR" requirements.txt requirements-dev.txt
+  )" || return 1
+  if [[ -f "$requirements_stamp" ]]; then
+    installed_requirements_fingerprint="$(<"$requirements_stamp")"
+  fi
+
+  if [[ ! -x "$RUFF" ]] \
+      || [[ ! -x "$BACKEND_DIR/.venv/bin/gunicorn" ]] \
+      || [[ "$installed_requirements_fingerprint" != "$requirements_fingerprint" ]] \
+      || ! "$PYTHON" -m pip check >/dev/null 2>&1 \
+      || ! "$PYTHON" -c \
+        'import firebase_admin, flask, flask_cors, flask_restx, mysql.connector' \
+        >/dev/null 2>&1; then
+    install_required=1
+  fi
+
+  if [[ $install_required -eq 1 ]]; then
+    printf 'Installing backend development dependencies...\n'
+    "$PYTHON" -m pip install --disable-pip-version-check \
+      -r "$BACKEND_DIR/requirements-dev.txt" || return 1
+
+    "$PYTHON" -m pip check || return 1
+    printf '%s\n' "$requirements_fingerprint" > "$requirements_stamp"
+  fi
+}
+
+ensure_frontend_dependencies() {
+  local install_required=0
+  local dependencies_fingerprint
+  local dependencies_stamp="$FRONTEND_DIR/node_modules/.objectives-dependencies.checksum"
+  local installed_dependencies_fingerprint=''
+
+  if ! select_compatible_node; then
+    printf '%sERROR:%s Frontend checks require Node.js 24 or newer.\n' \
+      "$RED" "$RESET" >&2
+    printf 'Install it first, for example with: nvm install 24\n' >&2
+    return 127
+  fi
+
+  if ! command -v npm >/dev/null 2>&1; then
+    printf '%sERROR:%s npm is required to install frontend dependencies.\n' \
+      "$RED" "$RESET" >&2
+    return 127
+  fi
+
+  dependencies_fingerprint="$(
+    dependency_fingerprint "$FRONTEND_DIR" package.json package-lock.json
+  )" || return 1
+  if [[ -f "$dependencies_stamp" ]]; then
+    installed_dependencies_fingerprint="$(<"$dependencies_stamp")"
+  fi
+
+  if [[ ! -x "$FRONTEND_DIR/node_modules/.bin/vitest" \
+      || ! -x "$FRONTEND_DIR/node_modules/.bin/eslint" \
+      || ! -x "$FRONTEND_DIR/node_modules/.bin/playwright" \
+      || "$installed_dependencies_fingerprint" != "$dependencies_fingerprint" ]] \
+      || ! (cd "$FRONTEND_DIR" && npm ls --depth=0 --include=dev >/dev/null 2>&1); then
+    install_required=1
+  fi
+
+  if [[ $install_required -eq 1 ]]; then
+    printf 'Installing frontend dependencies...\n'
+    (cd "$FRONTEND_DIR" && npm ci --include=dev) || return 1
+    printf '%s\n' "$dependencies_fingerprint" > "$dependencies_stamp"
+  fi
+
+  if ! (cd "$FRONTEND_DIR" && node -e '
+    const fs = require("node:fs")
+    const {chromium} = require("@playwright/test")
+    try {
+      fs.accessSync(chromium.executablePath(), fs.constants.X_OK)
+    } catch {
+      process.exit(1)
+    }
+  '); then
+    printf 'Installing the Playwright Chromium browser...\n'
+    (cd "$FRONTEND_DIR" && ./node_modules/.bin/playwright install chromium) || return 1
+  fi
+}
+
+bootstrap_dependencies() {
+  printf '%sChecking local dependencies...%s\n' "$BOLD" "$RESET"
+  ensure_backend_dependencies || return $?
+  ensure_frontend_dependencies || return $?
+  printf '%sDependencies are ready.%s\n' "$GREEN" "$RESET"
+}
 
 run_step() {
   local name="$1"
@@ -256,6 +370,11 @@ print_summary() {
 
 printf '%sObjectives local checks%s\n' "$BOLD" "$RESET"
 printf 'Workspace: %s\n' "$ROOT_DIR"
+
+if ! bootstrap_dependencies; then
+  printf '%sDependency setup failed; checks were not started.%s\n' "$RED" "$RESET" >&2
+  exit 1
+fi
 
 run_step 'Backend · Ruff' backend_ruff
 run_step 'Backend · SQLite tests' backend_sqlite_tests
