@@ -65,13 +65,25 @@ class TestTasksApi(ApiTestCase):
         self.assertEqual(len(after_key_result['tasks']), len(before_key_result['tasks']) + 3, message)
 
     def test_create_multiple_tasks_rejects_count_outside_limit(self):
-        for count in (0, 21):
+        for count in (0, 41):
             status, _, message = post_request('/task/bulk', json.dumps({
                 'kr_id': 10,
                 'value': 'Generated task',
                 'count': count,
             }))
             self.assertIn(status, (400, 422), message)
+
+    def test_create_multiple_tasks_accepts_limit(self):
+        status, created_tasks, message = post_request('/task/bulk', json.dumps({
+            'kr_id': 10,
+            'value': 'Generated task',
+            'count': 40,
+        }))
+
+        self.assertEqual(status, 201, message)
+        self.assertEqual(len(created_tasks), 40, message)
+        self.assertEqual(created_tasks[0]['value'], 'Generated task 1', message)
+        self.assertEqual(created_tasks[-1]['value'], 'Generated task 40', message)
 
     def test_create_daily_tasks(self):
         status, before_key_result, message = get_request('/key_result/10')
@@ -105,7 +117,7 @@ class TestTasksApi(ApiTestCase):
     def test_create_daily_tasks_rejects_invalid_ranges(self):
         for from_date, to_date, expected_error in (
             ('2026-07-04', '2026-07-02', 'The end date cannot be before the start date.'),
-            ('2026-07-01', '2026-07-21', 'A daily task range cannot exceed 20 days.'),
+            ('2026-07-01', '2026-08-10', 'A daily task range cannot exceed 40 days.'),
         ):
             status, error, message = post_request('/task/daily', json.dumps({
                 'kr_id': 10,
@@ -115,6 +127,19 @@ class TestTasksApi(ApiTestCase):
             }))
             self.assertEqual(status, 400, message)
             self.assertEqual(error, expected_error, message)
+
+    def test_create_daily_tasks_accepts_limit(self):
+        status, created_tasks, message = post_request('/task/daily', json.dumps({
+            'kr_id': 10,
+            'value': 'Drink water',
+            'from_date': '2026-07-01',
+            'to_date': '2026-08-09',
+        }))
+
+        self.assertEqual(status, 201, message)
+        self.assertEqual(len(created_tasks), 40, message)
+        self.assertEqual(created_tasks[0]['value'], '1.7. Drink water', message)
+        self.assertEqual(created_tasks[-1]['value'], '9.8. Drink water', message)
 
     def test_create_task_null(self):
         status, error, message = post_request("/task", None)

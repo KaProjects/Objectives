@@ -47,4 +47,21 @@ describe('AddTaskDialog', () => {
       kr_id: 2, value: '', from_date: '2026-07-02', to_date: '2026-07-03',
     })
   })
+
+  it('accepts up to 40 repetitive or daily tasks and rejects 41', () => {
+    const wrapper = shallowMount(AddTaskDialog, {props: {modelValue: true, keyResultId: 2}})
+
+    wrapper.vm.task = {value: 'Walk', repetitive: true, daily: false, count: 40, fromDate: '', toDate: ''}
+    expect(wrapper.vm.validate()).toBeNull()
+    wrapper.vm.task.count = 41
+    expect(wrapper.vm.validate()).toBe('Task count must be a whole number from 1 to 40.')
+
+    wrapper.vm.task = {
+      value: 'Walk', repetitive: false, daily: true, count: 2,
+      fromDate: '2026-07-01', toDate: '2026-08-09',
+    }
+    expect(wrapper.vm.validate()).toBeNull()
+    wrapper.vm.task.toDate = '2026-08-10'
+    expect(wrapper.vm.validate()).toBe('A daily task range cannot exceed 40 days.')
+  })
 })

@@ -16,6 +16,8 @@ const isOpen = computed({
 const task = ref({value: '', repetitive: false, daily: false, count: 2, fromDate: '', toDate: ''})
 const isSubmitting = ref(false)
 const submissionError = ref(null)
+const maxTasksPerRequest = 40
+const millisecondsPerDay = 24 * 60 * 60 * 1000
 
 watch(isOpen, (open) => {
   if (!open) return
@@ -25,10 +27,18 @@ watch(isOpen, (open) => {
 
 function validate() {
   if (!task.value.daily && !task.value.value.trim()) return 'Task value is required.'
-  if (task.value.repetitive && (!Number.isInteger(Number(task.value.count)) || task.value.count < 1 || task.value.count > 20)) {
-    return 'Task count must be a whole number from 1 to 20.'
+  if (task.value.repetitive
+      && (!Number.isInteger(Number(task.value.count)) || task.value.count < 1 || task.value.count > maxTasksPerRequest)) {
+    return `Task count must be a whole number from 1 to ${maxTasksPerRequest}.`
   }
   if (task.value.daily && (!task.value.fromDate || !task.value.toDate)) return 'Both dates are required.'
+  if (task.value.daily) {
+    const start = Date.parse(`${task.value.fromDate}T00:00:00Z`)
+    const end = Date.parse(`${task.value.toDate}T00:00:00Z`)
+    if (end < start) return 'The end date cannot be before the start date.'
+    const count = Math.round((end - start) / millisecondsPerDay) + 1
+    if (count > maxTasksPerRequest) return `A daily task range cannot exceed ${maxTasksPerRequest} days.`
+  }
   return null
 }
 
@@ -77,7 +87,7 @@ async function addTasks() {
 
         <v-checkbox v-model="task.repetitive" label="Repetitive task" v-if="!task.daily"/>
         <v-text-field v-if="task.repetitive" v-model.number="task.count" label="Number of tasks" type="number"
-                      min="1" max="20" hint="From 1 to 20" persistent-hint/>
+                      min="1" :max="maxTasksPerRequest" :hint="`From 1 to ${maxTasksPerRequest}`" persistent-hint/>
 
         <v-checkbox v-model="task.daily" label="Daily task" v-if="!task.repetitive"/>
         <template v-if="task.daily">

@@ -451,7 +451,7 @@ class BulkTasks(Resource):
     @task.expect(api.model('TaskBulkCreate', {
         'value': non_blank_string('value'),
         'kr_id': fields.Integer(required=True, example=1),
-        'count': fields.Integer(required=True, min=1, max=20, example=3),
+        'count': fields.Integer(required=True, min=1, max=40, example=3),
     }))
     @task.response(404, 'Key Result with ID not found')
     @task.response(201, 'Created')

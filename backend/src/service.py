@@ -138,8 +138,8 @@ class Service:
             raise ValueError('The end date cannot be before the start date.')
 
         count = (end - start).days + 1
-        if count > 20:
-            raise ValueError('A daily task range cannot exceed 20 days.')
+        if count > 40:
+            raise ValueError('A daily task range cannot exceed 40 days.')
 
         task_values = [
             f'{day.day}.{day.month}.' + (f' {value.strip()}' if value.strip() else '')
