@@ -31,6 +31,33 @@ const openAddTaskDialog = ref(false)
 const isSubmitting = ref(false)
 const submissionError = ref(null)
 const dateInputProps = Object.freeze({density: 'compact', style: 'width: 150px'})
+const taskSummary = computed(() => {
+  let completed = 0
+  let failed = 0
+  let active = 0
+
+  for (const task of keyResult.value?.tasks ?? []) {
+    if (task.state === TASK_STATE.FINISHED) completed += 1
+    else if (task.state === TASK_STATE.FAILED) failed += 1
+    else if (task.state === TASK_STATE.ACTIVE) active += 1
+  }
+
+  const total = keyResult.value?.tasks.length ?? 0
+  const completedPercentage = total === 0 ? 0 : Math.round((completed / total) * 1000) / 10
+  const failedPercentage = total === 0 ? 0 : Math.round((failed / total) * 1000) / 10
+  return {
+    completed,
+    failed,
+    active,
+    total,
+    completedPercentage,
+    failedPercentage,
+  }
+})
+
+function formatTaskPercentage(percentage) {
+  return Number.isInteger(percentage) ? String(percentage) : percentage.toFixed(1)
+}
 
 watch(() => props.kr, (value) => {
   keyResult.value = value ? {...value, tasks: value.tasks.map((task) => ({...task}))} : null
@@ -365,6 +392,28 @@ async function deleteKeyResult() {
 
       <v-divider></v-divider>
 
+      <div
+          class="taskSummary"
+          role="status"
+          aria-live="polite"
+          :aria-label="`Tasks: ${formatTaskPercentage(taskSummary.completedPercentage)}% completed (${taskSummary.completed}), ${formatTaskPercentage(taskSummary.failedPercentage)}% failed (${taskSummary.failed}), ${taskSummary.active} active out of ${taskSummary.total} total`"
+      >
+        <span class="taskSummaryItem taskSummaryCompleted" title="Completed tasks">
+          <v-icon class="taskSummaryCompletedIcon" icon="mdi-checkbox-marked-outline" size="18" aria-hidden="true"/>
+          {{ formatTaskPercentage(taskSummary.completedPercentage) }}% ({{ taskSummary.completed }})
+        </span>
+        <span class="taskSummaryItem taskSummaryFailed" title="Failed tasks">
+          <v-icon class="taskSummaryFailedIcon" icon="mdi-close-box-outline" size="18" aria-hidden="true"/>
+          {{ formatTaskPercentage(taskSummary.failedPercentage) }}% ({{ taskSummary.failed }})
+        </span>
+        <span class="taskSummaryItem taskSummaryActive" title="Active tasks">
+          <v-icon class="taskSummaryActiveIcon" icon="mdi-checkbox-blank-outline" size="18" aria-hidden="true"/>
+          {{ taskSummary.active }} / {{ taskSummary.total }}
+        </span>
+      </div>
+
+      <v-divider></v-divider>
+
       <div class="tasks">
       <div v-for="task in keyResult.tasks.slice().sort(compareTasks)" :key="task.id">
         <Editable :value="task.value" :editable="canEdit()" :submit="(value) => updateTaskValue(task, value)" label="Task" hide-details>
@@ -512,6 +561,43 @@ async function deleteKeyResult() {
   overflow-y: auto;
 }
 
+.taskSummary {
+  align-items: center;
+  background: transparent;
+  display: flex;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  justify-content: center;
+  margin: -1px 10px;
+  min-height: 32px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.taskSummaryItem {
+  align-items: center;
+  display: inline-flex;
+  gap: 3px;
+  justify-content: center;
+  padding: 0 12px;
+}
+
+.taskSummaryItem + .taskSummaryItem {
+  border-left: 1px solid rgba(var(--v-theme-on-surface), 0.16);
+}
+
+.taskSummaryCompletedIcon {
+  color: rgb(var(--v-theme-success));
+}
+
+.taskSummaryFailedIcon {
+  color: rgb(var(--v-theme-error));
+}
+
+.taskSummaryActiveIcon {
+  opacity: var(--v-medium-emphasis-opacity);
+}
+
 .taskMain {
   flex: 1;
 }
@@ -544,6 +630,10 @@ async function deleteKeyResult() {
 }
 
 @media (max-width: 600px) {
+  .taskSummaryItem {
+    padding: 0 7px;
+  }
+
   .taskActions {
     display: flex;
   }

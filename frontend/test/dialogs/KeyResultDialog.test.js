@@ -63,6 +63,66 @@ describe('KeyResultDialog', () => {
     expect(wrapper.vm.openAddTaskDialog).toBe(true)
   })
 
+  it('reactively summarizes completed, failed, and active tasks', async () => {
+    const tasks = [
+      {id: 1, value: 'Completed one', state: 'finished'},
+      {id: 2, value: 'Completed two', state: 'finished'},
+      {id: 3, value: 'Failed one', state: 'failed'},
+      {id: 4, value: 'Remaining one', state: 'active'},
+    ]
+    api.put.mockResolvedValue({state: 'failed'})
+    api.get.mockResolvedValue({date_reviewed: '2026-01-02'})
+    api.delete.mockResolvedValue(undefined)
+    const wrapper = mount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult, tasks},
+        kr_parent: {
+          ...keyResult, obj_state: 'active', all_tasks_count: 4, resolved_tasks_count: 3,
+        },
+      },
+    })
+
+    expect(wrapper.vm.taskSummary).toEqual({
+      completed: 2, failed: 1, active: 1, total: 4, completedPercentage: 50, failedPercentage: 25,
+    })
+    expect(wrapper.get('.taskSummary').attributes('aria-label'))
+        .toBe('Tasks: 50% completed (2), 25% failed (1), 1 active out of 4 total')
+
+    await wrapper.vm.updateTaskState(wrapper.vm.keyResult.tasks[3], 'failed')
+    expect(wrapper.vm.taskSummary).toEqual({
+      completed: 2, failed: 2, active: 0, total: 4, completedPercentage: 50, failedPercentage: 50,
+    })
+
+    await wrapper.vm.addCreatedTasks([
+      {id: 5, value: 'Remaining two', state: 'active'},
+      {id: 6, value: 'Remaining three', state: 'active'},
+    ])
+    expect(wrapper.vm.taskSummary).toEqual({
+      completed: 2, failed: 2, active: 2, total: 6, completedPercentage: 33.3, failedPercentage: 33.3,
+    })
+    expect(wrapper.vm.formatTaskPercentage(wrapper.vm.taskSummary.completedPercentage)).toBe('33.3')
+
+    await wrapper.vm.deleteTask(wrapper.vm.keyResult.tasks[0])
+    expect(wrapper.vm.taskSummary).toEqual({
+      completed: 1, failed: 2, active: 2, total: 5, completedPercentage: 20, failedPercentage: 40,
+    })
+  })
+
+  it('uses zero percentages when no tasks have been resolved', () => {
+    const wrapper = shallowMount(KeyResultDialog, {
+      props: {
+        modelValue: true,
+        kr: {...keyResult, tasks: [{id: 1, value: 'Remaining', state: 'active'}]},
+        kr_parent: {...keyResult, obj_state: 'active'},
+      },
+    })
+
+    expect(wrapper.vm.taskSummary).toEqual({
+      completed: 0, failed: 0, active: 1, total: 1, completedPercentage: 0, failedPercentage: 0,
+    })
+  })
+
   it('provides a date picker when editing the deadline', () => {
     const wrapper = mount(KeyResultDialog, {
       props: {
