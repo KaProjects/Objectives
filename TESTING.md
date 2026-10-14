@@ -35,7 +35,7 @@ python3 -m venv .venv
 
 ```sh
 cd backend
-.venv/bin/ruff check src devel test script
+.venv/bin/ruff check src devel test
 .venv/bin/python test/run.py
 ```
 
@@ -55,7 +55,7 @@ Ruff only reports problems by default. Apply its safe automatic fixes
 explicitly with:
 
 ```sh
-.venv/bin/ruff check --fix src devel test script
+.venv/bin/ruff check --fix src devel test
 ```
 
 ### Run the backend suite against disposable MySQL

@@ -1,6 +1,3 @@
-# Runtime configuration and credentials are mounted when the container starts.
-envs_*.json
-
 # Local-only artifacts
 .venv/
 __pycache__/

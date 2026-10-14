@@ -33,7 +33,23 @@ insert into Objectives(id, value_id, state, name, description, date_created, dat
   (19, 1, 'achieved', 'Eat vegetables with lunch every weekday', 'Make vegetables the default part of weekday lunches.', '2025-02-01', '2025-04-30'),
   (20, 1, 'failed', 'Never use a screen after 20:00', 'The absolute rule did not work with occasional evening plans.', '2025-09-01', '2025-10-15'),
   (21, 1, 'active', 'Improve daily hydration', 'Make drinking water the default throughout the workday.', '2026-07-20', ''),
-  (22, 1, 'active', 'Build a sustainable morning routine', 'Start the day with a calm, repeatable sequence that supports energy and focus.', '2026-07-18', ''),
+  (22, 1, 'active', 'Build a sustainable morning routine', 'Start the day with a calm, repeatable sequence that supports energy and focus.
+
+*Why this matters*
+Mornings currently start with the phone and email, which makes the rest of the day feel reactive. A predictable first hour should reduce decision fatigue and protect time for the things that are easy to skip later, like movement and planning.
+
+*What the routine should include*
+- Wake up at the same time on weekdays, within a 15 minute window
+- A glass of water before coffee
+- Ten minutes of mobility or a short walk outside
+- Five minutes to write down the three most important tasks for the day
+- No email or news until the plan is written
+
+*Constraints*
+The routine has to survive travel, late evenings and weekends with family. If it takes more than 45 minutes it will not stick, so every step needs a short fallback version for busy days.
+
+*Notes*
+Inspired by a few articles on habit stacking, see https://jamesclear.com/habit-stacking for the main idea. Review after four weeks and drop whatever does not feel useful.', '2026-07-18', ''),
   (23, 1, 'active', 'Reduce recurring neck tension', 'Use short movement breaks and improve the desk setup.', '2026-07-16', ''),
   (24, 1, 'active', 'Cook more varied healthy lunches', 'Collect a small rotation of quick lunches that are easy to prepare.', '2026-07-14', ''),
   (25, 1, 'active', 'Protect a consistent recovery day', 'Keep one lower-intensity day each week for rest and recovery.', '2026-07-11', '');
@@ -75,7 +91,21 @@ insert into KeyResults(id, objective_id, state, name, description, s, m, a, r, t
   (34, 21, 'active', 'Prepare a reusable travel bottle', 'Avoid losing the routine on days away from home.', 'true', 'Carry water on every commute for two weeks', 'Keep the bottle beside keys', 'true', '2026-08-10', '2026-07-08', '2026-07-21'),
   (35, 21, 'active', 'Avoid caffeine after midday', 'Reduce the chance of using coffee instead of rest and water.', 'true', 'No caffeinated drinks after 12:00 on five weekdays', 'Switch to herbal tea', 'true', '2026-08-31', '2026-07-11', '2026-07-15'),
   (36, 21, 'active', 'Review hydration weekly', 'Adjust cues based on what was missed that week.', 'true', 'Complete a five-minute review every Sunday', 'Use the hydration notes', 'true', 'text', '2026-07-13', '2026-07-20'),
-  (37, 21, 'active', 'Keep water by the bed overnight', 'Make it easy to drink if waking thirsty.', 'true', 'Water is prepared beside the bed each evening', 'Use a covered glass', 'true', '2026-08-15', '2026-07-16', '2026-07-21');
+  (37, 21, 'active', 'Keep water by the bed overnight', 'Make it easy to drink if waking thirsty.', 'true', 'Water is prepared beside the bed each evening', 'Use a covered glass', 'true', '2026-08-15', '2026-07-16', '2026-07-21'),
+  (38, 22, 'active', 'Wake up by 6:45 on weekdays', 'Keep the wake-up time consistent.', 'true', 'Four weeks with at most two late mornings', 'Move the alarm in 15 minute steps', 'true', '2026-08-15', '2026-07-18', '2026-07-25'),
+  (39, 22, 'active', 'Write the daily top three before email', 'Plan before reacting.', 'true', 'Done on at least 4 of 5 weekdays', 'Use a paper note by the coffee machine', 'true', '2026-08-08', '2026-07-18', '2026-07-24'),
+  (40, 22, 'active', 'Ten minutes of morning movement', 'Mobility or a short walk outside.', 'true', 'Logged on five days each week', 'Fallback is two minutes of stretching', 'true', '', '2026-07-18', '2026-07-22'),
+  (41, 22, 'completed', 'Move the phone charger out of the bedroom', 'Remove the first-thing scrolling trigger.', 'true', 'Charger lives in the hallway', 'One-time change', 'true', '2026-07-20', '2026-07-18', '2026-07-20'),
+  (42, 22, 'failed', 'Meditate for 20 minutes each morning', 'Turned out too long for busy days.', 'true', '20 minutes daily for two weeks', 'Too ambitious as a starting point', 'true', '2026-07-31', '2026-07-18', '2026-07-31'),
+  (43, 22, 'active', 'Drink a glass of water before coffee', 'Hydrate first thing.', 'true', 'Done on 5 of 7 days', 'Keep a glass on the counter overnight', 'true', '2026-08-10', '2026-07-19', '2026-07-26'),
+  (44, 22, 'active', 'No news or social media before 8:00', 'Protect the first hour from reactive input.', 'true', 'At most one slip per week', 'Use app limits on the phone', 'true', '2026-08-20', '2026-07-19', '2026-07-27'),
+  (45, 22, 'active', 'Prepare breakfast ingredients the evening before', 'Remove morning decisions.', 'true', 'Prepared on 4 weeknights', 'Two simple default breakfasts', 'true', '2026-08-12', '2026-07-20', '2026-07-26'),
+  (46, 22, 'active', 'Spend five minutes outside in daylight', 'Support the circadian rhythm.', 'true', 'Logged on 5 weekdays', 'Balcony counts on rainy days', 'true', '', '2026-07-20', '2026-07-23'),
+  (47, 22, 'active', 'Keep the routine under 45 minutes', 'Make it sustainable on busy days.', 'true', 'Average duration under 45 minutes for two weeks', 'Time each step once', 'true', '2026-08-25', '2026-07-21', '2026-07-28'),
+  (48, 22, 'active', 'Define a 10-minute travel version', 'The routine must survive trips.', 'true', 'Written and used on the next trip', 'Only water, stretch and top three', 'true', '2026-09-01', '2026-07-21', '2026-07-25'),
+  (49, 22, 'completed', 'Set a consistent weekday alarm', 'Same alarm time for all weekdays.', 'true', 'Alarm set for Mon-Fri', 'One-time change', 'true', '2026-07-22', '2026-07-18', '2026-07-22'),
+  (50, 22, 'completed', 'Buy a paper notebook for daily planning', 'Plan away from screens.', 'true', 'Notebook is next to the coffee machine', 'One-time purchase', 'true', '2026-07-24', '2026-07-18', '2026-07-23'),
+  (51, 22, 'failed', 'Cold shower every morning', 'Dropped after a week, not enjoyable enough to keep.', 'true', 'Daily for 30 days', 'Too much friction for now', 'true', '2026-08-01', '2026-07-19', '2026-07-27');
 
 insert into Tasks(id, kr_id, state, value) values
   (1, 1, 'finished', 'Set a 22:30 evening reminder'),

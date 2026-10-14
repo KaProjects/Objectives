@@ -230,7 +230,7 @@ require_backend_environment() {
 backend_ruff() {
   require_backend_environment || return $?
   cd "$BACKEND_DIR" || return 1
-  "$RUFF" check src devel test script
+  "$RUFF" check src devel test
 }
 
 backend_sqlite_tests() {

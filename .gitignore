@@ -1,0 +1,3 @@
+# Firebase backups written by deploy/firebase_maintenance.py
+firebase-backup-*
+deploy/.venv/

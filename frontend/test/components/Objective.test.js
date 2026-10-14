@@ -84,6 +84,24 @@ describe('Objective', () => {
     expect(wrapper.emitted('dialog-opened')).toEqual([[{type: 'objective', id: 8}]])
   })
 
+  it('shows a more button that opens the dialog only when the description overflows', async () => {
+    const wrapper = shallowMount(Objective, {
+      props: {objective: {...objective}},
+    })
+    expect(wrapper.find('.objDescriptionMore').exists()).toBe(false)
+
+    const description = wrapper.get('.objDescription').element
+    Object.defineProperty(description, 'scrollHeight', {configurable: true, value: 400})
+    Object.defineProperty(description, 'clientHeight', {configurable: true, value: 200})
+    await wrapper.setProps({objective: {...objective, description: 'Very long description'}})
+    await flushPromises()
+
+    const more = wrapper.get('.objDescriptionMore')
+    expect(more.attributes('aria-label')).toBe('Show full description of Exercise')
+    await more.trigger('click')
+    expect(wrapper.emitted('dialog-opened')).toEqual([[{type: 'objective', id: 1}]])
+  })
+
   it('restores and closes an Objective dialog from route-derived props', async () => {
     const wrapper = shallowMount(Objective, {
       props: {objective: {...objective}, objectiveDialogId: 1},

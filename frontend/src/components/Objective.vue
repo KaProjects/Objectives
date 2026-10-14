@@ -1,5 +1,5 @@
 <script setup>
-import {nextTick, ref, toRef, watch} from 'vue'
+import {nextTick, onBeforeUnmount, onMounted, ref, toRef, watch} from 'vue'
 import {compareDates, formatDate, parseIsoDate, string_to_html} from '@/utils'
 import {api} from '@/services/apiClient'
 import {setError} from '@/state/appState'
@@ -31,6 +31,9 @@ const selectedKr_parent = ref(null)
 const selectedObj = ref(null)
 const openKrDialog = ref(false)
 const keyResultsList = ref(null)
+const descriptionEl = ref(null)
+const descriptionOverflows = ref(false)
+let descriptionObserver = null
 const {
   scheduleEdgeRoll: scheduleKeyResultsRoll,
   updateEdgeRoll: updateKeyResultsRoll,
@@ -43,6 +46,22 @@ const keyResultStatus = Object.freeze({
 })
 
 watch(() => props.objective.key_results.length, () => nextTick(updateKeyResultsRoll))
+
+function updateDescriptionOverflow() {
+  const el = descriptionEl.value
+  descriptionOverflows.value = !!el && el.scrollHeight > el.clientHeight + 1
+}
+
+watch(() => props.objective.description, () => nextTick(updateDescriptionOverflow))
+
+onMounted(() => {
+  updateDescriptionOverflow()
+  if (typeof ResizeObserver === 'undefined' || !descriptionEl.value) return
+  descriptionObserver = new ResizeObserver(updateDescriptionOverflow)
+  descriptionObserver.observe(descriptionEl.value)
+})
+
+onBeforeUnmount(() => descriptionObserver?.disconnect())
 
 function idsMatch(left, right) {
   return left != null && right != null && String(left) === String(right)
@@ -163,7 +182,13 @@ function locateObjective() {
 
     <div class="objHeader">
       <v-card-title>{{ objective.name }}</v-card-title>
-      <div class="v-card-text" v-html="string_to_html(objective.description)"/>
+      <div class="objDescriptionWrapper" :class="{objDescriptionOverflows: descriptionOverflows}">
+        <div ref="descriptionEl" class="v-card-text objDescription" v-html="string_to_html(objective.description)"/>
+        <button v-if="descriptionOverflows" type="button" class="objDescriptionMore"
+                :aria-label="`Show full description of ${objective.name}`" @click="openObjective">
+          more<v-icon icon="mdi-chevron-down" size="14"/>
+        </button>
+      </div>
     </div>
 
     <img v-if="objective.state === OBJECTIVE_STATE.ACHIEVED"
@@ -475,8 +500,56 @@ function locateObjective() {
 }
 
 .objHeader {
+  display: flex;
   flex: 0 0 auto;
+  flex-direction: column;
+  /* header (title + description) takes at most half of the card's max height */
+  max-height: calc((100dvh - 90px) / 2);
+  min-height: 0;
   min-width: 0;
+}
+
+.objDescriptionWrapper {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
+.objDescription {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.objDescriptionOverflows .objDescription {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
+}
+
+.objDescriptionMore {
+  align-items: center;
+  align-self: center;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(44, 62, 80, 0.24);
+  border-radius: 999px;
+  bottom: 4px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.68rem;
+  font-weight: 650;
+  gap: 1px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 2px 4px 2px 8px;
+  position: absolute;
+}
+
+.objDescriptionMore:hover,
+.objDescriptionMore:focus-visible {
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .objHeader :deep(.v-card-title) {
